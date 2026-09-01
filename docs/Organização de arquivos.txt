@@ -1,0 +1,20 @@
+1- ReLer arquivos de livros/regras e livros/Adição-Narrativa, e Atualizar arquivos
+
+2- Terminar de ler as camanhas
+
+3- Um erro conhecido no extrator: "jogo o cinzeiro na cabeça dela" vira melee_attack. Consistente nas duas repetições, e defensável.
+
+4- Testes apresentarem o Resultado, exemplo: testes de dados, mostrar quais foram os valores que sairam, não somente se passou ou não
+
+5. Combate.resolver() aplica dano na ficha — nada a fazer. É contrato, e está trancado em teste.
+
+7. O degrau 3 aceita ou recusa por sorteio	baixo
+
+8. Combate.resolver() aplica dano na ficha — contrato, não defeito	—
+
+9. Nove funções sem teste direto	baixo
+
+10. Framework no navegador — destrava N5/N6	decisão sua
+
+
+

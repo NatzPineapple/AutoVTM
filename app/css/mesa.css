@@ -1,0 +1,541 @@
+/* ============================================================
+   VITÆ — A Mesa
+   Chat do Narrador + doca de contexto (ficha, locais, pessoas…)
+   ============================================================ */
+
+.mesa {
+  position: fixed; inset: 0; top: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  grid-template-columns: 1fr 380px;
+  grid-template-areas:
+    'topo  topo'
+    'aviso aviso'
+    'chat  doca';
+  background:
+    radial-gradient(1100px 620px at 30% -10%, rgba(139,18,32,.16), transparent 60%),
+    linear-gradient(180deg, var(--piche) 0%, var(--piche-2) 60%, #0a0709 100%);
+  overflow: hidden;
+}
+
+/* ---------- barra superior ---------- */
+.mesa-topo {
+  grid-area: topo;
+  display: flex; align-items: center; gap: 1rem;
+  padding: .6rem 1.2rem;
+  border-bottom: 1px solid var(--borda);
+  background: linear-gradient(180deg, rgba(8,6,10,.97), rgba(8,6,10,.8));
+  backdrop-filter: blur(12px);
+  min-width: 0;
+}
+.mesa-cena { min-width: 0; flex: 1; }
+.mesa-cena .local {
+  font-family: var(--title); font-size: 1rem; letter-spacing: .06em; color: var(--osso);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mesa-cena .hora {
+  font-family: var(--sans); font-size: .62rem; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--carne-fria);
+}
+
+/* medidores vitais compactos */
+.hud { display: flex; gap: .9rem; flex-wrap: wrap; }
+.hud-item { text-align: center; }
+.hud-item .rot {
+  display: block; font-family: var(--sans); font-size: .55rem; letter-spacing: .16em;
+  text-transform: uppercase; color: rgba(185,173,158,.5); margin-bottom: .2rem;
+}
+.hud-pips { display: flex; gap: 2px; justify-content: center; }
+.hud-pips i {
+  width: 9px; height: 9px; display: block;
+  border: 1px solid rgba(182,145,63,.35); background: rgba(0,0,0,.4);
+}
+.hud-pips i.on { background: var(--sangue); border-color: var(--sangue-viva); }
+.hud-pips.fome i.on { background: linear-gradient(135deg, var(--sangue-viva), #5a0a12);
+                      box-shadow: 0 0 6px rgba(192,24,41,.5); }
+.hud-pips.hum i.on  { background: var(--osso-fosco); border-color: var(--osso); }
+.hud-pips i.ferido  { background: rgba(139,18,32,.35); }
+
+/* ---------- faixa de aviso ---------- */
+.mesa-aviso {
+  grid-area: aviso;
+  display: flex; align-items: center; gap: .6rem;
+  padding: .4rem 1.2rem;
+  font-family: var(--sans); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ouro-claro);
+  background: linear-gradient(90deg, rgba(182,145,63,.16), transparent 70%);
+  border-bottom: 1px solid var(--borda);
+}
+.mesa-aviso b { color: var(--sangue-viva); }
+
+/* ---------- coluna do chat ---------- */
+.mesa-chat {
+  grid-area: chat;
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+}
+/* Sem scroll-behavior aqui: quem decide se a rolagem é suave é o script,
+   com fluxo.scrollTo({ behavior }). Deixar 'smooth' fixo fazia o chat
+   saltar para o topo e voltar a cada re-render. */
+.fluxo { flex: 1; overflow-y: auto; padding: 2rem 1.6rem 1rem; }
+.fluxo-interno { max-width: 720px; margin: 0 auto; }
+
+/* ---------- mensagens ---------- */
+.msg { margin-bottom: 1.5rem; animation: msgEntra .4s ease both; }
+@keyframes msgEntra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.msg-autor {
+  font-family: var(--sans); font-size: .6rem; letter-spacing: .24em; text-transform: uppercase;
+  margin-bottom: .4rem; display: flex; align-items: center; gap: .5rem;
+}
+.msg-texto { font-size: 1.06rem; line-height: 1.66; }
+.msg-texto p { margin: 0 0 .8em; }
+.msg-texto p:last-child { margin-bottom: 0; }
+.msg-texto strong { color: var(--osso); font-weight: 600; }
+.msg-texto em { color: var(--carne); font-style: italic; }
+
+.msg.narrador .msg-autor { color: var(--carne-fria); }
+.msg.narrador .msg-texto { color: var(--osso-fosco); }
+.msg.narrador .msg-texto strong { color: var(--carne); }
+
+.msg.jogador { padding-left: .9rem; border-left: 2px solid var(--sangue); }
+.msg.jogador .msg-autor { color: var(--sangue-viva); }
+.msg.jogador .msg-texto { color: var(--osso); }
+.msg.jogador.falar .msg-texto { font-style: italic; }
+
+.msg.sistema {
+  text-align: center; margin: 1.8rem 0;
+  font-family: var(--sans); font-size: .66rem; letter-spacing: .2em; text-transform: uppercase;
+  color: rgba(185,173,158,.55);
+}
+.msg.sistema span {
+  display: inline-block; padding: 0 1rem; position: relative;
+}
+.msg.sistema span::before, .msg.sistema span::after {
+  content: ''; position: absolute; top: 50%; width: 2.5rem; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--borda-forte));
+}
+.msg.sistema span::before { right: 100%; }
+.msg.sistema span::after  { left: 100%; transform: scaleX(-1); }
+.msg.sistema.critico { color: var(--sangue-viva); }
+.msg.sistema.critico span::before, .msg.sistema.critico span::after {
+  background: linear-gradient(90deg, transparent, var(--sangue-viva));
+}
+
+/* divisor de cena */
+.msg.cena { margin: 2.2rem 0; text-align: center; }
+.msg.cena .titulo {
+  font-family: var(--title); font-size: 1.05rem; letter-spacing: .16em; color: var(--ouro-claro);
+}
+.msg.cena .sub {
+  font-family: var(--sans); font-size: .6rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--carne-fria); margin-top: .25rem;
+}
+.msg.cena .fio {
+  height: 1px; margin: .8rem auto 0; max-width: 260px;
+  background: linear-gradient(90deg, transparent, var(--sangue), transparent);
+}
+
+/* cartão de rolagem pedida */
+.pedido-rolagem {
+  border: 1px solid var(--borda-forte); background: rgba(74,13,20,.22);
+  padding: .9rem 1.1rem; margin-top: .9rem;
+}
+.pedido-rolagem .cab {
+  font-family: var(--sans); font-size: .6rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--ouro-claro); margin-bottom: .35rem;
+}
+.pedido-rolagem .piscina {
+  font-family: var(--title); font-size: 1.05rem; color: var(--osso);
+}
+.pedido-rolagem .motivo { font-size: .92rem; color: var(--osso-fosco); font-style: italic; }
+.pedido-rolagem .dif { color: var(--sangue-viva); }
+
+/* referências clicáveis dentro da narração */
+.ref {
+  color: var(--ouro-claro); border-bottom: 1px dotted rgba(182,145,63,.5);
+  cursor: pointer; transition: color .2s, border-color .2s;
+}
+.ref:hover { color: var(--sangue-viva); border-color: var(--sangue-viva); }
+
+/* "o Narrador escreve…" */
+.escrevendo { display: flex; align-items: center; gap: .5rem; color: var(--carne-fria);
+  font-family: var(--sans); font-size: .64rem; letter-spacing: .2em; text-transform: uppercase; }
+.escrevendo i {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--sangue-viva); display: block;
+  animation: pisca 1.3s infinite;
+}
+.escrevendo i:nth-child(2) { animation-delay: .18s; }
+.escrevendo i:nth-child(3) { animation-delay: .36s; }
+@keyframes pisca { 0%,60%,100% { opacity: .25; } 30% { opacity: 1; } }
+
+/* ---------- compositor ---------- */
+.compositor {
+  border-top: 1px solid var(--borda);
+  background: linear-gradient(180deg, rgba(8,6,10,.6), rgba(8,6,10,.95));
+  padding: .8rem 1.6rem 1.1rem;
+}
+.compositor-interno { max-width: 720px; margin: 0 auto; }
+
+.modos { display: flex; gap: .35rem; margin-bottom: .55rem; flex-wrap: wrap; }
+.modo {
+  font-family: var(--sans); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase;
+  padding: .3rem .7rem; border: 1px solid rgba(182,145,63,.22); background: rgba(0,0,0,.3);
+  color: var(--osso-fosco); cursor: pointer; transition: all .22s;
+}
+.modo:hover { border-color: var(--sangue-viva); color: var(--carne); }
+.modo.on { background: rgba(139,18,32,.4); border-color: var(--sangue); color: var(--osso); }
+
+.caixa-envio {
+  display: flex; align-items: flex-end; gap: .6rem;
+  border: 1px solid var(--borda-forte); background: rgba(0,0,0,.5);
+  padding: .55rem .6rem .55rem .9rem;
+  transition: border-color .25s, background .25s;
+}
+.caixa-envio:focus-within { border-color: var(--sangue); background: rgba(74,13,20,.2); }
+.caixa-envio textarea {
+  flex: 1; background: transparent; border: 0; outline: none; resize: none;
+  color: var(--osso); font-family: var(--serif); font-size: 1.04rem; line-height: 1.5;
+  max-height: 200px; min-height: 26px; padding: 0;
+}
+.caixa-envio textarea::placeholder { color: rgba(185,173,158,.35); font-style: italic; }
+.btn-enviar {
+  flex: 0 0 auto; width: 34px; height: 34px; border: 1px solid var(--borda-forte);
+  background: rgba(74,13,20,.4); color: var(--carne); cursor: pointer;
+  display: grid; place-items: center; font-size: .9rem; transition: all .25s;
+}
+.btn-enviar:hover:not(:disabled) { background: var(--sangue); color: var(--osso); border-color: var(--sangue-viva); }
+.btn-enviar:disabled { opacity: .3; cursor: not-allowed; }
+.dica-envio {
+  font-family: var(--sans); font-size: .58rem; letter-spacing: .1em; color: rgba(185,173,158,.35);
+  margin-top: .4rem; display: flex; justify-content: space-between; gap: 1rem;
+}
+
+/* ---------- doca ---------- */
+.doca {
+  grid-area: doca;
+  display: flex; flex-direction: column; min-height: 0;
+  border-left: 1px solid var(--borda);
+  background: linear-gradient(180deg, rgba(22,16,26,.7), rgba(10,7,11,.9));
+}
+/* cabeçalho com o botão de recolher — só aparece quando a doca é sobreposta */
+.doca-cabeca { display: none; }
+.doca-fechar {
+  width: 30px; height: 30px; display: grid; place-items: center;
+  background: transparent; border: 1px solid var(--borda-forte); color: var(--carne);
+  cursor: pointer; font-size: .8rem; line-height: 1; transition: all .22s;
+}
+.doca-fechar:hover { background: var(--sangue); color: var(--osso); border-color: var(--sangue-viva); }
+
+/* fundo escurecido atrás da doca sobreposta */
+.doca-fundo { display: none; }
+
+.doca-abas {
+  display: flex; border-bottom: 1px solid var(--borda); overflow-x: auto; scrollbar-width: none;
+}
+.doca-abas::-webkit-scrollbar { display: none; }
+.doca-aba {
+  flex: 1 0 auto; padding: .6rem .55rem; text-align: center; cursor: pointer;
+  font-family: var(--sans); font-size: .58rem; letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(185,173,158,.42); border-bottom: 2px solid transparent;
+  transition: all .25s; white-space: nowrap;
+}
+.doca-aba:hover { color: var(--carne); background: rgba(139,18,32,.08); }
+.doca-aba.on { color: var(--ouro-claro); border-bottom-color: var(--sangue-viva); background: rgba(139,18,32,.14); }
+.doca-aba .n {
+  display: inline-block; margin-left: .25rem; font-size: .55rem;
+  color: rgba(182,145,63,.55);
+}
+.doca-corpo { flex: 1; overflow-y: auto; padding: 1.1rem; min-height: 0; }
+
+.doca-sec { margin-bottom: 1.5rem; }
+.doca-sec > h4 {
+  font-family: var(--sans); font-size: .58rem; letter-spacing: .24em; text-transform: uppercase;
+  color: var(--ouro); border-bottom: 1px solid var(--borda); padding-bottom: .35rem;
+  margin: 0 0 .6rem;
+}
+
+/* item genérico da doca */
+.item {
+  border: 1px solid var(--borda); background: rgba(0,0,0,.28);
+  padding: .7rem .8rem; margin-bottom: .6rem; cursor: pointer;
+  transition: border-color .25s, background .25s, transform .25s;
+  position: relative;
+}
+.item:hover { border-color: var(--borda-forte); background: rgba(74,13,20,.18); transform: translateX(-2px); }
+.item.aberto { border-color: var(--borda-forte); background: rgba(74,13,20,.24); }
+.item .nome { font-family: var(--title); font-size: .9rem; letter-spacing: .03em; color: var(--osso); }
+.item .meta {
+  font-family: var(--sans); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--carne-fria); margin-top: .18rem;
+}
+.item .desc { font-size: .9rem; color: var(--osso-fosco); margin-top: .5rem; line-height: 1.5; }
+.item .fita-rel { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; }
+.item.desconhecido .nome { color: var(--fumaca); }
+.item.desconhecido::after {
+  content: 'não confirmado'; position: absolute; top: .7rem; right: .8rem;
+  font-family: var(--sans); font-size: .5rem; letter-spacing: .14em; text-transform: uppercase;
+  color: rgba(185,173,158,.3);
+}
+
+/* medidor de perigo */
+.perigo { display: inline-flex; gap: 2px; vertical-align: middle; margin-left: .4rem; }
+.perigo i { width: 4px; height: 9px; display: block; background: rgba(182,145,63,.2); }
+.perigo i.on { background: var(--sangue-viva); }
+
+/* ficha resumida na doca */
+.ficha-doca .bloco { margin-bottom: 1.1rem; }
+.ficha-doca .linha {
+  display: flex; justify-content: space-between; align-items: center; gap: .6rem;
+  padding: .2rem 0; border-bottom: 1px dotted rgba(182,145,63,.12); font-size: .92rem;
+}
+.ficha-doca .linha .rot { color: var(--osso-fosco); }
+.ficha-doca .linha .rot small {
+  display: block; font-family: var(--sans); font-size: .52rem; letter-spacing: .1em;
+  text-transform: uppercase; color: rgba(185,173,158,.35);
+}
+.ficha-doca .pontos-mini { display: flex; gap: 3px; }
+.ficha-doca .pontos-mini i {
+  width: 8px; height: 8px; border-radius: 50%; display: block;
+  border: 1px solid rgba(182,145,63,.35); background: rgba(0,0,0,.4);
+}
+.ficha-doca .pontos-mini i.on {
+  background: radial-gradient(circle at 32% 30%, var(--sangue-viva), var(--oxblood) 75%);
+  border-color: var(--sangue);
+}
+
+/* ---------- estado vazio ---------- */
+.mesa-vazia {
+  min-height: 100vh; display: grid; place-items: center; text-align: center; padding: 3rem 1.5rem;
+}
+
+/* ---------- responsivo ---------- */
+.doca-alternar { display: none; }
+
+@media (max-width: 980px) {
+  .mesa {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'topo' 'aviso' 'chat';
+  }
+  .doca {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(400px, 88vw);
+    z-index: 60; transform: translateX(101%); transition: transform .32s cubic-bezier(.2,.8,.3,1);
+    box-shadow: -20px 0 60px rgba(0,0,0,.7);
+    background: linear-gradient(180deg, #16101a, #0a070b);
+  }
+  .doca.aberta { transform: none; }
+  .doca-alternar { display: grid; }
+  .fluxo, .compositor { padding-left: 1rem; padding-right: 1rem; }
+
+  /* a doca sobrepõe o topo, então precisa carregar o próprio botão de fechar */
+  .doca-cabeca {
+    display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+    padding: .6rem .8rem; border-bottom: 1px solid var(--borda);
+    font-family: var(--sans); font-size: .6rem; letter-spacing: .24em;
+    text-transform: uppercase; color: var(--carne-fria);
+  }
+  .doca-fundo {
+    display: block; position: fixed; inset: 0; z-index: 55;
+    background: rgba(4,3,5,.6); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .doca-fundo.on { opacity: 1; pointer-events: auto; }
+}
+
+@media (max-width: 760px) {
+  .mesa-aviso .so-largo { display: none; }
+  .mesa-aviso { padding: .35rem 1rem; }
+}
+
+@media (max-width: 560px) {
+  .mesa-topo { flex-wrap: wrap; gap: .5rem .8rem; padding: .55rem 1rem; }
+  .hud { gap: .7rem; width: 100%; order: 3; }
+  .mesa-cena .local { font-size: .9rem; }
+  .msg-texto { font-size: 1rem; }
+  .modos { gap: .3rem; }
+  .modo { padding: .28rem .55rem; font-size: .58rem; }
+}
+
+.msg.arbitro .msg-autor { color: var(--ouro-claro); }
+.arbitro-caixa {
+  border: 1px solid var(--borda-forte); border-left: 2px solid var(--ouro);
+  background: linear-gradient(90deg, rgba(182,145,63,.10), rgba(0,0,0,.3) 65%);
+  padding: .85rem 1.05rem;
+}
+.arb-titulo {
+  font-family: var(--title); font-size: .98rem; letter-spacing: .04em;
+  color: var(--osso); margin-bottom: .5rem;
+}
+.arb-bloqueio {
+  display: flex; align-items: baseline; gap: .55rem;
+  font-size: .94rem; color: var(--osso-fosco); margin-bottom: .3rem; line-height: 1.5;
+}
+.arb-bloqueio .tag {
+  flex: none; font-family: var(--sans); font-size: .52rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--sangue-viva);
+  border: 1px solid rgba(192,24,41,.35); padding: .1rem .35rem;
+}
+.arb-aviso {
+  margin-top: .5rem; padding-top: .45rem; border-top: 1px solid rgba(182,145,63,.14);
+  font-size: .88rem; font-style: italic; color: var(--carne-fria);
+}
+
+.msg-texto .aspas { color: var(--carne-fria); opacity: .55; }
+.msg-texto.acao { font-style: italic; color: var(--carne); }
+.msg-texto.acao mark.acao-chave {
+  background: rgba(182,145,63,.16); color: var(--ouro-claro);
+  border-bottom: 1px solid rgba(182,145,63,.5);
+  padding: 0 .12em; border-radius: 1px; font-style: normal; font-weight: 600;
+}
+.msg-texto.fala { color: var(--osso); font-style: normal; }
+.msg-texto.fala.vol-sussurro { color: var(--osso-fosco); font-size: .96rem; letter-spacing: .01em; }
+.msg-texto.fala.vol-grito { color: var(--osso); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.msg-texto.fala.vol-mensagem {
+  font-family: var(--mono, ui-monospace, monospace); font-size: .92rem;
+  color: var(--carne); background: rgba(0,0,0,.3);
+  border: 1px solid var(--borda); padding: .5rem .7rem; display: inline-block;
+}
+.msg-texto.meta-pergunta {
+  color: var(--fumaca); font-style: italic; font-size: .98rem;
+}
+.msg.jogador.perguntar { border-left-color: var(--fumaca); }
+.fala-meta {
+  font-family: var(--sans); font-size: .55rem; letter-spacing: .14em;
+  text-transform: uppercase; color: rgba(185,173,158,.45);
+}
+
+.delimitador {
+  margin-left: auto; align-self: center;
+  font-family: var(--serif); font-size: .95rem; color: rgba(182,145,63,.45);
+  letter-spacing: .1em;
+}
+.voz-linha { display: flex; align-items: center; gap: .55rem; margin-bottom: .45rem; flex-wrap: wrap; }
+.voz-rot {
+  font-family: var(--sans); font-size: .55rem; letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(185,173,158,.42); flex: none; min-width: 3.4rem;
+}
+.volumes { display: flex; gap: .3rem; flex-wrap: wrap; }
+.vol {
+  font-family: var(--sans); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase;
+  padding: .24rem .55rem; border: 1px solid rgba(182,145,63,.2);
+  background: rgba(0,0,0,.3); color: var(--osso-fosco); cursor: pointer; transition: all .2s;
+}
+.vol:hover { border-color: var(--sangue-viva); color: var(--carne); }
+.vol.on { background: rgba(139,18,32,.4); border-color: var(--sangue); color: var(--osso); }
+.alvo-fala {
+  background: rgba(0,0,0,.4); border: 1px solid var(--borda); color: var(--osso);
+  font-family: var(--serif); font-size: .92rem; padding: .25rem .5rem; max-width: 15rem;
+}
+.alvo-fala:focus { outline: none; border-color: var(--sangue); }
+.alvo-fala option { background: var(--piche-2); }
+.voz-nota {
+  font-family: var(--sans); font-size: .53rem; letter-spacing: .1em;
+  color: rgba(185,173,158,.32);
+}
+
+.saguao { min-height: 100vh; }
+.saguao-cabeca {
+  display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
+  padding: 1.4rem clamp(1rem, 4vw, 2.5rem);
+  border-bottom: 1px solid var(--borda);
+  background: linear-gradient(180deg, rgba(8,6,10,.96), rgba(8,6,10,.75));
+}
+.saguao-cabeca h1 {
+  font-family: var(--title); font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 800; letter-spacing: .04em; margin: .15rem 0 0; color: var(--osso);
+}
+.saguao-corpo { max-width: 900px; margin: 0 auto; padding: 2.2rem clamp(1rem, 4vw, 2rem) 5rem; }
+
+.sessoes { display: flex; flex-direction: column; gap: .6rem; margin-top: .9rem; }
+.sessao-cartao {
+  position: relative; display: flex; align-items: stretch;
+  border: 1px solid var(--borda); background: linear-gradient(160deg, var(--veludo), var(--piche-2) 70%);
+  transition: border-color .25s, transform .25s;
+}
+.sessao-cartao:hover { border-color: var(--borda-forte); transform: translateY(-2px); }
+.sessao-corpo { flex: 1; padding: 1rem 1.2rem; cursor: pointer; min-width: 0; }
+.sessao-topo { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
+.sessao-personagem {
+  font-family: var(--title); font-size: 1.15rem; letter-spacing: .04em; color: var(--osso);
+}
+.sessao-quando {
+  margin-left: auto; font-family: var(--sans); font-size: .58rem; letter-spacing: .14em;
+  text-transform: uppercase; color: rgba(185,173,158,.4);
+}
+.sessao-meta {
+  font-family: var(--sans); font-size: .6rem; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--carne-fria); margin-top: .3rem;
+}
+.sessao-onde { font-size: .94rem; color: var(--osso-fosco); margin-top: .35rem; }
+.sessao-onde.cena { color: var(--ouro-claro); font-style: italic; }
+.sessao-rodape {
+  display: flex; gap: 1.1rem; flex-wrap: wrap; margin-top: .6rem;
+  padding-top: .5rem; border-top: 1px solid rgba(182,145,63,.12);
+  font-family: var(--sans); font-size: .56rem; letter-spacing: .12em;
+  text-transform: uppercase; color: rgba(185,173,158,.42);
+}
+.sessao-apagar {
+  flex: none; width: 42px; border: 0; border-left: 1px solid var(--borda);
+  background: transparent; color: rgba(185,173,158,.3);
+  cursor: pointer; font-size: .8rem; transition: all .22s;
+}
+.sessao-apagar:hover { background: rgba(139,18,32,.35); color: var(--osso); }
+.sessao-apagar:focus-visible { outline: 2px solid var(--ouro); outline-offset: -2px; }
+
+.saguao-linha {
+  display: flex; gap: 1rem; flex-wrap: wrap; margin: .6rem 0 .2rem;
+  font-family: var(--sans); font-size: .58rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--carne-fria);
+}
+.btn.grande { padding: .85rem 2.2rem; font-size: .78rem; }
+
+/* ---------- painel de combate, no fluxo ---------- */
+.combate-painel {
+  border: 1px solid var(--sangue); border-bottom: 0;
+  background: linear-gradient(180deg, rgba(139,18,32,.16), rgba(0,0,0,.42));
+  padding: .8rem 1rem;
+}
+.combate-cabeca { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
+.combate-titulo {
+  font-family: var(--sans); font-size: .64rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--sangue-viva);
+}
+.combate-vez {
+  margin-left: auto; font-family: var(--sans); font-size: .6rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--carne-fria);
+}
+.combate-motivo { margin: .3rem 0 0; font-size: .84rem; color: var(--osso-fosco); }
+.combate-ordem {
+  display: flex; flex-wrap: wrap; gap: .5rem; list-style: none;
+  margin: .5rem 0 .2rem; padding: 0;
+  font-family: var(--sans); font-size: .6rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--carne-fria);
+}
+.combate-ordem li { border: 1px solid var(--borda); padding: .18rem .45rem; }
+.combate-ordem li span { color: var(--osso-fosco); }
+.combate-ordem li.agora { border-color: var(--ouro); color: var(--osso); }
+.combate-arma { margin-top: .5rem; }
+.combate-arma .rot {
+  font-family: var(--sans); font-size: .58rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--carne-fria);
+}
+.combate-alvos { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .6rem; }
+.combate-alvo {
+  flex: 1 1 220px; border: 1px solid var(--borda); padding: .5rem .7rem;
+  background: rgba(0,0,0,.3);
+}
+.combate-alvo.na-vez { border-color: var(--ouro); }
+.combate-alvo.caido { opacity: .45; border-color: var(--sangue-viva); }
+.combate-alvo-topo { display: flex; align-items: baseline; gap: .5rem; }
+.combate-nome { font-family: var(--title); font-size: 1rem; color: var(--osso); }
+.combate-selo {
+  margin-left: auto; font-family: var(--sans); font-size: .55rem; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--carne-fria);
+}
+@media (max-width: 640px) { .combate-alvo { flex: 1 1 100%; } }
+
+.sessao-apagar.confirmando {
+  width: 72px; background: rgba(139,18,32,.45); color: var(--osso);
+  font-family: var(--sans); font-size: .52rem; letter-spacing: .1em;
+  text-transform: uppercase; line-height: 1.3;
+}
+.sessao-apagar.confirmando:hover { background: var(--sangue); }

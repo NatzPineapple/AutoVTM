@@ -1,0 +1,374 @@
+/* ============================================================
+   VITAE — Folha de estilo
+   Paleta: piche, oxblood, carne, osso, folha de ouro velho
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Josefin+Sans:wght@300;400;600&display=swap');
+
+:root {
+  --piche:      #08060a;
+  --piche-2:    #0f0b10;
+  --veludo:     #16101a;
+  --veludo-2:   #1e1620;
+  --oxblood:    #4a0d14;
+  --sangue:     #8b1220;
+  --sangue-viva:#c01829;
+  --carne:      #d6a3a3;
+  --carne-fria: #a87f83;
+  --osso:       #e8ddd0;
+  --osso-fosco: #b9ad9e;
+  --ouro:       #b6913f;
+  --ouro-claro: #e0bd6e;
+  --fumaca:     #6b6070;
+  --borda:      rgba(182,145,63,.22);
+  --borda-forte:rgba(182,145,63,.45);
+  --sombra:     0 18px 60px rgba(0,0,0,.85);
+
+  --serif:  'Cormorant Garamond', Georgia, serif;
+  --title:  'Cinzel', 'Times New Roman', serif;
+  --sans:   'Josefin Sans', system-ui, sans-serif;
+}
+
+/* ---------- base ---------- */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background:
+    radial-gradient(1200px 700px at 50% -10%, rgba(139,18,32,.18), transparent 60%),
+    radial-gradient(900px 600px at 100% 100%, rgba(74,13,20,.14), transparent 65%),
+    linear-gradient(180deg, var(--piche) 0%, var(--piche-2) 45%, #0a0709 100%);
+  background-attachment: fixed;
+  color: var(--osso);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.62;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* véu de textura: grão + veias */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: .5;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px),
+    radial-gradient(circle at 20% 30%, rgba(139,18,32,.07), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(107,96,112,.06), transparent 45%);
+  mix-blend-mode: screen;
+}
+/* vinheta */
+body::after {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  box-shadow: inset 0 0 240px 60px rgba(0,0,0,.9);
+}
+
+#app { position: relative; z-index: 2; }
+
+::selection { background: var(--sangue); color: var(--osso); }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: var(--piche); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--oxblood), #2a0a0e);
+  border: 1px solid var(--borda);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--sangue); }
+
+/* ---------- tipografia ---------- */
+h1, h2, h3, h4 { font-family: var(--title); font-weight: 600; letter-spacing: .06em; margin: 0 0 .5em; }
+h1 { font-size: clamp(2rem, 5vw, 3.4rem); font-weight: 800; }
+h2 { font-size: clamp(1.3rem, 3vw, 1.9rem); color: var(--osso); }
+h3 { font-size: 1.1rem; color: var(--ouro-claro); }
+.sub { font-family: var(--sans); font-weight: 300; letter-spacing: .3em; text-transform: uppercase;
+       font-size: .68rem; color: var(--carne-fria); }
+em, .it { font-style: italic; color: var(--carne); }
+.quiet { color: var(--osso-fosco); font-size: .93em; }
+.blood-text { color: var(--sangue-viva); }
+.gold { color: var(--ouro-claro); }
+
+/* ---------- capa ---------- */
+.capa {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 4rem 1.5rem; position: relative;
+}
+.capa-marca {
+  font-family: var(--title); font-size: clamp(3.2rem, 13vw, 9rem); font-weight: 800;
+  letter-spacing: .18em; line-height: .95; margin: 0;
+  background: linear-gradient(175deg, #f3e7d8 0%, var(--carne) 35%, var(--sangue) 72%, #3a070d 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 26px rgba(139,18,32,.55));
+  animation: pulso 5.5s ease-in-out infinite;
+}
+@keyframes pulso {
+  0%,100% { filter: drop-shadow(0 6px 26px rgba(139,18,32,.45)); }
+  48%     { filter: drop-shadow(0 6px 42px rgba(192,24,41,.8)); }
+  52%     { filter: drop-shadow(0 6px 30px rgba(139,18,32,.6)); }
+}
+.capa-sub { font-family: var(--title); font-size: clamp(.75rem,2.4vw,1.05rem);
+  letter-spacing: .55em; text-transform: uppercase; color: var(--carne-fria); margin: .4rem 0 0 .55em; }
+.capa-linha { max-width: 46ch; margin: 2.2rem auto; font-size: 1.15rem; font-style: italic; color: var(--osso-fosco); }
+.capa-fonte { margin-top: 3.5rem; font-family: var(--sans); font-size: .7rem; letter-spacing: .18em;
+  text-transform: uppercase; color: rgba(185,173,158,.4); }
+
+/* gota de sangue decorativa */
+.gota { width: 1px; height: 90px; margin: 1.6rem auto;
+  background: linear-gradient(180deg, transparent, var(--sangue) 60%, var(--sangue-viva)); position: relative; }
+.gota::after { content:''; position:absolute; bottom:-5px; left:-4px; width:9px; height:9px;
+  border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--sangue-viva); box-shadow: 0 0 14px var(--sangue); }
+
+/* ---------- layout ---------- */
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 1.5rem; }
+.topo {
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(180deg, rgba(8,6,10,.97), rgba(8,6,10,.82));
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--borda);
+}
+.topo-inner { display: flex; align-items: center; gap: 1.2rem; padding: .75rem 1.5rem; max-width: 1180px; margin: 0 auto; }
+.topo-marca { font-family: var(--title); font-weight: 800; letter-spacing: .22em; font-size: 1.05rem;
+  color: var(--osso); cursor: pointer; }
+.topo-marca span { color: var(--sangue-viva); }
+.topo-acoes { margin-left: auto; display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* passos */
+.trilha { display: flex; gap: 0; overflow-x: auto; border-top: 1px solid var(--borda);
+  scrollbar-width: none; }
+.trilha::-webkit-scrollbar { display: none; }
+.trilha-item {
+  flex: 0 0 auto; padding: .55rem 1rem; font-family: var(--sans); font-size: .7rem;
+  letter-spacing: .16em; text-transform: uppercase; color: rgba(185,173,158,.42);
+  border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+  transition: color .25s, border-color .25s, background .25s;
+}
+.trilha-item:hover { color: var(--carne); background: rgba(139,18,32,.09); }
+.trilha-item.ativo { color: var(--ouro-claro); border-bottom-color: var(--sangue-viva); background: rgba(139,18,32,.14); }
+.trilha-item.feito { color: var(--carne-fria); }
+.trilha-item.feito::before { content: '✦ '; color: var(--sangue); }
+
+/* ---------- painéis ---------- */
+.painel { padding: 3rem 0 6rem; animation: entra .5s ease both; }
+@keyframes entra { from { opacity: 0; transform: translateY(14px);} to { opacity: 1; transform: none; } }
+
+.painel-cabeca { margin-bottom: 2.4rem; border-bottom: 1px solid var(--borda); padding-bottom: 1.2rem; }
+.painel-cabeca .num { font-family: var(--title); font-size: .75rem; letter-spacing: .4em;
+  color: var(--sangue); text-transform: uppercase; }
+.painel-cabeca p { max-width: 62ch; color: var(--osso-fosco); margin: .4rem 0 0; }
+
+.grade { display: grid; gap: 1rem; }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+
+/* ---------- cartões ---------- */
+.cartao {
+  position: relative; padding: 1.2rem 1.3rem;
+  background: linear-gradient(160deg, var(--veludo), var(--piche-2) 70%);
+  border: 1px solid var(--borda);
+  transition: border-color .3s, transform .3s, box-shadow .3s, background .3s;
+}
+.cartao::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(120deg, transparent 40%, rgba(214,163,163,.05) 50%, transparent 60%);
+  opacity: 0; transition: opacity .45s;
+}
+.cartao:hover::before { opacity: 1; }
+.cartao.selec {
+  border-color: var(--borda-forte);
+  background: linear-gradient(160deg, rgba(74,13,20,.5), var(--piche-2) 75%);
+  box-shadow: 0 0 0 1px rgba(182,145,63,.2), 0 12px 40px rgba(139,18,32,.28);
+}
+.cartao.clicavel { cursor: pointer; }
+.cartao.clicavel:hover { transform: translateY(-3px); border-color: var(--borda-forte); }
+
+.cartao-cla { display: flex; flex-direction: column; min-height: 168px; }
+.cla-topo { display: flex; align-items: baseline; gap: .6rem; }
+.cla-simbolo { font-size: 1.5rem; line-height: 1; filter: saturate(.7); }
+.cla-nome { font-family: var(--title); font-size: 1.15rem; letter-spacing: .07em; }
+.cla-epiteto { font-family: var(--sans); font-size: .62rem; letter-spacing: .22em;
+  text-transform: uppercase; color: var(--carne-fria); }
+.cla-lema { font-style: italic; color: var(--carne); font-size: .95rem; margin: .55rem 0; }
+.cla-discs { margin-top: auto; padding-top: .7rem; font-family: var(--sans); font-size: .64rem;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--osso-fosco); border-top: 1px solid rgba(182,145,63,.12); }
+
+/* fita superior colorida do clã */
+.fita { position: absolute; top: 0; left: 0; right: 0; height: 2px; opacity: .75; }
+
+/* ---------- pontos (bolinhas) ---------- */
+.linha-traco {
+  display: flex; align-items: center; gap: .8rem; padding: .42rem .55rem;
+  border-bottom: 1px solid rgba(182,145,63,.09);
+}
+.linha-traco:hover { background: rgba(139,18,32,.07); }
+.traco-nome { font-family: var(--serif); font-size: 1.02rem; flex: 1; }
+.traco-nome small { display:block; font-family: var(--sans); font-size:.6rem; letter-spacing:.12em;
+  text-transform: uppercase; color: rgba(185,173,158,.45); }
+.pontos { display: flex; gap: 5px; flex: 0 0 auto; }
+.ponto {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1px solid rgba(182,145,63,.4); background: rgba(0,0,0,.45);
+  cursor: pointer; transition: all .18s; position: relative;
+}
+.ponto:hover { border-color: var(--sangue-viva); transform: scale(1.18); }
+.ponto.cheio {
+  background: radial-gradient(circle at 32% 30%, var(--sangue-viva), var(--oxblood) 75%);
+  border-color: var(--sangue); box-shadow: 0 0 8px rgba(192,24,41,.5);
+}
+.ponto.travado { cursor: not-allowed; opacity: .55; }
+.pontos.compacto .ponto { width: 11px; height: 11px; }
+
+/* contador de cotas */
+.cotas { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 1.4rem; }
+.cota {
+  font-family: var(--sans); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+  padding: .35rem .7rem; border: 1px solid var(--borda); color: var(--osso-fosco);
+  background: rgba(0,0,0,.3);
+}
+.cota b { color: var(--ouro-claro); font-family: var(--title); }
+.cota.ok { border-color: rgba(120,160,110,.4); color: #9fc08f; }
+.cota.ok b { color: #b6d9a4; }
+.cota.excedeu { border-color: var(--sangue-viva); color: var(--sangue-viva); animation: treme .35s; }
+@keyframes treme { 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+
+/* ---------- botões ---------- */
+.btn {
+  font-family: var(--sans); font-size: .72rem; letter-spacing: .2em; text-transform: uppercase;
+  padding: .62rem 1.35rem; background: transparent; color: var(--osso-fosco);
+  border: 1px solid var(--borda-forte); cursor: pointer; transition: all .28s;
+  position: relative; overflow: hidden;
+}
+.btn::after {
+  content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--oxblood), var(--sangue));
+  transform: scaleX(0); transform-origin: left; transition: transform .32s ease; z-index: -1;
+}
+.btn:hover { color: var(--osso); border-color: var(--sangue-viva); }
+.btn:hover::after { transform: scaleX(1); }
+.btn:disabled { opacity: .3; cursor: not-allowed; }
+.btn:disabled:hover::after { transform: scaleX(0); }
+.btn.primario { color: var(--osso); border-color: var(--sangue); background: rgba(74,13,20,.45); }
+.btn.fantasma { border-color: rgba(182,145,63,.18); font-size: .66rem; padding: .45rem .9rem; }
+
+.navegar { display: flex; gap: .8rem; justify-content: space-between; align-items: center;
+  margin-top: 3rem; padding-top: 1.6rem; border-top: 1px solid var(--borda); flex-wrap: wrap; }
+
+/* ---------- campos ---------- */
+.campo { margin-bottom: 1.1rem; }
+.campo label {
+  display: block; font-family: var(--sans); font-size: .66rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--carne-fria); margin-bottom: .35rem;
+}
+.campo input, .campo textarea, .campo select {
+  width: 100%; padding: .6rem .75rem; background: rgba(0,0,0,.45);
+  border: 1px solid var(--borda); color: var(--osso);
+  font-family: var(--serif); font-size: 1.02rem; transition: border-color .25s, background .25s;
+}
+.campo input:focus, .campo textarea:focus, .campo select:focus {
+  outline: none; border-color: var(--sangue); background: rgba(74,13,20,.22);
+}
+.campo textarea { resize: vertical; min-height: 78px; }
+.campo select option { background: var(--piche-2); }
+.campo .dica { font-size: .82rem; color: rgba(185,173,158,.5); margin-top: .3rem; font-style: italic; }
+
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+.chip {
+  font-family: var(--sans); font-size: .64rem; letter-spacing: .1em; padding: .28rem .6rem;
+  border: 1px solid rgba(182,145,63,.25); color: var(--osso-fosco); cursor: pointer;
+  transition: all .22s; background: rgba(0,0,0,.25);
+}
+.chip:hover { border-color: var(--sangue-viva); color: var(--carne); }
+.chip.on { background: rgba(139,18,32,.4); border-color: var(--sangue); color: var(--osso); }
+.chip.apagado { opacity: .35; }
+
+/* ---------- caixas de destaque ---------- */
+.caixa {
+  border-left: 2px solid var(--sangue); padding: .9rem 1.1rem; margin: 1rem 0;
+  background: linear-gradient(90deg, rgba(74,13,20,.28), transparent 70%);
+}
+.caixa h4 { font-family: var(--sans); font-size: .66rem; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--sangue-viva); margin: 0 0 .35rem; }
+.caixa p { margin: 0; font-size: .96rem; color: var(--osso-fosco); }
+
+.caixa.ouro { border-left-color: var(--ouro); background: linear-gradient(90deg, rgba(182,145,63,.13), transparent 70%); }
+.caixa.ouro h4 { color: var(--ouro-claro); }
+
+/* ---------- ficha final ---------- */
+.ficha { background: linear-gradient(170deg, #120d13, #0a070b); border: 1px solid var(--borda-forte);
+  padding: 2.2rem; box-shadow: var(--sombra); }
+.ficha-topo { text-align: center; border-bottom: 1px double var(--borda-forte); padding-bottom: 1.4rem; margin-bottom: 1.8rem; }
+.ficha-nome { font-family: var(--title); font-size: clamp(1.8rem,5vw,2.9rem); font-weight: 800;
+  letter-spacing: .1em; color: var(--osso); margin: 0; }
+.ficha-linha { font-family: var(--sans); font-size: .7rem; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--carne-fria); margin-top: .5rem; }
+.ficha-sec { margin: 1.8rem 0; }
+.ficha-sec > h3 {
+  font-family: var(--title); font-size: .78rem; letter-spacing: .34em; text-transform: uppercase;
+  color: var(--ouro); border-bottom: 1px solid var(--borda); padding-bottom: .4rem; margin-bottom: .9rem;
+}
+.ficha-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px,1fr)); gap: 1.4rem 2.4rem; }
+.ficha-item { display: flex; justify-content: space-between; align-items: center; gap: .8rem;
+  padding: .22rem 0; border-bottom: 1px dotted rgba(182,145,63,.14); font-size: .98rem; }
+.ficha-item .rot { color: var(--osso-fosco); }
+.ficha-item .val { font-family: var(--title); color: var(--ouro-claro); font-size: .9rem; }
+
+.medidor { display: flex; gap: 4px; }
+.medidor i { width: 15px; height: 15px; border: 1px solid rgba(182,145,63,.35); display: block;
+  background: rgba(0,0,0,.4); }
+.medidor i.on { background: var(--sangue); border-color: var(--sangue-viva); }
+.medidor.fome i.on { background: linear-gradient(135deg, var(--sangue-viva), #5a0a12); }
+.medidor.hum i.on { background: linear-gradient(135deg, var(--osso), var(--osso-fosco)); border-color: var(--osso-fosco); }
+
+/* ---------- cidade ---------- */
+.cidade-card { position: relative; overflow: hidden; }
+.cidade-uf { position: absolute; top: .7rem; right: .9rem; font-family: var(--title);
+  font-size: 2.6rem; font-weight: 800; color: rgba(182,145,63,.09); letter-spacing: .05em; }
+.selo { display: inline-block; font-family: var(--sans); font-size: .56rem; letter-spacing: .18em;
+  text-transform: uppercase; padding: .16rem .45rem; border: 1px solid; margin-right: .35rem; }
+.selo.alto  { color: var(--ouro-claro); border-color: rgba(182,145,63,.5); }
+.selo.medio { color: var(--carne); border-color: rgba(214,163,163,.35); }
+.selo.baixo { color: var(--fumaca); border-color: rgba(107,96,112,.4); }
+.selo.nenhum{ color: rgba(185,173,158,.4); border-color: rgba(185,173,158,.2); }
+
+/* ---------- poderes ---------- */
+.poder {
+  padding: .7rem .9rem; border: 1px solid var(--borda); cursor: pointer;
+  background: rgba(0,0,0,.28); transition: all .25s; margin-bottom: .5rem;
+}
+.poder:hover { border-color: var(--borda-forte); background: rgba(74,13,20,.2); }
+.poder.on { border-color: var(--sangue); background: linear-gradient(90deg, rgba(139,18,32,.3), rgba(0,0,0,.3)); }
+.poder b { font-family: var(--title); font-size: .92rem; letter-spacing: .04em; color: var(--osso); }
+.poder p { margin: .25rem 0 0; font-size: .9rem; color: var(--osso-fosco); }
+
+/* ---------- utilitário ---------- */
+.hidden { display: none !important; }
+.centro { text-align: center; }
+.mt { margin-top: 1.4rem; }
+.mt2 { margin-top: 2.4rem; }
+hr.ornamento { border: 0; height: 22px; margin: 2.4rem 0;
+  background: radial-gradient(ellipse at center, rgba(182,145,63,.32), transparent 62%); position: relative; }
+hr.ornamento::after { content: '✦'; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  color: var(--sangue); font-size: .8rem; background: var(--piche-2); padding: 0 .8rem; }
+
+.aviso { font-family: var(--sans); font-size: .68rem; letter-spacing: .1em; color: var(--sangue-viva);
+  text-transform: uppercase; }
+
+/* toast */
+#toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; transform: translateY(200%);
+  background: linear-gradient(160deg, var(--veludo), var(--piche)); border: 1px solid var(--borda-forte);
+  padding: .8rem 1.6rem; font-family: var(--sans); font-size: .72rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--osso); z-index: 200; transition: transform .4s cubic-bezier(.2,.9,.3,1.2);
+  box-shadow: var(--sombra);
+}
+#toast.on { transform: translateY(0); }
+
+/* A impressão é tratada inteiramente em css/ficha-oficial.css */
+
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .ficha { padding: 1.2rem; }
+  .topo-inner { padding: .6rem 1rem; }
+  .wrap { padding: 0 1rem; }
+}

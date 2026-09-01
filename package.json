@@ -1,0 +1,25 @@
+{
+  "name": "vitae",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VITÆ — criador de fichas e mesa solo de Vampiro: A Máscara 5ª Edição, cenário brasileiro.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test --test-reporter=./testes/relator.mjs --test-reporter-destination=stdout \"testes/*.test.mjs\"",
+    "test:ficha": "node --test testes/ficha.test.mjs",
+    "dev": "node servidor/dev.mjs",
+    "proxy": "node servidor/proxy.mjs",
+    "diagnostico": "node -e \"import('./servidor/cronista.mjs').then(async m=>console.log(JSON.stringify(await m.diagnostico(),null,2)))\"",
+    "comparar": "node servidor/comparador.mjs",
+    "test:arbitro": "node --test testes/arbitro.test.mjs",
+    "test:sessoes": "node --test testes/sessoes.test.mjs",
+    "test:cadeia": "node --test testes/cadeia.test.mjs",
+    "test:cru": "node --test \"testes/*.test.mjs\"",
+    "test:front": "node --test testes/front.test.mjs",
+    "test:fronteiras": "node --test testes/fronteiras.test.mjs",
+    "testes:log": "node -e \"process.stdout.write(require(String.fromCharCode(102,115)).readFileSync(\"testes/registro/ultimo.md\",\"utf8\"))\"",
+    "test:cronista": "node --test testes/cronista.test.mjs",
+    "test:jornada": "node --test testes/jornada.test.mjs",
+    "test:servidor": "node --test testes/servidor.test.mjs"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "texto": "tento arrombar a gaveta trancada da penteadeira",
+  "modo": "agir",
+  "seita": "camarilla",
+  "cidade": "rio",
+  "arquivoCampanha": "carnaval-de-cinzas.md",
+  "indiceCapitulo": 0,
+  "personagem": "Inácia Vasques — Lasombra, Camarilla",
+  "lealdade": "Camarilla · sem cargo na corte",
+  "condicao": "a Fome incomoda",
+  "cena": { "local": "boate_ipanema", "hora": "Quinta-feira, 23h40", "descricao": "o camarim da sua boate" },
+  "presentes": ["bia (Beatriz Coutinho)"],
+  "pessoas": [
+    { "id": "bia", "nome": "Beatriz Coutinho", "relacao": "aliado" },
+    { "id": "duarte", "nome": "Duarte de Alvim", "relacao": "complicado" }
+  ],
+  "locais": [
+    { "id": "boate_ipanema", "nome": "Casa Vermelha" },
+    { "id": "copacabana", "nome": "Praia de Copacabana" }
+  ],
+  "fios": [{ "id": "fotografo", "titulo": "Quem tirou as fotos?" }],
+  "historico": [
+    "[cena] camarim — Quinta-feira, 23h40",
+    "[narração] Sobre a penteadeira, um envelope pardo com seu nome escrito à mão.",
+    "[jogador examinar] abro o envelope com a unha",
+    "[narração] Dentro, três fotografias. Duas suas na praia, uma da Bia em plena luz do dia."
+  ],
+  "acoes": ["arrombar", "achar_escondido", "persuadir", "esconder", "intimidar", "escutar", "farejar", "seduzir", "lutar", "caçar", "ocultismo", "passar_por_humano", "rastrear"]
+}

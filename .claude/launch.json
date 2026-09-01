@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vitae",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["servidor/proxy.mjs"],
+      "port": 5173
+    }
+  ]
+}

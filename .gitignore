@@ -1,0 +1,87 @@
+# ============================================================
+# VITÆ — o que não entra no repositório
+#
+# Três categorias, e a primeira é a que importa de verdade:
+#   1. material com dono (os livros da Paradox)
+#   2. o que se regenera sozinho (venv, node_modules, medições)
+#   3. sujeira de máquina e de editor
+# ============================================================
+
+
+# ---------- 1. Material com dono ----------
+# 738 MB de PDFs comerciais da Paradox / White Wolf. São livros COMPRADOS,
+# não conteúdo deste projeto, e publicá-los seria redistribuição indevida.
+#
+# Nada em app/ ou servidor/ lê estes arquivos em tempo de execução: eles
+# servem para extração offline, e o que saiu deles já está compilado em
+# docs/regras.md e docs/cenario.md, que ENTRAM no repositório.
+#
+# Se você clonar isto noutra máquina e quiser reabrir os livros, ponha os
+# PDFs de volta em Livros/ com os mesmos nomes. O README Parte C lista os
+# comandos de extração.
+Livros/
+
+
+# ---------- 2. O que se regenera ----------
+
+# Node. O projeto tem ZERO dependências (README §16.2) — nem em app/, nem em
+# servidor/, e desde a §42 nem no extrator de intenção. Isto costuma nem
+# existir, mas npm cria a pasta assim mesmo, e o mupdf entra aqui quando
+# você renderiza página de livro.
+node_modules/
+npm-debug.log*
+.npm/
+
+# Saída do comparador de modelos: reescrita a cada `npm run comparar`, e
+# versionar só geraria diff de ruído. As DUAS outras amostras da pasta são
+# ENTRADA de teste e ficam no repositório.
+servidor/amostras/ultima-comparacao.json
+
+# Modelos de linguagem, se algum dia forem baixados para dentro do projeto.
+# Hoje vivem no ollama, fora daqui.
+*.gguf
+*.safetensors
+*.bin
+
+
+# ---------- 3. Máquina e editor ----------
+
+# Preferências locais do Claude Code. O launch.json ENTRA — ele descreve
+# como subir o servidor e vale para todo mundo.
+.claude/settings.local.json
+.claude/*.local.json
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS e Linux, para quem clonar de outro lado
+.DS_Store
+.AppleDouble
+
+# Variáveis de ambiente. Este projeto não usa chave de API nenhuma
+# (README §16.2), mas VITAE_MODELO, VITAE_PORTA_INTENCAO e afins podem
+# acabar num arquivo local.
+.env
+.env.*
+!.env.exemplo
+
+# Temporários e rascunhos
+*.log
+*.tmp
+*.bak
+/tmp/
+/scratch/
+
+# Registro das corridas de teste — resultado de execução, não código.
+# `npm test` reescreve, e guarda os vinte últimos.
+testes/registro/

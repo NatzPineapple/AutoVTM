@@ -1,0 +1,104 @@
+{
+  "tipo": "capitulo",
+  "personagem": "Inácia Vasques — Lasombra, 12ª geração",
+  "lealdade": "Camarilla · sem cargo na corte",
+  "seita": "camarilla",
+  "cidade": "rio",
+  "arquivoCampanha": "carnaval-de-cinzas.md",
+  "indiceCapitulo": 0,
+  "capitulo": "Capítulo 1 — O Envelope — Alguém entrou no camarim e deixou fotografias. A noite começa com a certeza de que você foi vigiada.",
+  "cenas": [
+    {
+      "id": "camarim",
+      "titulo": "camarim",
+      "local": "boate_ipanema"
+    },
+    {
+      "id": "fotos",
+      "titulo": "as fotografias",
+      "local": "boate_ipanema"
+    },
+    {
+      "id": "corredor",
+      "titulo": "o corredor",
+      "local": "boate_ipanema"
+    }
+  ],
+  "pessoas": [
+    {
+      "id": "bia",
+      "nome": "Beatriz \"Bia\" Coutinho",
+      "relacao": "aliado"
+    },
+    {
+      "id": "duarte",
+      "nome": "Duarte de Alvim",
+      "relacao": "complicado"
+    },
+    {
+      "id": "mensageiro",
+      "nome": "O moço de terno claro",
+      "relacao": "suspeito"
+    }
+  ],
+  "locais": [
+    {
+      "id": "boate_ipanema",
+      "nome": "Casa Vermelha"
+    },
+    {
+      "id": "copacabana",
+      "nome": "Praia de Copacabana"
+    }
+  ],
+  "fatos": [
+    {
+      "titulo": "Alguém te fotografou caçando",
+      "texto": "Duas fotos da Praia de Copacabana e uma da Bia em plena luz do dia. Quem tirou sabe onde você caça e sabe de quem você gosta."
+    },
+    {
+      "titulo": "A cidade opera sob o Carnaval",
+      "texto": "Troca livre de serviços entre as seitas. Não significa paz."
+    }
+  ],
+  "fios": [
+    {
+      "id": "fotografo",
+      "titulo": "Quem tirou as fotos?",
+      "estado": "aberto"
+    },
+    {
+      "id": "fio_boes",
+      "titulo": "O BOES atacou Vitória em 2017. O alvo real era o Rio.",
+      "estado": "aberto"
+    }
+  ],
+  "eventos": [
+    "Cena: camarim — Quinta-feira, 23h40",
+    "Narração: O camarim cheira a cigarro caro. Lá fora a casa está cheia. Sobre a penteadeira, um envelope pardo com seu nome escrito à mão.",
+    "Jogador (examinar): abro o envelope com a unha",
+    "Teste de achar_escondido: sucesso",
+    "Narração: Dentro, três fotografias e nada mais. Nas duas primeiras, você na praia, de madrugada, inclinada sobre um turista. A terceira é da Bia saindo do prédio onde mora, com o rosto marcado a caneta vermelha.",
+    "Jogador (falar): pergunto à Bia se ela viu alguém entrar aqui",
+    "Teste de persuadir: sucesso com um custo",
+    "Narração: Ela diz que ninguém entrou. Depois lembra do fotógrafo que a produção contratou na terça e não sabe o nome dele.",
+    "Sistema: a Fome subiu mais um degrau",
+    "Jogador (agir): saio pelo corredor dos fundos para procurar o tal fotógrafo",
+    "Barrado: Você precisa ver o alvo, e não há linha de visão.",
+    "Jogador (agir): desço até a portaria e peço a gravação da câmera",
+    "Teste de arrombar: falha bestial",
+    "Sistema: você arranca a fechadura do armário com as mãos, na frente do porteiro",
+    "Sistema: Mácula por violência sem necessidade diante de testemunha",
+    "Narração: O porteiro recua até a parede e não diz nada. O disco está na sua mão. Ele viu tudo.",
+    "Cena: corredor",
+    "Narração: Do corredor vem a voz do segurança: tem um moço aqui querendo falar com a senhora, diz que é da parte do Sr. Duarte.",
+    "Sistema: o moço de terno claro entra na história"
+  ],
+  "mudancas": [
+    "a Fome pesa em tudo que ela olha",
+    "saiu sem um arranhão",
+    "gastou vontade para se segurar",
+    "ficou uma Mácula na trilha de Humanidade"
+  ],
+  "resumoAnterior": ""
+}
