@@ -28,7 +28,8 @@ export const TIPOS = ['melee_attack', 'ranged_attack', 'cast_spell', 'move', 'in
 export const ESQUEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['action_type', 'target', 'weapon', 'spell_name', 'modifier', 'reason'],
+  required: ['action_type', 'target', 'weapon', 'spell_name', 'modifier', 'reason',
+             'speech', 'speech_volume'],
   properties: {
     action_type: { type: 'string', enum: TIPOS,
       description: "Tipo mecânico da ação. 'unknown' quando a frase for conversa, sentimento ou não tiver efeito mecânico." },
@@ -36,7 +37,18 @@ export const ESQUEMA = {
     weapon:     { type: 'string', description: 'A arma ou instrumento citado. "" se o jogador não citar.' },
     spell_name: { type: 'string', description: "Nome do poder de Disciplina. \"\" se não for 'cast_spell'." },
     modifier:   { type: 'string', description: 'Circunstância que muda a dificuldade: terreno, posição, silêncio, pressa. "" se não houver.' },
-    reason:     { type: 'string', description: "Por que não deu para nomear. \"\" se não for 'unknown'." }
+    reason:     { type: 'string', description: "Por que não deu para nomear. \"\" se não for 'unknown'." },
+
+    /* §57 — a mesa passou a ter uma caixa só, e o modelo virou o segundo
+       leitor do que era fala e o que era ação. O primeiro é a pontuação,
+       em app/js/arbitro/motor-entrada.js: aspas e parênteses resolvem o
+       caso comum sem chamar ninguém. Estes dois campos existem para o
+       caso que a pontuação NÃO resolve — o jogador que escreve "digo pra
+       ela que ela não devia ter vindo", sem aspas. */
+    speech: { type: 'string',
+      description: 'O que o personagem DIZ em voz alta, com as palavras dele. "" se ele não falar.' },
+    speech_volume: { type: 'string', enum: ['none', 'normal', 'whisper', 'shout', 'message'],
+      description: "Como a fala sai: 'none' se não houver fala." }
   }
 };
 
@@ -71,7 +83,13 @@ COMO PREENCHER OS CAMPOS:
 - spell_name: só o nome do poder, e só quando action_type for cast_spell.
 - modifier: circunstância que MUDA A DIFICULDADE — terreno, posição, cobertura, silêncio,
   pressa, cuidado, surpresa. Estado emocional NÃO é modificador.
-- reason: só quando action_type for unknown, dizendo por que não deu para nomear.`;
+- reason: só quando action_type for unknown, dizendo por que não deu para nomear.
+- speech: o que o personagem DIZ em voz alta. Se o jogador escreveu entre aspas, copie o que
+  está entre aspas. Se ele escreveu em fala indireta ("digo pra ela que ela não devia ter
+  vindo"), escreva a frase DIRETA que o personagem diria ("você não devia ter vindo").
+  Vazio quando ninguém abre a boca. Pensamento NÃO é fala.
+- speech_volume: 'whisper' para sussurro e cochicho, 'shout' para grito e berro, 'message'
+  para recado escrito, telefone ou mensagem, 'normal' para o resto, 'none' sem fala.`;
 
 /* Os exemplos entram como turnos de conversa, não como bloco de texto: modelo
    pequeno obedece formato que vê no próprio papel de resposta muito melhor do
@@ -86,35 +104,50 @@ COMO PREENCHER OS CAMPOS:
 const EXEMPLOS = [
   ['avanço no segurança e acerto um soco no queixo dele',
    { action_type: 'melee_attack', target: 'o segurança', weapon: '',
-     spell_name: '', modifier: '', reason: '' }],
+     spell_name: '', modifier: '', reason: '', speech: '', speech_volume: 'none' }],
 
   ['saco a nove milímetros e atiro no Duarte de trás da coluna, sem ele me ver',
    { action_type: 'ranged_attack', target: 'Duarte', weapon: 'nove milímetros',
-     spell_name: '', modifier: 'atirando de trás da coluna, sem ser visto', reason: '' }],
+     spell_name: '', modifier: 'atirando de trás da coluna, sem ser visto', reason: '', speech: '', speech_volume: 'none' }],
 
   ['pego o cinzeiro da mesa e arremesso na cara dela',
    { action_type: 'ranged_attack', target: 'ela', weapon: 'cinzeiro',
-     spell_name: '', modifier: '', reason: '' }],
+     spell_name: '', modifier: '', reason: '', speech: '', speech_volume: 'none' }],
 
   ['puxo o Manto das Sombras em volta de mim antes que ela vire o rosto',
    { action_type: 'cast_spell', target: '', weapon: '',
-     spell_name: 'Manto das Sombras', modifier: 'antes de ela virar o rosto', reason: '' }],
+     spell_name: 'Manto das Sombras', modifier: 'antes de ela virar o rosto', reason: '', speech: '', speech_volume: 'none' }],
 
   ['subo pela escada de incêndio até o terceiro andar, o mais quieto que der',
    { action_type: 'move', target: 'terceiro andar', weapon: '',
-     spell_name: '', modifier: 'pela escada de incêndio, em silêncio', reason: '' }],
+     spell_name: '', modifier: 'pela escada de incêndio, em silêncio', reason: '', speech: '', speech_volume: 'none' }],
 
   ['forço a gaveta trancada da penteadeira com o canivete',
    { action_type: 'interact', target: 'a gaveta trancada da penteadeira', weapon: 'canivete',
-     spell_name: '', modifier: '', reason: '' }],
+     spell_name: '', modifier: '', reason: '', speech: '', speech_volume: 'none' }],
 
   ['fico pensando se valeu a pena ter vindo, e sinto falta de quem eu era',
    { action_type: 'unknown', target: '', weapon: '', spell_name: '',
-     modifier: '', reason: 'Reflexão interna, sem ação mecânica.' }],
+     modifier: '', reason: 'Reflexão interna, sem ação mecânica.', speech: '', speech_volume: 'none' }],
 
   ['mestre, a Bia sabe que eu sou vampira?',
    { action_type: 'unknown', target: '', weapon: '', spell_name: '',
-     modifier: '', reason: 'Pergunta ao Mestre, fora da ficção.' }]
+     modifier: '', reason: 'Pergunta ao Mestre, fora da ficção.',
+     speech: '', speech_volume: 'none' }],
+
+  /* §57 — os dois casos de fala. O primeiro é o que a pontuação já
+     resolve, e está aqui para o modelo não "melhorar" o que o jogador
+     escreveu. O segundo é a razão de os campos existirem: fala indireta,
+     sem aspas, que a pontuação não tem como pegar. */
+  ['encosto o cinzeiro na mesa e sussurro para a Bia: "você não devia ter vindo"',
+   { action_type: 'interact', target: 'o cinzeiro', weapon: '', spell_name: '',
+     modifier: '', reason: '',
+     speech: 'você não devia ter vindo', speech_volume: 'whisper' }],
+
+  ['digo pra ela, bem baixo, que ela não devia ter vindo hoje',
+   { action_type: 'unknown', target: '', weapon: '', spell_name: '', modifier: '',
+     reason: 'Só fala, sem ação mecânica.',
+     speech: 'você não devia ter vindo hoje', speech_volume: 'whisper' }]
 ];
 
 const TETO_DA_LISTA = 40;
@@ -158,8 +191,17 @@ export function normalizar(bruto) {
     weapon: limpar(bruto && bruto.weapon),
     spell_name: limpar(bruto && bruto.spell_name),
     modifier: limpar(bruto && bruto.modifier),
-    reason: limpar(bruto && bruto.reason)
+    reason: limpar(bruto && bruto.reason),
+    /* §57 — volume fora da lista vira 'normal' quando há fala; sem fala,
+       o volume não existe e é null, para não parecer que alguém falou. */
+    speech: limpar(bruto && bruto.speech),
+    speech_volume: null
   };
+  const VOLUMES = ['normal', 'whisper', 'shout', 'message'];
+  if (saida.speech) {
+    const v = limpar(bruto && bruto.speech_volume);
+    saida.speech_volume = VOLUMES.includes(v) ? v : 'normal';
+  }
 
   if (saida.action_type === 'unknown') {
     if (!saida.reason) saida.reason = 'O modelo não soube nomear a ação.';

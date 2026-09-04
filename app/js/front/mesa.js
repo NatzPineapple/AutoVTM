@@ -31,6 +31,10 @@ const MESA_VAZIA = () => ({
   opcaoAberta: null,
   aba: 'ficha',
   modo: 'agir',
+  /* §57 — lidos do texto a cada tecla; só o "Manual" é escolha do
+     jogador, e ele vale por uma mensagem. */
+  volumeManual: null,
+  alvoManual: null,
   volume: 'normal',
   alvoFala: 'geral',
   rascunho: '',
@@ -109,19 +113,48 @@ async function enviarTurno(texto) {
   const limpo = (texto || '').trim();
   if (!limpo) return;
 
-  const ehFala = M.modo === 'falar';
-  const alvo = ehFala ? alvoDeFala(M.alvoFala) : null;
-  const leitura = Arbitro.interpretar(limpo, M.modo);
+  /* §57 — A LEITURA VEM DO TEXTO, NÃO DE UM BOTÃO.
+     `M.modo` continua existindo e continua viajando até o Narrador e
+     o Cronista; ele deixou de ser escolha do jogador e passou a ser o
+     que o segmentador leu. `M.volumeManual` e `M.alvoManual` são a
+     correção à mão desta mensagem, e valem mais que a leitura.
+
+     Quem pode ser alvo é a união de "está na cena" com "você tem
+     contato" — porque o volume só se sabe DEPOIS de ler o texto, e
+     mensagem alcança quem não está presente. Se o alvo lido não puder
+     ouvir, quem barra é `alvoDeFala` com o Árbitro, como sempre foi. */
+  const alvosPossiveis = pessoasNaCena()
+    .concat(pessoasComContato().filter(p => !(M.cena.presentes || []).includes(p.id)));
+  const seg = Entrada.segmentar(limpo, { pessoas: alvosPossiveis });
+  const volume = M.volumeManual || seg.volume;
+  const alvoFala = M.alvoManual || seg.alvo;
+
+  M.modo = seg.modo;
+  M.volume = volume;
+  M.alvoFala = alvoFala;
+
+  const ehFala = !!seg.fala;
+  const alvo = ehFala ? alvoDeFala(alvoFala) : null;
+
+  /* Só a AÇÃO vai para o léxico. Antes o texto inteiro ia, e a fala
+     envenenava a leitura: "atiro" dentro de aspas é ameaça, não um
+     disparo, e o Árbitro pedia teste de Armas de Fogo por causa dela. */
+  const leitura = Arbitro.interpretar(Entrada.textoParaArbitrar(seg), seg.modo);
 
   const msgJogador = {
-    id: msgId(), autor: 'jogador', modo: M.modo, texto: limpo, ts: Date.now(),
-    termos: (M.modo === 'agir' || M.modo === 'examinar') ? leitura.termos || [] : [],
+    id: msgId(), autor: 'jogador', modo: seg.modo, texto: limpo, ts: Date.now(),
+    segmentos: seg.segmentos,
+    termos: seg.acao ? leitura.termos || [] : [],
     acaoNome: leitura.acao ? leitura.acao.nome : '',
-    volume: ehFala ? M.volume : null,
-    alvoFala: ehFala ? M.alvoFala : null
+    volume: ehFala ? volume : null,
+    alvoFala: ehFala ? alvoFala : null
   };
   M.mensagens.push(msgJogador);
   M.rascunho = '';
+  /* A correção à mão vale por UMA mensagem. Deixá-la grudada fazia o
+     sussurro do turno anterior virar o volume padrão do próximo. */
+  M.volumeManual = null;
+  M.alvoManual = null;
   mesaOcupada = true;
   renderFluxo();
   atualizarCompositor();
@@ -129,14 +162,28 @@ async function enviarTurno(texto) {
   const estados = estadosAtuais();
   const veredito = M.modo === 'perguntar'
     ? { possivel: true, bloqueios: [], avisos: [] }
-    : await arbitrarTurno({ texto: limpo, estados, fala: ehFala ? { volume: M.volume, alvo } : null });
+    : await arbitrarTurno({ texto: Entrada.textoParaArbitrar(seg), estados,
+                            fala: ehFala ? { volume: M.volume, alvo } : null });
 
   if (!combateAtivo() && veredito.possivel !== false &&
       INTENCOES_DE_COMBATE.includes(leitura.intencao)) {
     abrirCombate({ motivo: leitura.acao ? leitura.acao.nome.toLowerCase() : 'você partiu para cima' });
   }
 
-  const turno = turnoDaMesa({ texto: limpo, leitura, veredito, estados });
+  /* §57 — segundo leitor. Se o jogador escreveu a fala sem aspas, a
+     pontuação não tinha como pegar, e o extrator pegou. A mensagem já
+     está na tela: o que muda aqui é o desenho dela, no render do fim. */
+  const refinado = Entrada.comModelo(seg, veredito.leitura && veredito.leitura.bruta,
+                                     alvosPossiveis);
+  if (refinado.leuComModelo) {
+    msgJogador.segmentos = refinado.segmentos;
+    msgJogador.modo = refinado.modo;
+    msgJogador.volume = refinado.volume;
+    msgJogador.alvoFala = refinado.alvo;
+    M.modo = refinado.modo;
+  }
+
+  const turno = turnoDaMesa({ texto: limpo, leitura, veredito, estados, seg: refinado });
   const passo = await escadaDaMesa().descer(turno);
   aplicarPasso(passo, turno);
 
@@ -193,9 +240,13 @@ async function arbitrarTurno({ texto, estados, fala }) {
   }
 }
 
-function turnoDaMesa({ texto, leitura, veredito, estados }) {
+function turnoDaMesa({ texto, leitura, veredito, estados, seg }) {
   return {
     texto, leitura, veredito, estados,
+    /* O texto INTEIRO vai para o Narrador — ele precisa da fala. Os
+       segmentos vão junto para ele não ter de adivinhar de novo o que
+       era ação e o que era fala (§57). */
+    segmentos: seg ? seg.segmentos : [],
     modo: M.modo, ficha: M.ficha, cena: M.cena,
     locais: M.locais, pessoas: M.pessoas, fatos: M.fatos, fios: M.fios,
     campanha: M.campanha, estadoDiretor: M.diretor,
@@ -205,6 +256,7 @@ function turnoDaMesa({ texto, leitura, veredito, estados }) {
         campanha: { cena: M.cena, locais: M.locais, pessoas: M.pessoas,
                     fatos: M.fatos, fios: M.fios },
         ficha: M.ficha, estados, texto, modo: M.modo,
+        segmentos: seg ? seg.segmentos : [],
         historico: M.mensagens.slice(-20),
         arquivoCampanha: M.campanha && M.campanha.arquivo ? M.campanha.arquivo.split('/').pop() : null,
         indiceCapitulo: (M.diretor && M.diretor.capitulo) || 0,
@@ -336,11 +388,14 @@ async function rolarDoJogador(idMensagem, indiceRota) {
   if (!rota) return;
 
   const p = piscinaDaRota(rota, pedido);
+  /* §63 (A4): a rota pode cobrar Dificuldade a mais. Hoje só o caminho
+     eletrônico do arrombamento cobra, e o livro é quem cobra (pág. 410). */
+  const extra = rota.dificuldadeExtra || 0;
   const resultado = Dados.rolar({
     piscina: p.total,
     fome: M.ficha.fome || 0,
-    dificuldade: pedido.dificuldade || 0,
-    rotulo: p.rotulo
+    dificuldade: (pedido.dificuldade || 0) + extra,
+    rotulo: p.rotulo + (extra ? ` (+${extra} de Dificuldade)` : '')
   });
   resultado.composicao = { base: p.base, especializacao: p.especializacao,
     modificadores: p.modificadores, penalidadeEstado: p.penalidadeEstado };
@@ -576,10 +631,41 @@ function encerrarRodada() {
   salvarMesa(); renderMesa();
 }
 
+/* ------------------------------------------------------------
+   O FOGO NÃO APAGA SOZINHO  (§66)
+
+   As armas incendiárias das págs. 379–381 causam dano POR TURNO
+   até serem apagadas. `Combate.resolver` devolve isso em `queima`;
+   a mesa guarda a queima em quem pegou fogo e cobra a cada volta
+   da rodada. Quem apaga é o jogador — cada item diz com o quê.
+   ------------------------------------------------------------ */
+function pegarFogo(registro, queima, nome) {
+  if (!registro || !queima) return;
+  registro.queimas = registro.queimas || [];
+  registro.queimas.push(queima);
+  M.combate.estado = 'ativo';
+  anunciar([{ tipo: 'critico', texto: `${nome} está em chamas.` }]);
+}
+
+function arderNoTurno(registro, ficha, nome) {
+  const queimas = (registro && registro.queimas) || [];
+  if (!queimas.length || !ficha) return;
+  const r = Combate.queimar(ficha, queimas);
+  anunciar([{ tipo: 'perigo', texto: `${nome} ainda queima.` }, ...r.eventos]);
+}
+
 function avancarVez() {
   const r = Rodada.avancar(M.combate.rodada, combatentes());
   M.combate.rodada = r.fim && r.rodada && r.rodada.encerrada ? null : r.rodada;
   anunciar(r.eventos);
+  const vez = M.combate.rodada && Rodada.atual(M.combate.rodada);
+  if (vez) {
+    if (vez.ref === 'voce') arderNoTurno(M.combate, M.ficha, 'Você');
+    else {
+      const o = oponentePorRef(vez.ref);
+      if (o) arderNoTurno(o, o.ficha, o.nome);
+    }
+  }
   return r;
 }
 
@@ -602,6 +688,7 @@ function correrTurnosDosOponentes() {
         arma: escolha.arma, armadura: null,
         estadosAtacante: o.estados, estadosDefensor: estadosAtuais(), alvoVampiro: true,
         terreno: terrenoDoOponente(o) });
+      if (g.queima) pegarFogo(M.combate, g.queima, 'Você');
       if (g.torpor) anunciar([{ tipo: 'critico', texto: 'Você caiu em torpor. A briga acabou para você.' }]);
     }
     if (Rodada.foraDeCombate({ ficha: M.ficha })) {
@@ -858,10 +945,17 @@ function atualizarCompositor() {
   if (!ta) return;
   ta.disabled = mesaOcupada;
   if (btn) btn.disabled = mesaOcupada;
-  ta.placeholder = (MODOS_MESA.find(m => m.id === M.modo) || MODOS_MESA[0]).dica;
+  ta.placeholder = DICA_ENTRADA;
   if (ta.value !== M.rascunho) ta.value = M.rascunho;
   autoCrescer(ta);
   if (!mesaOcupada) focarEntrada();
+}
+
+/* Só a linha de leitura. Chamada a cada tecla — por isso não pode
+   redesenhar o compositor: o textarea perderia o cursor. */
+function renderLeitura() {
+  const alvo = $('#leitura');
+  if (alvo) alvo.innerHTML = leituraHTML();
 }
 
 function focarEntrada() {
@@ -1170,7 +1264,12 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('input', (e) => {
-  if (e.target.id === 'entrada') { M.rascunho = e.target.value; autoCrescer(e.target); }
+  if (e.target.id !== 'entrada') return;
+  M.rascunho = e.target.value;
+  autoCrescer(e.target);
+  /* A leitura acompanha o que está sendo digitado. Só ela é
+     redesenhada: redesenhar o compositor inteiro perderia o cursor. */
+  renderLeitura();
 });
 
 document.addEventListener('change', (e) => {
@@ -1187,6 +1286,9 @@ document.addEventListener('change', (e) => {
   } else {
     M[campo] = valor;
   }
+  /* §57 — corrigir o alvo à mão muda a linha de leitura ("lido do seu
+     texto" vira "corrigido à mão"). */
+  if (campo === 'alvoManual') renderLeitura();
   salvarMesa();
 });
 

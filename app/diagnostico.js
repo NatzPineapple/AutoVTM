@@ -39,7 +39,7 @@ const Diagnostico = {
     f.habilidades = { briga: 2, labia: 3, persuasao: 3, furtividade: 2, investigacao: 2,
                       consciencia: 2, ocultismo: 1, manha: 2, atletismo: 2, intimidacao: 2 };
     f.disciplinas = { ofuscacao: 2, potencia: 1 };
-    f.poderes = { ofuscacao: ['Manto das Sombras', 'Passo Invisível'], potencia: ['Poder Letal'] };
+    f.poderes = { ofuscacao: ['Manto de Sombras', 'Passagem Invisível'], potencia: ['Corpo Letal'] };
     f.conviccoes = ['Não toco em criança', '', ''];
     f.marcos = ['Bia', '', ''];
     return Object.assign(f, extra || {});
@@ -592,6 +592,89 @@ const Diagnostico = {
       const e = Rodada.escolhaDoOponente({ nome: 'X', armaDele: '', estados: ['torpor'] }, null);
       return e.possivel === false ? true : 'agiu em torpor';
     });
+
+    /* §66 — o capítulo "Itens" (págs. 378–381). Antes dele, as armas
+       incendiárias do livro casavam com nada e viravam dano 0
+       Superficial. */
+    this.checar(G, 'Arma incendiária do livro é Agravado, e não dano 0', () => {
+      for (const n of ['Lança-chamas', 'Coquetel Molotov', 'Hafla', 'Raufoss']) {
+        const a = Combate.armaPor(n);
+        if (!a.item) return `${n} não casou com item nenhum`;
+        if (a.item.natureza !== 'agravado') return `${n} saiu ${a.item.natureza}`;
+      }
+      return true;
+    });
+
+    this.checar(G, 'Raufoss ignora armadura; a pistola não', () => {
+      const comum = Combate.armaPor('Pistola .22');
+      const rauf = Combate.armaPor('Raufoss');
+      if (comum.item) return 'pistola virou item do capítulo Itens';
+      return rauf.item && rauf.item.ignoraArmadura === true
+        ? true : 'Raufoss não ignora armadura';
+    });
+
+    /* §67 — a Ressonância era decorativa: com ou sem ela, a parada
+       dava o mesmo número. */
+    this.checar(G, 'Ressonância intensa chega ao dado da Disciplina', () => {
+      const rota = { atributo: 'destreza', pericia: 'atletismo' };
+      const com = this.fichaDeTeste(); com.ressonancia = 'colerico'; com.temperamento = 'intenso';
+      const sem = this.fichaDeTeste(); sem.ressonancia = ''; sem.temperamento = '';
+      const a = Arbitro.piscinaFinal(com, { rota, disciplina: 'celeridade' }).total;
+      const b = Arbitro.piscinaFinal(sem, { rota, disciplina: 'celeridade' }).total;
+      if (a !== b + 1) return `com ${a}, sem ${b}: o dado da Ressonância não chegou`;
+      const errada = this.fichaDeTeste();
+      errada.ressonancia = 'fleumatico'; errada.temperamento = 'intenso';
+      const c = Arbitro.piscinaFinal(errada, { rota, disciplina: 'celeridade' }).total;
+      return c === b ? true : 'Fleumático deu dado em Celeridade';
+    });
+
+    this.checar(G, 'Temperamento efêmero não dá dado nenhum', () => {
+      const rota = { atributo: 'destreza', pericia: 'atletismo' };
+      const f = this.fichaDeTeste(); f.ressonancia = 'colerico'; f.temperamento = 'efemero';
+      const s = this.fichaDeTeste(); s.ressonancia = ''; s.temperamento = '';
+      return Arbitro.piscinaFinal(f, { rota, disciplina: 'celeridade' }).total
+           === Arbitro.piscinaFinal(s, { rota, disciplina: 'celeridade' }).total
+        ? true : 'efêmero deu dado, e o livro diz que não dá';
+    });
+
+    this.checar(G, 'Toda Disciplina citada por uma Ressonância existe', () => {
+      for (const r of RESSONANCIAS)
+        for (const d of r.disciplinas)
+          if (!DISCIPLINAS[d]) return `${r.nome} cita "${d}", que não existe`;
+      return true;
+    });
+
+    /* §69 — as três do capítulo Crenças, achadas enquanto eu só
+       documentava e todas escritas no regras.md sem código atrás. */
+    this.checar(G, 'O Desejo paga na hora, e uma vez por sessão', () => {
+      const f = this.fichaDeTeste();
+      f.desejo = 'x'; f.danoVontade = 2; delete f.desejoUsadoNaSessao;
+      Estado.realizarDesejo(f);
+      if (f.danoVontade !== 1) return `pagou ${2 - f.danoVontade}, e o livro paga 1`;
+      Estado.realizarDesejo(f);
+      return f.danoVontade === 1 ? true : 'pagou duas vezes na mesma sessão';
+    });
+
+    this.checar(G, 'Perder o Pilar derruba a Convicção associada', () => {
+      const f = this.fichaDeTeste();
+      f.conviccoes = ['Não matarás', 'Mantenha o juramento', ''];
+      f.marcos = ['Dona Ivete', 'Tiago', ''];
+      f.maculas = 0;
+      Estado.perderPilar(f, 0);
+      if (f.conviccoes[0] !== '') return 'a Convicção sobreviveu ao Pilar';
+      if (f.conviccoes[1] !== 'Mantenha o juramento') return 'o par por índice se desalinhou';
+      return f.maculas === 2 ? true : `custou ${f.maculas} Máculas, e a tabela diz 2`;
+    });
+
+    this.checar(G, 'Mácula a serviço de Convicção é reduzida (o exemplo da pág. 239)', () => {
+      const f = this.fichaDeTeste(); f.maculas = 0;
+      Estado.ganharMacula(f, 3, 'assassinato cruel',
+        { porConviccao: 'minha família deve ser mantida fora disto' });
+      if (f.maculas !== 2) return `3 Máculas viraram ${f.maculas}, e o livro diz 2`;
+      const s = this.fichaDeTeste(); s.maculas = 0;
+      Estado.ganharMacula(s, 3, 'assassinato cruel');
+      return s.maculas === 3 ? true : 'reduziu sem Convicção invocada';
+    });
   },
 
   mundoDeTeste() {
@@ -904,9 +987,14 @@ const Diagnostico = {
         const t = Intencao.traduzir(bruta({ action_type: tipo }));
         if (t.intencao !== esperado) erros.push(`${tipo} virou ${t.intencao}`);
       }
+      /* O nome vem do DADO, e não de uma cópia. Na §64 este teste caiu
+         porque 'Manto das Sombras' virou 'Manto de Sombras' no livro, e
+         a cópia aqui ficou para trás — a mesma armadilha que quebrou
+         oito entradas de PODER_EXIGE. */
+      const alvo = DISCIPLINAS.ofuscacao.poderes[1][0].nome;
       const poder = Intencao.traduzir(bruta({ action_type: 'cast_spell',
-        spell_name: 'Manto das Sombras' }));
-      if (poder.intencao !== 'poder:ofuscacao:Manto das Sombras') {
+        spell_name: alvo }));
+      if (poder.intencao !== 'poder:ofuscacao:' + alvo) {
         erros.push(`cast_spell virou ${poder.intencao}`);
       }
       return erros;
@@ -948,10 +1036,10 @@ const Diagnostico = {
 
     this.checar(G, 'O contexto da cena sai da ficha e do grafo', () => {
       const mesa = this.mundoDeTeste();
-      mesa.ficha.poderes = { ofuscacao: ['Manto das Sombras'] };
+      mesa.ficha.poderes = { ofuscacao: ['Manto de Sombras'] };
       const g = Grafo.de(mesa);
       const c = Intencao.contextoDaCena(mesa.ficha, g, Grafo.contexto(g, 'voce'));
-      if (!c.poderes.includes('Manto das Sombras')) return 'não listou o poder da ficha';
+      if (!c.poderes.includes('Manto de Sombras')) return 'não listou o poder da ficha';
       if (!c.presentes.includes('Bia')) return 'não listou quem está na cena';
       return c.objetos.includes('Canivete') ? true : 'não listou o que está na mão';
     });

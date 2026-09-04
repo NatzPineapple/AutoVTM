@@ -176,15 +176,6 @@
 }
 .compositor-interno { max-width: 720px; margin: 0 auto; }
 
-.modos { display: flex; gap: .35rem; margin-bottom: .55rem; flex-wrap: wrap; }
-.modo {
-  font-family: var(--sans); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase;
-  padding: .3rem .7rem; border: 1px solid rgba(182,145,63,.22); background: rgba(0,0,0,.3);
-  color: var(--osso-fosco); cursor: pointer; transition: all .22s;
-}
-.modo:hover { border-color: var(--sangue-viva); color: var(--carne); }
-.modo.on { background: rgba(139,18,32,.4); border-color: var(--sangue); color: var(--osso); }
-
 .caixa-envio {
   display: flex; align-items: flex-end; gap: .6rem;
   border: 1px solid var(--borda-forte); background: rgba(0,0,0,.5);
@@ -351,8 +342,6 @@
   .hud { gap: .7rem; width: 100%; order: 3; }
   .mesa-cena .local { font-size: .9rem; }
   .msg-texto { font-size: 1rem; }
-  .modos { gap: .3rem; }
-  .modo { padding: .28rem .55rem; font-size: .58rem; }
 }
 
 .msg.arbitro .msg-autor { color: var(--ouro-claro); }
@@ -403,11 +392,6 @@
   text-transform: uppercase; color: rgba(185,173,158,.45);
 }
 
-.delimitador {
-  margin-left: auto; align-self: center;
-  font-family: var(--serif); font-size: .95rem; color: rgba(182,145,63,.45);
-  letter-spacing: .1em;
-}
 .voz-linha { display: flex; align-items: center; gap: .55rem; margin-bottom: .45rem; flex-wrap: wrap; }
 .voz-rot {
   font-family: var(--sans); font-size: .55rem; letter-spacing: .18em; text-transform: uppercase;
@@ -539,3 +523,101 @@
   text-transform: uppercase; line-height: 1.3;
 }
 .sessao-apagar.confirmando:hover { background: var(--sangue); }
+
+/* ---------- §57: a caixa única, a leitura e o exemplo ---------- */
+
+/* O botão de ajuda mora DENTRO da caixa, encostado no canto, para
+   não virar mais uma fileira de controles acima do texto — que é
+   exatamente o que a §57 tirou daqui. */
+.ajuda-entrada { position: relative; flex: 0 0 auto; align-self: flex-end; }
+
+.btn-exemplo {
+  font-family: var(--sans); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase;
+  padding: .3rem .55rem; border: 1px solid rgba(182,145,63,.22);
+  background: rgba(0,0,0,.3); color: rgba(185,173,158,.5); cursor: help; transition: all .22s;
+}
+.btn-exemplo:hover, .btn-exemplo:focus-visible {
+  border-color: var(--sangue-viva); color: var(--carne); outline: none;
+}
+.btn-exemplo:disabled { opacity: .3; cursor: not-allowed; }
+
+/* O balão abre no hover E no foco de teclado. Sem JS e sem estado:
+   um painel que só existe enquanto o ponteiro está em cima não
+   precisa de nada guardado na sessão. */
+.exemplo-balao {
+  position: absolute; bottom: calc(100% + .55rem); right: 0; z-index: 40;
+  width: min(30rem, 78vw);
+  border: 1px solid var(--borda-forte); background: var(--piche-2);
+  box-shadow: 0 10px 34px rgba(0,0,0,.72);
+  padding: .85rem .95rem .75rem;
+  opacity: 0; visibility: hidden; transform: translateY(.3rem);
+  transition: opacity .18s, transform .18s, visibility .18s;
+  pointer-events: none;
+}
+.ajuda-entrada:hover .exemplo-balao,
+.btn-exemplo:focus-visible + .exemplo-balao {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
+.exemplo-titulo {
+  font-family: var(--sans); font-size: .56rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--ouro); margin-bottom: .5rem;
+}
+.exemplo-balao pre {
+  font-family: var(--serif); font-size: .92rem; line-height: 1.55; color: var(--osso);
+  white-space: pre-wrap; margin: 0 0 .6rem;
+  border-left: 2px solid var(--sangue); padding: .1rem 0 .1rem .7rem;
+}
+.exemplo-balao ul { list-style: none; margin: 0 0 .55rem; padding: 0; }
+.exemplo-balao li {
+  font-family: var(--sans); font-size: .66rem; line-height: 1.7;
+  color: var(--osso-fosco); display: flex; gap: .45rem;
+}
+.exemplo-balao li b {
+  color: var(--carne); font-weight: 400; flex: 0 0 9.5rem;
+}
+.exemplo-nota {
+  font-family: var(--sans); font-size: .62rem; line-height: 1.6;
+  color: rgba(185,173,158,.45); border-top: 1px solid var(--borda); padding-top: .5rem;
+}
+
+/* A linha de leitura: o que o segmentador entendeu. Fica ABAIXO da
+   caixa de propósito — é consequência do que foi escrito, não
+   escolha a fazer antes. */
+.leitura { margin-top: .45rem; min-height: 1.1rem; }
+.leitura-vazia {
+  font-family: var(--sans); font-size: .58rem; letter-spacing: .1em;
+  color: rgba(185,173,158,.3);
+}
+.leitura-trilha { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
+.leitura-trilha i {
+  font-style: normal; color: rgba(182,145,63,.35); font-size: .7rem;
+}
+.leitura-parte {
+  font-family: var(--sans); font-size: .55rem; letter-spacing: .14em; text-transform: uppercase;
+  padding: .18rem .5rem; border: 1px solid rgba(182,145,63,.2); background: rgba(0,0,0,.3);
+  color: var(--osso-fosco);
+}
+.leitura-parte.fala { border-color: rgba(139,18,32,.5); color: var(--carne); }
+.leitura-parte.meta { border-style: dashed; color: rgba(185,173,158,.45); }
+
+.leitura-fala {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-top: .4rem;
+}
+.leitura-nota {
+  font-family: var(--sans); font-size: .53rem; letter-spacing: .1em;
+  color: rgba(185,173,158,.32);
+}
+.leitura-nota.corrigido { color: var(--ouro); }
+
+@media (max-width: 720px) {
+  .exemplo-balao { width: min(24rem, 88vw); }
+  .exemplo-balao li { flex-direction: column; gap: 0; }
+  .exemplo-balao li b { flex: none; }
+}
+
+/* Fala que o modelo leu de uma frase indireta (§57): sem aspas, e
+   visivelmente mais apagada que a citação literal do jogador. */
+.msg-texto.fala.lida {
+  font-style: italic; opacity: .82;
+  border-left: 2px solid rgba(139,18,32,.45); padding-left: .7rem;
+}

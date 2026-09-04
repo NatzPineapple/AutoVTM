@@ -26,10 +26,10 @@ export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 export const AREAS = {
   data: ['data-traits', 'data-clans', 'data-disciplinas', 'data-predadores', 'data-vantagens',
          'data-brasil', 'data-sabbat', 'data-anarquistas', 'data-independentes', 'data-seitas',
-         'data-mesa', 'data-recombinacao', 'data-escudo'],
+         'data-mesa', 'data-recombinacao', 'data-escudo', 'data-itens', 'data-ressonancia'],
   ficha: ['ficha-vocabulario', 'motor-ficha', 'motor-matilha', 'ficha-regras', 'ficha-oficial', 'fichas'],
   arbitro: ['motor-dados', 'motor-arbitro', 'arbitro-lexico', 'arbitro-tabelas', 'motor-estado', 'motor-combate', 'motor-grafo',
-            'motor-especialista', 'motor-cadeia', 'motor-navegacao', 'motor-intencao'],
+            'motor-especialista', 'motor-cadeia', 'motor-navegacao', 'motor-entrada', 'motor-intencao'],
   cronista: ['compilador', 'diretor', 'recombinador', 'escada', 'narrador',
              'motor-cronica', 'cronista', 'legado'],
   front: ['dados-ui', 'criador-paineis', 'app', 'sessoes', 'mesa-render', 'mesa', 'mesa-acoes']
@@ -209,6 +209,37 @@ export function carregar(areas = Object.keys(AREAS), extras = {}) {
  */
 export function executar(g, codigo) {
   return vm.runInContext(codigo, g);
+}
+
+/**
+ * O mesmo que `executar`, mas devolve uma CÓPIA congelada no tempo.
+ *
+ *   const antes = instantaneo(g, 'M.contador');
+ *   executar(g, 'aplicarPasso(...)');
+ *   const depois = instantaneo(g, 'M.contador');
+ *
+ * Existe por uma armadilha que já custou dois testes: **`executar`
+ * devolve a REFERÊNCIA VIVA**, não uma cópia. O `vm` do Node cria um
+ * contexto novo, e não um heap novo — o objeto que volta é o mesmo que
+ * está lá dentro.
+ *
+ * Então isto NÃO funciona:
+ *
+ *   const antes = executar(g, 'M.contador');   // referência viva
+ *   executar(g, 'aplicarPasso(...)');          // mexe no contador
+ *   const depois = executar(g, 'M.contador');  // o MESMO objeto
+ *   assert.equal(depois.local, antes.local + 1);   // nunca passa
+ *
+ * `antes.local` andou junto. O teste compara o objeto consigo mesmo, e
+ * o que ele afirma é sempre falso — ou, pior, sempre verdadeiro, se a
+ * asserção for de igualdade.
+ *
+ * Valor primitivo (`M.mensagens.length`) é copiado e está a salvo; o
+ * risco é só com objeto e lista.
+ */
+export function instantaneo(g, codigo) {
+  const v = vm.runInContext(codigo, g);
+  return (v && typeof v === 'object') ? JSON.parse(JSON.stringify(v)) : v;
 }
 
 /**

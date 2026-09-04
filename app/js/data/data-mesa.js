@@ -11,6 +11,34 @@ const MODOS_MESA = [
   { id: 'perguntar', rotulo: 'Ao Narrador', dica: 'Pergunta fora da ficção, para o Narrador.', prefixo: '' }
 ];
 
+/* ------------------------------------------------------------
+   O EXEMPLO DO COMPOSITOR  (§57)
+
+   Desde a §57 a mesa tem uma caixa só, e quem separa fala de ação
+   é a pontuação. Um acordo assim só funciona se estiver à vista —
+   e é isto que o botão "Como escrever" mostra.
+
+   O exemplo é um turno de verdade, com as três marcas de uma vez,
+   porque o que se quer ensinar não é a sintaxe: é que dá para
+   mandar o turno INTEIRO numa mensagem só.
+   ------------------------------------------------------------ */
+const DICA_ENTRADA = 'O que você faz — e, entre aspas, o que você diz.';
+
+const EXEMPLO_ENTRADA = {
+  texto:
+    'Encosto o cinzeiro na beirada da mesa e sussurro para a Bia:\n'
+  + '"você não devia ter vindo hoje"\n'
+  + '(ela sabe que eu sou o quê, mesmo?)',
+  regras: [
+    { marca: '"entre aspas"', vira: 'é o que você DIZ em voz alta' },
+    { marca: '— no começo da linha', vira: 'também é fala, se preferir travessão' },
+    { marca: '(entre parênteses)', vira: 'é pergunta ao Narrador, fora da ficção' },
+    { marca: 'o resto', vira: 'é o que você FAZ' }
+  ],
+  nota: 'O volume e para quem você fala saem do próprio texto — "sussurro para a Bia", '
+      + '"grito", "mando mensagem". A linha embaixo mostra o que foi entendido, e dá para corrigir.'
+};
+
 /* Semente rica para o Rio de Janeiro. */
 const SEMENTE_RIO = {
   cena: {

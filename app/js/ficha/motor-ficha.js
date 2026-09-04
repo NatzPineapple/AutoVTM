@@ -265,7 +265,11 @@ const Ficha = {
         fome: f.fome || 0, potenciaDeSangue: d.potencia,
         danoSuperficial: f.danoSuperficial || 0, danoAgravado: f.danoAgravado || 0,
         danoVontade: f.danoVontade || 0,
-        ressonancia: r ? { id: r.id, nome: r.nome } : null
+        /* O temperamento acompanha a Ressonância desde a §67: sozinha,
+           ela não diz se vale dado. */
+        ressonancia: r ? { id: r.id, nome: r.nome,
+          temperamento: (Ressonancia.temperamentoPor(f.temperamento) || {}).id || null,
+          disciplinas: r.disciplinas } : null
       },
       indiceForca: {
         total: forca.total, faixa: forca.faixa.id, faixaNome: forca.faixa.nome,

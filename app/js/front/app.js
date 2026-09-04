@@ -574,6 +574,8 @@ document.addEventListener('click', (e) => {
 
     case acao === 'ressonancia': S.ressonancia = S.ressonancia === id ? '' : id; render(); return;
 
+    case acao === 'temperamento': S.temperamento = id === 'nenhum' ? '' : id; render(); return;
+
     case acao === 'poder': {
       const nome = alvo.dataset.nome;
       const lista = S.poderes[id] || (S.poderes[id] = []);

@@ -102,11 +102,18 @@ test('Front — o despachante da mesa', async (t) => {
     assert.equal(executar(g, 'M.aba'), 'ficha');
   });
 
-  await t.test('mudar de modo muda o compositor', () => {
-    executar(g, "ACOES_MESA['modo']('falar')");
-    assert.equal(executar(g, 'M.modo'), 'falar');
-    executar(g, "ACOES_MESA['modo']('agir')");
-    assert.equal(executar(g, 'M.modo'), 'agir');
+  await t.test('o botão de modo não existe mais — o modo é lido do texto', () => {
+    /* §57. O teste que morava aqui afirmava o contrário, e ele está
+       trocado, não apagado: o que importa é que ninguém volte a pôr
+       a escolha ANTES da escrita. */
+    assert.equal(executar(g, "typeof ACOES_MESA['modo']"), 'undefined');
+    assert.equal(executar(g, "typeof ACOES_MESA['volume']"), 'function',
+      'a correção de volume à mão continua existindo');
+  });
+
+  await t.test('corrigir o volume à mão vale só por uma mensagem', () => {
+    executar(g, "ACOES_MESA['volume']('grito')");
+    assert.equal(executar(g, 'M.volumeManual'), 'grito');
   });
 
   await t.test('apagar sessão pede confirmação antes', () => {

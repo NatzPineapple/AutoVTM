@@ -53,15 +53,12 @@ const DEFEITOS = [
   { id: 'divida_terreiro', nome: 'Dívida com o Santo', custos: [1, 2], desc: 'Você quebrou um preceito e há um egum atrás disso. A cobrança vem.', brasil: true }
 ];
 
-/* Ressonâncias — o humor do sangue */
-const RESSONANCIAS = [
-  { id: 'colerico',   nome: 'Colérico',   humor: 'raiva, violência, paixão inflamada', disc: 'Celeridade, Potência', cor: '#b3202c' },
-  { id: 'melancolico',nome: 'Melancólico',humor: 'tristeza, saudade, intelecto ferido', disc: 'Fortitude, Ofuscação', cor: '#3f4a6b' },
-  { id: 'fleumatico', nome: 'Fleumático', humor: 'calma, apatia, controle gélido', disc: 'Auspícios, Dominação', cor: '#4a6b6b' },
-  { id: 'sanguineo',  nome: 'Sanguíneo',  humor: 'desejo, alegria, entusiasmo carnal', disc: 'Presença, Feitiçaria do Sangue', cor: '#b8446b' },
-  { id: 'vazio',      nome: 'Vazio',      humor: 'ausência, entorpecimento, nada', disc: 'Nenhuma', cor: '#5a5a5a' },
-  { id: 'animal',     nome: 'Animal',     humor: 'sangue de bicho — instinto puro', disc: 'Animalismo, Metamorfose', cor: '#6b7a3f' }
-];
+/* As Ressonâncias saíram daqui na §67 e moram em `data-ressonancia.js`,
+   com os humores, os temperamentos e as 26 Discrasias do livro. A lista
+   que estava aqui tinha envelhecido em dois nomes ("Metamorfose", que
+   virou Proteanismo na §64, e "Feitiçaria do Sangue", que nunca foi o
+   nome do livro) e trazia uma sexta Ressonância, "Vazio", que não
+   aparece em nenhum dos dez livros de `Livros/Regras`. */
 
 /* Convicções sugeridas */
 const CONVICCOES_SUGERIDAS = [

@@ -283,8 +283,24 @@ export function validar(saida, { pessoas = [], locais = [], fios = [], acoes = [
     problemas.push('número de regra na prosa');
   }
 
+  /* SÓ O MÍNIMO. O teto de 260 palavras saiu na §55, por decisão do
+     usuário — o mesmo movimento feito no Cronista, e estendido aqui.
+
+     Eu tinha argumentado para manter este, com o argumento de que a
+     narração de um TURNO inunda a tela quando cresce. O argumento é
+     sobre ritmo, e ritmo é escolha de quem joga: uma cena que pede
+     duzentas e cinquenta palavras não é um defeito do modelo, e
+     reprovar por isso jogava fora texto bom e pagava uma segunda
+     chamada só para encurtar.
+
+     O PAPEL continua pedindo 80 a 180 palavras, e o esquema repete no
+     campo. Isso orienta sem rejeitar — que é a diferença entre alvo e
+     portão.
+
+     O mínimo fica, e pega outra coisa: narração de vinte palavras é o
+     modelo desistindo, não uma escolha de ritmo. */
   const n = texto.trim().split(/\s+/).filter(Boolean).length;
-  if (n < 40 || n > 260) problemas.push(`tamanho fora da faixa: ${n} palavras, esperado entre 40 e 260`);
+  if (n < 40) problemas.push(`curta demais: ${n} palavras, esperado ao menos 40`);
   if (/\?\s*$/.test(texto.trim())) problemas.push('a narração termina perguntando ao jogador');
 
   const ingles = (texto.match(/\b(the|and|with|which|that|there|would)\b/gi) || []).length;
@@ -331,7 +347,9 @@ export function validar(saida, { pessoas = [], locais = [], fios = [], acoes = [
   return { valido: problemas.length === 0, problemas };
 }
 
-function corpoDoTurno(t) {
+/* Exportada na §57 para poder ser afirmada: é ela que decide o que o
+   modelo vê do turno, e até aqui só dava para conferir lendo. */
+export function corpoDoTurno(t) {
   const lista = (rot, arr, fn) => {
     const itens = (arr || []).map(fn).filter(Boolean);
     return itens.length ? `${rot}:\n${itens.map(x => `- ${x}`).join('\n')}` : '';
@@ -352,7 +370,27 @@ function corpoDoTurno(t) {
     lista('Fios em aberto', t.fios, f => `${f.id} — ${f.titulo}`),
     lista('Últimos momentos, em ordem', t.historico, h => h),
     '',
-    `O jogador ${modo}: ${t.texto}`,
+    /* §57 — a mesa passou a ter uma caixa só, e o turno pode ser ação E
+       fala E pergunta de uma vez. Quando os pedaços vêm, eles vão para o
+       modelo separados: quem está na cena reage ao que foi DITO em voz
+       alta, e não ao que o personagem só fez. Misturar os dois numa
+       linha só fazia o Narrador tratar pensamento como fala.
+
+       Turno sem pedaços — sessão gravada antes da §57 — cai na linha de
+       antes, que continua correta. */
+    (t.segmentos && t.segmentos.length)
+      ? ['O TURNO DO JOGADOR:'].concat(t.segmentos.map((s) => {
+          if (s.tipo === 'fala') {
+            const vol = { sussurro: 'sussurrando', grito: 'gritando',
+                          mensagem: 'por mensagem escrita' }[s.volume] || 'em voz alta';
+            return `- Ele diz, ${vol}: "${s.texto}"`;
+          }
+          if (s.tipo === 'meta') {
+            return `- Fora da ficção, ele pergunta a você: ${s.texto}`;
+          }
+          return `- Ele faz: ${s.texto}`;
+        })).join('\n')
+      : `O jogador ${modo}: ${t.texto}`,
     t.arbitro ? `Árbitro: ${t.arbitro}` : '',
     (t.acoes && t.acoes.length)
       ? `Se for pedir teste, "intencao" tem que ser EXATAMENTE um destes, sem inventar e sem\n`

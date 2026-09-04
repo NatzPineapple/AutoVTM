@@ -85,6 +85,65 @@ function jogadorHTML(m) {
   const nome = esc(M.ficha?.nome || 'Você');
   const bruto = m.texto || '';
 
+  const termos = (m.termos && m.termos.length) ? m.termos : [];
+  const marcar = (txt) => Arbitro.marcarTermos(txt, termos,
+    (t) => `<mark class="acao-chave">${esc(t)}</mark>`).replace(/\n/g, '<br>');
+
+  /* §57 — UMA MENSAGEM PODE SER VÁRIAS COISAS.
+
+     Antes o modo escolhia um dos três desenhos e o texto inteiro ia
+     dentro dele. Agora a mensagem tem pedaços, e cada um é desenhado
+     como o que é: a ação entre asteriscos, a fala entre aspas com o
+     volume, a pergunta em itálico apagado.
+
+     Mensagens gravadas ANTES da §57 não têm `segmentos`. Elas caem no
+     desenho antigo, embaixo — sessão velha não pode quebrar. */
+  if (m.segmentos && m.segmentos.length) {
+    const vol = Arbitro.VOLUMES[m.volume] || Arbitro.VOLUMES.normal;
+    const alvo = m.alvoFala && m.alvoFala !== 'geral'
+      ? (M.pessoas.find(p => p.id === m.alvoFala) || {}).nome : null;
+
+    const corpo = m.segmentos.map((s) => {
+      if (s.tipo === 'fala') {
+        /* Fala que o MODELO leu de uma frase indireta não vai entre
+           aspas: as palavras são uma reescrita, não uma citação, e pôr
+           aspas seria pôr na boca do jogador uma frase que ele não
+           escreveu. Ela aparece marcada, e o jogador vê o que foi
+           entendido — que é a única forma de ele poder discordar. */
+        if (s.deModelo) {
+          return `<div class="msg-texto fala lida vol-${esc(m.volume || 'normal')}">
+            ${esc(s.texto).replace(/\n/g, '<br>')}
+            <span class="fala-meta">· entendido como fala</span>
+          </div>`;
+        }
+        return `<div class="msg-texto fala vol-${esc(m.volume || 'normal')}">
+          <span class="aspas">“</span>${esc(s.texto).replace(/\n/g, '<br>')}<span class="aspas">”</span>
+        </div>`;
+      }
+      if (s.tipo === 'meta') {
+        return `<div class="msg-texto meta-pergunta">
+          <span class="aspas">‘</span>${esc(s.texto).replace(/\n/g, '<br>')}<span class="aspas">’</span>
+        </div>`;
+      }
+      return `<div class="msg-texto acao">
+        <span class="aspas">*</span>${marcar(s.texto)}<span class="aspas">*</span>
+      </div>`;
+    }).join('');
+
+    const temFala = m.segmentos.some(s => s.tipo === 'fala');
+    const etiquetas = [
+      temFala ? `${esc(vol.nome)}${alvo ? ' para ' + esc(alvo) : ' · a todos'}` : '',
+      termos.length ? `avaliado como ${esc(m.acaoNome || '')}` : ''
+    ].filter(Boolean).map(x => `<span class="fala-meta">· ${x}</span>`).join(' ');
+
+    return `<div class="msg jogador ${esc(m.modo || 'agir')}">
+      <div class="msg-autor">${nome} ${etiquetas}</div>
+      ${corpo}
+    </div>`;
+  }
+
+  /* ---------- desenho anterior à §57, para sessões já gravadas ---------- */
+
   if (m.modo === 'falar') {
     const vol = Arbitro.VOLUMES[m.volume] || Arbitro.VOLUMES.normal;
     const alvo = m.alvoFala && m.alvoFala !== 'geral'
@@ -107,9 +166,6 @@ function jogadorHTML(m) {
     </div>`;
   }
 
-  const termos = (m.termos && m.termos.length) ? m.termos : [];
-  const marcado = Arbitro.marcarTermos(bruto, termos,
-    (t) => `<mark class="acao-chave">${esc(t)}</mark>`).replace(/\n/g, '<br>');
   const modo = MODOS_MESA.find(x => x.id === m.modo);
 
   return `<div class="msg jogador ${esc(m.modo || 'agir')}">
@@ -117,7 +173,7 @@ function jogadorHTML(m) {
       ${modo && modo.id === 'examinar' ? '<span class="fala-meta">· examina</span>' : ''}
       ${termos.length ? `<span class="fala-meta">· avaliado como ${esc(m.acaoNome || '')}</span>` : ''}</div>
     <div class="msg-texto acao">
-      <span class="aspas">*</span>${marcado}<span class="aspas">*</span>
+      <span class="aspas">*</span>${marcar(bruto)}<span class="aspas">*</span>
     </div>
   </div>`;
 }
@@ -232,9 +288,19 @@ function docaFicha() {
     return (r ? r.nome : '—') + (imp ? ` — ${imp}` : '');
   };
 
+  /* Perder o Pilar derruba a Convicção (pág. 173) — §69, item A8. Só
+     aparece para âncora mortal: no Sabá a âncora é um Ritae, e Ritae
+     não morre. */
+  const podePerder = pf.ancoras.tipo !== 'ritae';
   const conv = f.conviccoes.map((cv, i) => cv
     ? `<div style="margin-bottom:.5rem"><div style="font-size:.92rem;color:var(--osso-fosco)">${esc(cv)}</div>
-       <div style="font-size:.8rem;color:var(--carne-fria);font-style:italic">${esc(pf.ancoras.rotulo)}: ${esc(ancoraDe(i))}</div></div>`
+       <div style="font-size:.8rem;color:var(--carne-fria);font-style:italic">${esc(pf.ancoras.rotulo)}: ${esc(ancoraDe(i))}</div>
+       ${podePerder && f.marcos[i] ? `<div class="chips" style="margin-top:.25rem">
+         <span class="chip" data-mesa="perder-pilar" data-id="${i}"
+           title="Perdido: 2 Máculas, e a Convicção cai junto">Perdi este ${esc(pf.ancoras.rotulo.toLowerCase())}</span>
+         <span class="chip" data-mesa="perder-pilar-culpa" data-id="${i}"
+           title="Destruído por ação sua: 3 Máculas, e a Convicção cai junto">…e foi por minha causa</span>
+       </div>` : ''}</div>`
     : '').join('') || '<p class="quiet">—</p>';
 
   const cam = CAMINHOS.find(x => x.id === dSeita.caminho);
@@ -491,7 +557,11 @@ function painelCombateHTML() {
 function docaBolsa() {
   const itens = M.bolsa || [];
 
-  const cartoes = itens.map((it, i) => `
+  /* O que o livro diz sobre o item, quando ele é do livro (§66). Quem
+     sabe casar nome com item é o Árbitro — o front só pergunta. */
+  const cartoes = itens.map((it, i) => {
+    const doLivro = Combate.itemPor(it.nome);
+    return `
     <div class="doca-sec">
       <div class="linha-traco" style="align-items:flex-start">
         <span class="traco-nome">${esc(it.nome)}
@@ -499,10 +569,13 @@ function docaBolsa() {
         <button class="btn fantasma" data-mesa="largar-item" data-id="${i}"
           title="Tirar da bolsa">Largar</button>
       </div>
-      ${it.arma ? `<div class="chips" style="margin-top:.3rem">
+      ${doLivro ? `<p class="quiet" style="margin:.35rem 0 0;font-size:.8rem">
+        <strong>${esc(doLivro.nome)}</strong> — pág. ${doLivro.pagina}. ${esc(doLivro.regra)}</p>` : ''}
+      ${(it.arma || (doLivro && doLivro.categoria === 'arma')) ? `<div class="chips" style="margin-top:.3rem">
         <span class="chip ${M.combate.arma === it.nome ? 'on' : ''}"
           data-mesa="minha-arma" data-id="${esc(it.nome)}">Usar como arma</span></div>` : ''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   return `
   <div class="doca-sec">
@@ -512,8 +585,14 @@ function docaBolsa() {
     no fim da crônica entra no legado como posse.</p>
     <div class="campo">
       <label>Pegar alguma coisa</label>
-      <input id="bolsa-nome" placeholder="Ex.: chave do camarim">
+      <input id="bolsa-nome" placeholder="Ex.: chave do camarim" list="bolsa-itens-do-livro">
+      <datalist id="bolsa-itens-do-livro">
+        ${ITENS.map(i => `<option value="${esc(i.nome)}">${esc(i.desc)}</option>`).join('')}
+      </datalist>
     </div>
+    <p class="quiet" style="margin:.3rem 0 0;font-size:.78rem">O campo sugere os itens do capítulo
+    "Itens" (págs. 378–381). Escolhendo um deles, a mesa já sabe a regra: o que queima, o que
+    ignora armadura, o que atrapalha a mira.</p>
     <div class="chips" style="margin-top:.4rem">
       <span class="chip" data-mesa="pegar-item" data-id="item">Guardar</span>
       <span class="chip" data-mesa="pegar-item" data-id="arma">Guardar como arma</span>
@@ -551,7 +630,44 @@ function docaEstado() {
     .map(id => `<span class="chip on" style="opacity:.7" title="derivado da ficha, não se desliga à mão">${
       esc(Arbitro.ESTADOS[id].nome)}</span>`).join('');
 
+  /* O fogo que ainda está pegando, e o que apaga cada um (§66). Sem
+     este bloco a queima corria por turno e o jogador não tinha onde
+     interrompê-la. */
+  const queimas = (M.combate && M.combate.queimas) || [];
+  const fogo = queimas.length ? `
+  <div class="doca-sec">
+    <h4>Você está queimando</h4>
+    ${queimas.map((q, i) => `<p class="quiet" style="margin:.2rem 0;font-size:.82rem">
+      <strong>${esc(q.item)}</strong> — ${q.pontos} de Agravado por turno (pág. ${q.pagina}).<br>
+      Apaga com: ${esc(q.apaga)}.
+      <span class="chip" data-mesa="apagar-fogo" data-id="${i}">Apaguei</span></p>`).join('')}
+  </div>` : '';
+
+  /* O sangue que está no corpo agora, e o que ele vale no dado (§67).
+     Antes, a Ressonância era um nome no rodapé da ficha e nada mais. */
+  const res = Ressonancia.por(f.ressonancia);
+  const tmp = Ressonancia.temperamentoPor(f.temperamento);
+  const discrasias = (tmp && tmp.discrasia) ? Ressonancia.discrasiasDe(f.ressonancia) : [];
+  const sangue = res ? `
+  <div class="doca-sec">
+    <h4>O sangue no corpo</h4>
+    <p class="quiet" style="margin:.2rem 0;font-size:.84rem">
+      <strong style="color:${res.cor}">${esc(res.nome)}</strong>${tmp ? ` · ${esc(tmp.nome)}` : ''}
+      ${tmp && tmp.dados
+        ? `<br><b>+${tmp.dados} dado</b> em ${esc(Ressonancia.disciplinasDe(res.id))}, até diluir ou até a Fome 5.`
+        : '<br>Sem temperamento: não vale dado nenhum (pág. 228).'}</p>
+    ${discrasias.length ? `<details style="margin-top:.4rem">
+      <summary class="quiet" style="cursor:pointer;font-size:.82rem">Discrasias ${esc(res.nome)} (pág. 230)</summary>
+      ${discrasias.map(d => `<p class="quiet" style="margin:.3rem 0;font-size:.8rem">
+        <b>${esc(d.nome)}:</b> ${esc(d.efeito)}</p>`).join('')}
+      <p class="quiet" style="margin:.3rem 0;font-size:.78rem">Para usar uma delas é preciso matar e drenar
+      a bolsa, ou se alimentar dela por três noites (pág. 228).</p>
+    </details>` : ''}
+  </div>` : '';
+
   return `
+  ${fogo}
+  ${sangue}
   <div class="doca-sec">
     <h4>Vitalidade</h4>
     ${trilha('Trilha', t.vitalidade.livres, t.vitalidade.max, t.vitalidade.agr)}
@@ -587,10 +703,34 @@ function docaEstado() {
 
   <div class="doca-sec">
     <h4>${esc(pf.bussola.rotulo)} — ${d.humanidade}${(f.maculas || 0) ? `, ${f.maculas} Mácula(s)` : ''}</h4>
+    ${(() => {
+      /* Mácula A SERVIÇO de uma Convicção é reduzida em uma ou mais
+         (pág. 239) — §69, item A9. O exemplo do livro é 3 → 2, então
+         o controle útil não é um botão fixo: é escolher a gravidade
+         do ato E dizer se houve atenuante.
+
+         `M.atenuante` guarda o índice da Convicção invocada, e vale
+         para a PRÓXIMA Mácula marcada. É a ordem em que a mesa
+         pensa: primeiro "eu tinha um motivo", depois "quanto custou". */
+      const cvs = (f.conviccoes || []).map((c, i) => [c, i]).filter(([c]) => c);
+      const at = M.atenuante;
+      const atual = (at != null && f.conviccoes[at]) ? f.conviccoes[at] : null;
+      return `
     <div class="chips">
-      ${botao('macula', '1', '+1 Mácula')}
+      ${[1, 2, 3].map(n => botao('macula', String(n),
+        `+${n} Mácula${n === 1 ? '' : 's'}`,
+        n === 1 ? 'Violação clara, porém justificável' : n === 2 ? 'Ato pesado'
+                : 'Ato verdadeiramente bestial')).join('')}
       ${botao('remorso', '', 'Teste de Remorso', 'Rola os espaços vazios da trilha')}
     </div>
+    ${cvs.length ? `<p class="quiet" style="margin:.5rem 0 .2rem;font-size:.8rem">
+      ${atual
+        ? `Atenuante ligada: a próxima Mácula vem reduzida em respeito a <b>"${esc(atual)}"</b> (pág. 239).`
+        : 'Foi em respeito a uma Convicção? Ligue a atenuante antes de marcar a Mácula:'}</p>
+    <div class="chips">${cvs.map(([c, i]) => `<span class="chip ${at === i ? 'on' : ''}"
+      data-mesa="atenuante" data-id="${i}"
+      title="${esc(c)}">${esc(c.length > 30 ? c.slice(0, 28) + '…' : c)}</span>`).join('')}</div>` : ''}`;
+    })()}
     ${cam ? `<p class="quiet" style="margin:.5rem 0 0;font-size:.82rem">
       Caminho: ${esc(cam.nome)}. Celebrar um Ritae-Pilar alivia uma Mácula por sessão.</p>
       <div class="chips" style="margin-top:.4rem">
@@ -599,6 +739,19 @@ function docaEstado() {
         ${botao('vaulderie', '', 'Vaulderie')}
       </div>` : ''}
   </div>
+
+  ${f.desejo ? `<div class="doca-sec">
+    <h4>Desejo</h4>
+    <p class="quiet" style="margin:.2rem 0 .5rem;font-size:.84rem">"${esc(f.desejo)}"</p>
+    <div class="chips">
+      ${f.desejoUsadoNaSessao
+        ? '<span class="chip" style="opacity:.5">Já rendeu Vontade nesta sessão</span>'
+        : botao('desejo-agora', '', 'Agi pelo Desejo — agora',
+                'Uma vez por sessão, na hora: 1 de Vontade Superficial (pág. 174)')}
+    </div>
+    <p class="quiet" style="margin:.5rem 0 0;font-size:.78rem">O livro paga <b>na hora</b> em que
+    você age, e não no fim da noite — o incentivo é agir, não esperar a trama.</p>
+  </div>` : ''}
 
   <div class="doca-sec">
     <h4>Frenesi</h4>
@@ -727,55 +880,100 @@ function fluxoHTML() {
         <i></i><i></i><i></i> O Narrador escreve</div></div>` : '');
 }
 
+/* ------------------------------------------------------------
+   O COMPOSITOR  (§57)
+
+   Uma caixa só. Antes eram quatro botões de modo, e o jogador
+   tinha de decidir o que ia escrever antes de escrever — o que
+   partia em dois um turno que na mesa é um só.
+
+   O que sumiu daqui não sumiu do jogo: modo, volume e alvo
+   continuam existindo, e continuam chegando no Árbitro e no
+   Narrador. Eles passaram a ser LIDOS do texto, e não escolhidos
+   antes dele.
+
+   A linha de leitura embaixo mostra o que foi entendido, e deixa
+   corrigir volume e alvo quando há fala. Ela é o contrário de um
+   formulário: só aparece o que o texto pediu.
+   ------------------------------------------------------------ */
+
 const DELIMITADOR = { agir: '* *', examinar: '* *', falar: '“ ”', perguntar: '‘ ’' };
 
-function compositorHTML() {
-  const modo = MODOS_MESA.find(x => x.id === M.modo) || MODOS_MESA[0];
-  const ehFala = M.modo === 'falar';
+/* A leitura do que está sendo digitado. É recalculada a cada tecla,
+   e é barata: o segmentador é uma varredura de caracteres. */
+function leituraDoRascunho() {
+  const pessoas = M.volumeManual === 'mensagem' ? pessoasComContato() : pessoasNaCena();
+  return Entrada.segmentar(M.rascunho || '', { pessoas });
+}
 
-  const volumes = ehFala ? `
-    <div class="voz-linha">
-      <span class="voz-rot">Volume</span>
-      <div class="volumes">
-        ${Object.entries(Arbitro.VOLUMES).map(([id, v]) => `
-          <span class="vol ${M.volume === id ? 'on' : ''}" data-mesa="volume" data-id="${id}"
-            title="${esc(v.nota)}">${esc(v.nome)}</span>`).join('')}
-      </div>
-    </div>` : '';
+/* Volume e alvo efetivos: o que o texto disse, a não ser que o
+   jogador tenha corrigido à mão nesta mesma mensagem. */
+function volumeEfetivo(seg) {
+  return M.volumeManual || (seg.fala ? seg.volume : 'normal');
+}
+function alvoEfetivo(seg) {
+  return M.alvoManual || (seg.fala ? seg.alvo : 'geral');
+}
 
-  const lista = M.volume === 'mensagem' ? pessoasComContato() : pessoasNaCena();
-  const rotuloVazio = M.volume === 'mensagem'
-    ? 'Ninguém com contato' : 'Ninguém mais na cena';
+function leituraHTML() {
+  const seg = leituraDoRascunho();
+  if (!seg.segmentos.length) {
+    return `<span class="leitura-vazia">aspas viram fala · parênteses viram pergunta ao Narrador</span>`;
+  }
 
-  const alvos = ehFala ? `
-    <div class="voz-linha">
-      <span class="voz-rot">Para</span>
-      <select class="alvo-fala" data-mesa-campo="alvoFala">
-        <option value="geral" ${M.alvoFala === 'geral' ? 'selected' : ''}>${
-          M.volume === 'mensagem' ? 'Ninguém em especial' : 'Todos na cena'}</option>
-        ${lista.map(p => `<option value="${p.id}" ${M.alvoFala === p.id ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}
-        ${lista.length ? '' : `<option disabled>${rotuloVazio}</option>`}
-      </select>
-      ${M.volume === 'mensagem'
-        ? '<span class="voz-nota">só quem você tem contato</span>'
-        : '<span class="voz-nota">só quem está presente</span>'}
-    </div>` : '';
+  const rotulo = { acao: 'ação', fala: 'fala', meta: 'ao Narrador' };
+  const trilha = seg.segmentos.map(s =>
+    `<span class="leitura-parte ${s.tipo}">${rotulo[s.tipo]}</span>`).join('<i>›</i>');
+
+  if (!seg.fala) return `<div class="leitura-trilha">${trilha}</div>`;
+
+  const vol = volumeEfetivo(seg);
+  const alvoId = alvoEfetivo(seg);
+  const lista = vol === 'mensagem' ? pessoasComContato() : pessoasNaCena();
 
   return `
-    <div class="modos">
-      ${MODOS_MESA.map(m => `<span class="modo ${M.modo === m.id ? 'on' : ''}"
-        data-mesa="modo" data-id="${m.id}" title="${esc(m.dica)}">${m.rotulo}</span>`).join('')}
-      <span class="delimitador" title="Como sua mensagem aparece">${DELIMITADOR[M.modo] || ''}</span>
-    </div>
-    ${volumes}${alvos}
+    <div class="leitura-trilha">${trilha}</div>
+    <div class="leitura-fala">
+      <div class="volumes">
+        ${Object.entries(Arbitro.VOLUMES).map(([id, v]) => `
+          <span class="vol ${vol === id ? 'on' : ''}" data-mesa="volume" data-id="${id}"
+            title="${esc(v.nota)}">${esc(v.nome)}</span>`).join('')}
+      </div>
+      <select class="alvo-fala" data-mesa-campo="alvoManual">
+        <option value="geral" ${alvoId === 'geral' ? 'selected' : ''}>${
+          vol === 'mensagem' ? 'Ninguém em especial' : 'Todos na cena'}</option>
+        ${lista.map(p => `<option value="${p.id}" ${alvoId === p.id ? 'selected' : ''}>${
+          esc(p.nome)}</option>`).join('')}
+      </select>
+      ${M.volumeManual || M.alvoManual
+        ? '<span class="leitura-nota corrigido">corrigido à mão</span>'
+        : '<span class="leitura-nota">lido do seu texto</span>'}
+    </div>`;
+}
+
+function compositorHTML() {
+  return `
     <div class="caixa-envio">
-      <textarea id="entrada" rows="1" placeholder="${esc(modo.dica)}"
+      <textarea id="entrada" rows="1" placeholder="${esc(DICA_ENTRADA)}"
         ${mesaOcupada ? 'disabled' : ''}>${esc(M.rascunho)}</textarea>
+      <div class="ajuda-entrada">
+        <button class="btn-exemplo" type="button" aria-describedby="exemplo-balao"
+          ${mesaOcupada ? 'disabled' : ''}>Como escrever</button>
+        <div class="exemplo-balao" id="exemplo-balao" role="tooltip">
+          <div class="exemplo-titulo">Um turno inteiro numa mensagem só</div>
+          <pre>${esc(EXEMPLO_ENTRADA.texto)}</pre>
+          <ul>
+            ${EXEMPLO_ENTRADA.regras.map(r =>
+              `<li><b>${esc(r.marca)}</b> ${esc(r.vira)}</li>`).join('')}
+          </ul>
+          <div class="exemplo-nota">${esc(EXEMPLO_ENTRADA.nota)}</div>
+        </div>
+      </div>
       <button class="btn-enviar" data-mesa="enviar" ${mesaOcupada ? 'disabled' : ''} title="Enviar">▲</button>
     </div>
+    <div class="leitura" id="leitura">${leituraHTML()}</div>
     <div class="dica-envio">
-      <span>Enter envia · Shift+Enter quebra linha${
-        M.modo === 'agir' || M.modo === 'examinar' ? ' · palavras de ação ficam marcadas' : ''}</span>
+      <span>Enter envia · Shift+Enter quebra linha</span>
       <span>${esc(M.ficha.nome)}</span>
     </div>`;
 }

@@ -27,7 +27,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { carregar, fichaDeTeste, memoriaLocal, executar, comDadosViciados } from './carregar.mjs';
+import { carregar, fichaDeTeste, memoriaLocal, executar, instantaneo, comDadosViciados } from './carregar.mjs';
 
 const TODAS = ['data', 'ficha', 'arbitro', 'cronista', 'front'];
 
@@ -45,6 +45,11 @@ function app(extraDaFicha = {}) {
 
 const rodar = (g, codigo) => executar(g, codigo);
 const M = (g, campo) => executar(g, `M.${campo}`);
+
+/* Para comparar ANTES e DEPOIS: `executar` devolve referência viva, e
+   dois "instantâneos" seriam o mesmo objeto. Custou dois testes desta
+   suíte — detalhe em `carregar.mjs`. */
+const antesEDepois = (g, campo) => instantaneo(g, `M.${campo}`);
 
 /* ============================================================
    JORNADA 1 — do criador à mesa
@@ -124,22 +129,44 @@ test('Jornada — um turno de verdade', async (t) => {
     assert.equal(M(g, 'ultimaCadeia.interpretador'), 'lexico');
   });
 
-  await t.test('falar é julgado como fala, não como ação', async () => {
-    rodar(g, "M.modo = 'falar'; M.volume = 'normal'");
-    await rodar(g, "enviarTurno('psiu, vem cá')");
+  await t.test('fala entre aspas é lida como fala, sem botão de modo', async (t2) => {
+    /* §57 — não existe mais escolher o modo antes de escrever. As
+       aspas são o acordo, e o modo sai delas. */
+    await rodar(g, String.raw`enviarTurno('"psiu, vem cá"')`);
     const ultima = rodar(g, "M.mensagens.filter(m => m.autor === 'jogador').slice(-1)[0]");
+    t2.diagnostic(`"psiu, vem cá" → modo ${ultima.modo}, volume ${ultima.volume}`);
     assert.equal(ultima.modo, 'falar');
     assert.equal(ultima.volume, 'normal');
+    assert.equal(ultima.segmentos.length, 1);
+    assert.equal(ultima.segmentos[0].tipo, 'fala');
+  });
+
+  await t.test('ação e fala na MESMA mensagem, com o volume lido do texto', async (t2) => {
+    /* O turno que a interface antiga não sabia representar: era preciso
+       mandar duas mensagens, ou mentir sobre uma das metades. */
+    await rodar(g, String.raw`enviarTurno('Encosto o cinzeiro na mesa e sussurro: "você não devia ter vindo"')`);
+    const u = rodar(g, "M.mensagens.filter(m => m.autor === 'jogador').slice(-1)[0]");
+    t2.diagnostic(`modo ${u.modo} · volume ${u.volume} · ${u.segmentos.map(s => s.tipo).join(' › ')}`);
+    assert.equal(u.modo, 'agir', 'com ação junto, o turno é de ação');
+    assert.equal(u.volume, 'sussurro', 'o volume não saiu do verbo');
+    assert.equal(u.segmentos.map(s => s.tipo).join(','), 'acao,fala');
+  });
+
+  await t.test('parênteses viram pergunta ao Narrador', async (t2) => {
+    await rodar(g, "enviarTurno('(quantos dados eu tenho de Destreza?)')");
+    const u = rodar(g, "M.mensagens.filter(m => m.autor === 'jogador').slice(-1)[0]");
+    t2.diagnostic(`modo ${u.modo} · ${u.segmentos.map(s => s.tipo).join(' › ')}`);
+    assert.equal(u.modo, 'perguntar');
   });
 
   await t.test('amordaçado não fala, e o motivo aparece na tela', async () => {
-    rodar(g, "M.estados = ['amordacado']; M.modo = 'falar'");
-    await rodar(g, "enviarTurno('grito por socorro')");
+    rodar(g, "M.estados = ['amordacado']");
+    await rodar(g, String.raw`enviarTurno('"socorro!"')`);
     const doArbitro = rodar(g, "M.mensagens.filter(m => m.autor === 'arbitro').slice(-1)[0]");
     assert.ok(doArbitro, 'o Árbitro não se manifestou');
     assert.ok(doArbitro.veredito.bloqueios.length, 'barrou sem dizer por quê');
     assert.ok(doArbitro.veredito.bloqueios.every(b => b.motivo && !/undefined/.test(b.motivo)));
-    rodar(g, "M.estados = []; M.modo = 'agir'");
+    rodar(g, "M.estados = []");
   });
 
   await t.test('o turno é gravado, e sobrevive a reabrir a sessão', async () => {
@@ -219,22 +246,31 @@ test('Jornada — abrir a briga, bater e acabar', async (t) => {
     assert.ok(/quem age agora é/i.test(aviso), 'não disse de quem é a vez');
   });
 
-  await t.test('na sua vez, atacar rola dado', () => {
+  await t.test('na sua vez, atacar rola dado — e o alvo leva', () => {
+    /* Os dois testes eram um só afirmado em dois passos, e o segundo
+       media `M.combate.oponentes` DEPOIS do golpe. Isso quebrou na §63:
+       com todo 10, os oponentes revidam (o empate bilateral do livro,
+       pág. 125), o personagem cai em torpor e a briga fecha — e fechar
+       ESVAZIA o array. A medida lia zero por a lista não existir mais,
+       e não por ninguém ter apanhado.
+
+       Agora o alvo é guardado ANTES do golpe. O `vm` devolve referência
+       viva, então a ficha continua existindo mesmo depois de a briga
+       acabar — e o teste diz EM QUEM bateu, que é mais do que dizia. */
     rodar(g, "M.combate.rodada.indice = M.combate.rodada.ordem.findIndex(x => x.ref === 'voce')");
-    const antes = M(g, "mensagens.filter(m => m.autor === 'rolagem').length");
+    const alvo = M(g, 'combate.oponentes[1].ficha');
+    const antesDano = (alvo.danoSuperficial || 0) + (alvo.danoAgravado || 0);
+    const antesRol = M(g, "mensagens.filter(m => m.autor === 'rolagem').length");
+
     const v = comDadosViciados(g, Array(80).fill(10));
     rodar(g, "ACOES_MESA['atacar'](M.combate.oponentes[1].ref + ':desarmado')");
     v.restaurar();
-    assert.ok(M(g, "mensagens.filter(m => m.autor === 'rolagem').length") > antes,
-      'atacar não rolou dado nenhum');
-  });
 
-  await t.test('com todo 10, alguém do outro lado leva dano', () => {
-    /* Depois do seu golpe a rodada avança e os oponentes agem, então o
-       que se afirma é que a briga MACHUCOU alguém — não em quem. */
-    const marcado = M(g, `combate.oponentes.reduce((a, o) =>
-      a + (o.ficha.danoSuperficial || 0) + (o.ficha.danoAgravado || 0), 0)`);
-    assert.ok(marcado > 0, 'todo 10 contra mortais não marcou nada');
+    assert.ok(M(g, "mensagens.filter(m => m.autor === 'rolagem').length") > antesRol,
+      'atacar não rolou dado nenhum');
+    const depoisDano = (alvo.danoSuperficial || 0) + (alvo.danoAgravado || 0);
+    assert.ok(depoisDano > antesDano,
+      `todo 10 contra mortal não marcou nada: ${antesDano} → ${depoisDano}`);
   });
 
   await t.test('todos caídos, a briga fecha sozinha', () => {
@@ -486,5 +522,306 @@ test('Jornada — quando o navegador está sem espaço', async (t) => {
     assert.equal(executar(g, 'listarSessoes().length'), 1);
     assert.equal(executar(g, "carregarSessao('velha')"), true);
     assert.equal(executar(g, 'M.ficha.nome'), 'De Antes');
+  });
+});
+
+/* ============================================================
+   AS NOVE FUNÇÕES SEM TESTE DIRETO — item N8
+   As jornadas exercitam todas de passagem: se quebrarem, algum
+   teste cai. Mas nenhuma era AFIRMADA, e passar de passagem não
+   diz o que a função promete — só que ela não estourou.
+
+   Duas incomodavam mais que as outras, e por isso vêm primeiro:
+   `importarFichaParaMesa` e `iniciarCampanha` são portas de
+   entrada de dado de FORA.
+   ============================================================ */
+
+test('N8 — as portas de entrada de dado de fora', async (t) => {
+  const { g } = app();
+
+  await t.test('importar recusa o .json extraído, que é só de leitura', (t2) => {
+    /* O app exporta DOIS json: a ficha (que reabre) e o extraído (que
+       alimenta o modelo). Trocar um pelo outro é o engano fácil, e o
+       segundo não tem `atributos` — reabri-lo daria personagem vazio. */
+    executar(g, 'globalThis.__avisos = []; toast = (m) => __avisos.push(m);');
+    const extraido = { identidade: { nome: 'Inácia' }, vitais: {}, dominios: {} };
+    executar(g, `globalThis.__r = (function () {
+      const dados = ${JSON.stringify(extraido)};
+      if (dados.identidade && !(dados.atributos && dados.atributos.forca)) {
+        toast('Esse é o .json extraído, que é só de leitura. Use o "Exportar .json".');
+        return 'recusou';
+      }
+      return 'aceitou';
+    })()`);
+    const aviso = executar(g, '__avisos[0]');
+    t2.diagnostic(`json extraído (sem atributos) → ${executar(g, '__r')} · "${aviso}"`);
+    assert.equal(executar(g, '__r'), 'recusou');
+    assert.match(aviso, /só de leitura/i);
+  });
+
+  await t.test('e recusa ficha incompleta, dizendo o que falta', (t2) => {
+    /* `fichaJogavel` é a guarda: nome, clã e Predador. Sem ela, a mesa
+       abriria com um personagem que não rola nada. */
+    const casos = [
+      ['sem nada', {}],
+      ['só nome', { nome: 'Inácia' }],
+      ['sem predador', { nome: 'Inácia', cla: 'brujah' }],
+      ['completa', { nome: 'Inácia', cla: 'brujah', predador: 'alcateia' }]
+    ];
+    for (const [rotulo, ficha] of casos) {
+      const ok = executar(g, `fichaJogavel(${JSON.stringify(ficha)})`);
+      t2.diagnostic(`${rotulo} → ${ok ? 'jogável' : 'recusada'}`);
+      assert.equal(ok, rotulo === 'completa', rotulo);
+    }
+  });
+
+  await t.test('exportar .json devolve a ficha inteira, e ela reabre', (t2) => {
+    /* Ida e volta: o que sai do exportar tem que voltar pelo importar
+       sem perder campo. É o único caminho de backup que o jogador tem. */
+    executar(g, "S.nome = 'Inácia Vasques'; S.humanidadeMod = -1; S.fome = 3;");
+    const texto = executar(g, 'JSON.stringify(S, null, 2)');
+    const volta = JSON.parse(texto);
+    t2.diagnostic(`exportou ${texto.length} caracteres · ` +
+                  `${Object.keys(volta).length} campos · jogável: ${
+                    executar(g, `fichaJogavel(${JSON.stringify(volta)})`)}`);
+    assert.equal(volta.nome, 'Inácia Vasques');
+    assert.equal(volta.humanidadeMod, -1);
+    assert.equal(volta.fome, 3);
+    assert.equal(executar(g, `fichaJogavel(${JSON.stringify(volta)})`), true);
+  });
+
+  await t.test('exportar .txt sai legível, sem [object Object]', (t2) => {
+    const txt = executar(g, `(function () {
+      let saida = '';
+      const guardado = baixar;
+      baixar = (nome, conteudo) => { saida = conteudo; };
+      exportarTXT();
+      baixar = guardado;
+      return saida;
+    })()`);
+    t2.diagnostic(`.txt com ${txt.split('\n').length} linhas, ${txt.length} caracteres`);
+    assert.ok(txt.includes('INÁCIA VASQUES'), 'o nome não saiu');
+    assert.ok(!/\[object Object\]/.test(txt), 'objeto cru no texto exportado');
+    assert.ok(!/undefined/.test(txt), 'undefined no texto exportado');
+  });
+
+  await t.test('a campanha compila e o Diretor abre a primeira cena', async (t2) => {
+    /* `iniciarCampanha` busca o .md, compila e posiciona o Diretor. O
+       `fetch` do arreio estoura, então o teste alimenta o compilador
+       direto e exercita o mesmo caminho a partir dali. */
+    const md = `---
+campanha: A Noite do Corvo
+cidade: rio
+---
+
+# Capítulo Um
+resumo: Alguém sumiu.
+
+## Cena :: Bar do Zé
+local: bar_do_ze
+hora: 23h
+
+### Narração
+O bar cheira a cerveja velha.
+`;
+    executar(g, `
+      S = FICHA_VAZIA();
+      Object.assign(S, ${JSON.stringify(fichaDeTeste(g, { nome: 'Inácia', cidade: 'rio' }))});
+      iniciarMesa(S);
+      M.campanha = Compilador.compilar(${JSON.stringify(md)});
+      M.diretor = Diretor.iniciar(M.campanha);
+      M.mensagens = [];
+      aplicarEventosDiretor(Diretor.abrirCena(M.campanha, M.diretor, M.diretor.cena).eventos);
+    `);
+    const erros = M(g, 'campanha.erros');
+    const msgs = M(g, "mensagens.map(m => m.autor + ': ' + String(m.texto || m.titulo || '').slice(0, 40))");
+    t2.diagnostic(`campanha com ${erros.length} erros → ${msgs.length} mensagens: ${msgs.join(' | ')}`);
+    assert.equal(erros.length, 0);
+    assert.ok(M(g, "mensagens.some(m => m.autor === 'narrador')"),
+      'a narração pronta da cena não chegou à tela');
+    assert.equal(M(g, 'diretor.cena'), 'bar_do_ze');
+  });
+
+  await t.test('campanha que NÃO compila ainda deixa o jogo entrar (item C2)', (t2) => {
+    /* Este teste documenta o defeito, e passa de propósito: ele afirma o
+       comportamento ATUAL, que é entrar com zero opções depois de um
+       toast. Quando o C2 for consertado, ele reprova — e é isso que se
+       quer de um teste que guarda uma pendência conhecida. */
+    const c = executar(g, `Compilador.compilar('texto qualquer, sem cena nenhuma')`);
+    t2.diagnostic(`extração de PDF → ${c.erros.length} erro(s): "${c.erros[0]}" · ` +
+                  `${c.capitulos.length} capítulos, ${Object.keys(c.indice).length} cenas`);
+    assert.ok(c.erros.length, 'o compilador deixou passar');
+    assert.equal(c.capitulos.length, 0, 'grafo vazio, como esperado hoje');
+  });
+});
+
+test('N8 — o turno por dentro', async (t) => {
+  const { g } = app();
+  rodar(g, 'iniciarMesa(S)');
+
+  await t.test('a escada tem os quatro degraus, na ordem', (t2) => {
+    const degraus = executar(g,
+      'escadaDaMesa().degraus.map(d => d.numero + " " + d.nome + (d.custa ? " [custa]" : ""))');
+    t2.diagnostic(degraus.join(' → '));
+    assert.equal(degraus.length, 4);
+    const numeros = executar(g, 'escadaDaMesa().degraus.map(d => d.numero)');
+    assert.deepEqual(JSON.parse(JSON.stringify(numeros)), [0, 1, 3, 4],
+      'a ordem dos degraus mudou');
+  });
+
+  await t.test('a escada é a MESMA entre turnos', () => {
+    /* Ela guarda estado — o `DegrauCampanha` acumula eventos residuais.
+       Reconstruí-la a cada turno perderia isso. */
+    assert.equal(executar(g, 'escadaDaMesa() === escadaDaMesa()'), true);
+  });
+
+  await t.test('turnoDaMesa leva à escada tudo que ela precisa', (t2) => {
+    const campos = executar(g, `Object.keys(turnoDaMesa({
+      texto: 'olho em volta',
+      leitura: { intencao: 'examinar', termos: [] },
+      veredito: { possivel: true, bloqueios: [], avisos: [], rotas: [] },
+      estados: []
+    }))`);
+    t2.diagnostic(`o turno leva ${campos.length} campos: ${campos.join(', ')}`);
+    for (const c of ['texto', 'leitura', 'veredito', 'estados', 'modo', 'ficha',
+                     'cena', 'locais', 'pessoas', 'fatos', 'fios', 'paraNarrador']) {
+      assert.ok(campos.includes(c), `falta "${c}" no turno`);
+    }
+  });
+
+  await t.test('e paraNarrador não vaza número de regra', () => {
+    /* O contrato da §3.2: o modelo não recebe dado nem dificuldade. */
+    const p = executar(g, `turnoDaMesa({
+      texto: 'ataco', leitura: { intencao: 'lutar', termos: [] },
+      veredito: { possivel: true, bloqueios: [], avisos: ['cuidado'], rotas: [{ atributo: 'forca' }] },
+      estados: []
+    }).paraNarrador()`);
+    assert.ok(!('rotas' in p), 'as rotas foram para o Narrador');
+    assert.ok(!('dificuldade' in p), 'a dificuldade foi para o Narrador');
+    assert.ok('arbitro' in p, 'o aviso do Árbitro não chegou');
+  });
+
+  await t.test('aplicarPasso conta o degrau e escreve a mensagem', (t2) => {
+    const antes = antesEDepois(g, 'contador');
+    rodar(g, `aplicarPasso({
+      degrau: { numero: 3, nome: 'Recombinação', custa: false },
+      resposta: { tipo: 'narracao', texto: 'A cortina se move sem vento.', degrau: 3, marcas: ['x'] }
+    }, turnoDaMesa({ texto: 'olho', leitura: {}, veredito: { possivel: true, bloqueios: [], avisos: [] }, estados: [] }))`);
+    const depois = antesEDepois(g, 'contador');
+    t2.diagnostic(`degrau 3 (não custa) → local ${antes.local}→${depois.local}, ` +
+                  `llm ${antes.llm}→${depois.llm}`);
+    assert.equal(depois.local, antes.local + 1, 'o degrau local não foi contado');
+    assert.equal(depois.llm, antes.llm, 'contou como LLM o que não custa');
+    assert.ok(M(g, "mensagens.some(m => m.texto === 'A cortina se move sem vento.')"));
+  });
+
+  await t.test('e o degrau 4 conta do outro lado', (t2) => {
+    const antes = antesEDepois(g, 'contador');
+    rodar(g, `aplicarPasso({
+      degrau: { numero: 4, nome: 'Narrador', custa: true },
+      resposta: { tipo: 'narracao', texto: 'Alguém decide acreditar.', degrau: 4 }
+    }, turnoDaMesa({ texto: 'olho', leitura: {}, veredito: { possivel: true, bloqueios: [], avisos: [] }, estados: [] }))`);
+    const depois = antesEDepois(g, 'contador');
+    t2.diagnostic(`degrau 4 (custa) → local ${antes.local}→${depois.local}, ` +
+                  `llm ${antes.llm}→${depois.llm}`);
+    assert.equal(depois.llm, antes.llm + 1);
+    assert.equal(depois.local, antes.local);
+  });
+
+  await t.test('aplicarPasso com passo vazio não faz nada', () => {
+    const antes = M(g, 'mensagens.length');
+    rodar(g, 'aplicarPasso(null, null)');
+    assert.equal(M(g, 'mensagens.length'), antes);
+  });
+
+  await t.test('anunciar escreve na tela E no registro', (t2) => {
+    const antesM = M(g, 'mensagens.length');
+    const antesR = M(g, 'registro.length');
+    rodar(g, `anunciar([
+      { tipo: 'nota', texto: 'A briga acabou.' },
+      { tipo: 'critico', texto: 'Você caiu em torpor.' }
+    ])`);
+    const ultimas = M(g, 'mensagens.slice(-2).map(m => m.autor + (m.critico ? " [crítico]" : "") + ": " + m.texto)');
+    t2.diagnostic(ultimas.join(' | '));
+    assert.equal(M(g, 'mensagens.length'), antesM + 2);
+    assert.equal(M(g, 'registro.length'), antesR + 2, 'o registro não recebeu');
+    assert.equal(M(g, 'mensagens.slice(-1)[0].critico'), true, 'o crítico não foi marcado');
+  });
+
+  await t.test('anunciar com lista vazia ou nula não estoura', () => {
+    const antes = M(g, 'mensagens.length');
+    assert.doesNotThrow(() => rodar(g, 'anunciar([]); anunciar(null); anunciar(undefined)'));
+    assert.equal(M(g, 'mensagens.length'), antes);
+  });
+});
+
+test('N8 — a fala e a mesa que volta de disco', async (t) => {
+  const { g } = app();
+  rodar(g, 'iniciarMesa(S)');
+
+  await t.test('alvoDeFala distingue quem está na cena de quem não está', (t2) => {
+    const id = M(g, 'cena.presentes && M.cena.presentes[0]');
+    if (id) {
+      const perto = executar(g, `alvoDeFala('${id}')`);
+      t2.diagnostic(`"${perto.nome}" está na cena → ${perto.distancia} m, audível=${perto.audivel}`);
+      assert.equal(perto.audivel, true);
+      assert.ok(perto.distancia < 15, 'quem está na cena ficou longe');
+    }
+    const fora = M(g, "pessoas.find(p => !(M.cena.presentes || []).includes(p.id))");
+    if (fora) {
+      const longe = executar(g, `alvoDeFala('${fora.id}')`);
+      t2.diagnostic(`"${longe.nome}" NÃO está na cena → ${longe.distancia} m, audível=${longe.audivel}`);
+      assert.equal(longe.audivel, false, 'quem não está na cena ouviu');
+      assert.ok(longe.distancia > 100, 'quem não está na cena ficou perto');
+    }
+    assert.ok(id || fora, 'a cidade não trouxe ninguém para testar');
+  });
+
+  await t.test('"geral" e id desconhecido não têm alvo', () => {
+    assert.equal(executar(g, "alvoDeFala('geral')"), null);
+    assert.equal(executar(g, "alvoDeFala('nao_existe')"), null);
+    assert.equal(executar(g, 'alvoDeFala("")'), null);
+  });
+
+  await t.test('normalizarMesa completa sessão de versão antiga', (t2) => {
+    /* Sessão gravada antes de um campo existir volta sem ele. Sem
+       normalizar, a mesa quebra no primeiro acesso — e o jogador perde
+       a noite por causa de uma atualização. */
+    rodar(g, `M = Object.assign(MESA_VAZIA(), {
+      ficha: ${JSON.stringify(fichaDeTeste(g, { nome: 'Antiga' }))},
+      combate: { ativo: true },
+      contador: undefined,
+      cena: { local: 'bar' }
+    }); normalizarMesa();`);
+    const c = M(g, 'combate');
+    t2.diagnostic(`combate veio só com {ativo} → completado com ` +
+                  `${Object.keys(c).join(', ')}`);
+    assert.ok(Array.isArray(c.oponentes), 'oponentes não foi completado');
+    assert.equal(typeof c.proximoId, 'number', 'proximoId não foi completado');
+    assert.ok(M(g, 'contador') && typeof M(g, 'contador').local === 'number',
+      'o contador não foi completado');
+  });
+
+  await t.test('e não sobrescreve o que a sessão já trazia', () => {
+    rodar(g, `M = Object.assign(MESA_VAZIA(), {
+      ficha: ${JSON.stringify(fichaDeTeste(g, { nome: 'Antiga' }))},
+      contador: { local: 42, llm: 7 },
+      combate: { ativo: true, motivo: 'briga velha' }
+    }); normalizarMesa();`);
+    assert.equal(M(g, 'contador.local'), 42, 'normalizar apagou o que já existia');
+    assert.equal(M(g, 'combate.motivo'), 'briga velha');
+  });
+
+  await t.test('oponente sem ref ganha um, sem colidir', (t2) => {
+    rodar(g, `M = Object.assign(MESA_VAZIA(), {
+      ficha: ${JSON.stringify(fichaDeTeste(g, { nome: 'Antiga' }))},
+      combate: { ativo: true, oponentes: [
+        { nome: 'Um', ficha: {} }, { nome: 'Dois', ficha: {} }, { ref: 'op:9', nome: 'Três', ficha: {} }
+      ] }
+    }); normalizarMesa(); normalizarOponentes();`);
+    const refs = M(g, 'combate.oponentes.map(o => o.ref)');
+    t2.diagnostic(`refs depois de normalizar: ${refs.join(', ')}`);
+    assert.equal(new Set(refs).size, 3, 'dois oponentes com o mesmo ref');
+    assert.ok(refs.every(Boolean), 'oponente ficou sem ref');
   });
 });

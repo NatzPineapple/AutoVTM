@@ -36,10 +36,24 @@ const Estado = {
     const chaveAgr = trilha === 'vontade' ? 'danoVontadeAgravado' : 'danoAgravado';
 
     if (!agravadoDireto && !semMetade && !f.mortal && trilha === 'vitalidade') {
+      /* ARREDONDA PARA CIMA.  (§63, item A6)
+
+         O livro, na pág. 126, em letra que não deixa dúvida:
+
+           "A menos que especificado o contrário, divida dano Superficial
+            pela metade (ARREDONDANDO PARA CIMA) antes de aplicá-lo à
+            trilha."
+
+         Era `Math.floor`, e o projeto tinha até escrito que "1 virando 0
+         é regra, não defeito". Não é: 1 vira 1. O erro era sistemático —
+         todo dano Superficial ÍMPAR chegava com meio ponto a menos, e o
+         soco isolado não marcava nada.
+
+         Com o arredondamento certo, `n` nunca é zero aqui (n ≥ 1 desde o
+         começo do método), então a saída antecipada saiu junto. */
       const antes = n;
-      n = Math.floor(n / 2);
+      n = Math.ceil(n / 2);
       eventos.push({ tipo: 'nota', texto: `Dano Superficial em vampiro: ${antes} vira ${n}.` });
-      if (!n) return { eventos, destruido: false, torpor: false };
     }
 
     const max = this.trilhas(f)[trilha].max;
@@ -163,6 +177,7 @@ const Estado = {
     if (subiu && (f.fome || 0) < 5) {
       f.fome = (f.fome || 0) + 1;
       eventos.push({ tipo: 'fome', texto: `Provocação ${dado}: a Fome sobe para ${f.fome}.` });
+      this.secarRessonancia(f, eventos);
     } else if (subiu) {
       eventos.push({ tipo: 'fome', texto: `Provocação ${dado}, mas a Fome já está em 5.` });
     } else {
@@ -171,7 +186,84 @@ const Estado = {
     return { eventos, dado, subiu, rerrolou };
   },
 
-  alimentar(f, fonteNome) {
+  /* ----------------------------------------------------------
+     A RESSONÂNCIA DA BOLSA  (§67)
+
+     Básico, pág. 228: "Para determinar o temperamento de uma
+     vítima em potencial que o Narrador não tenha criado e
+     detalhado antes da sessão, role 1d10 para obter um
+     temperamento aleatório. Se você rolar 6+ no dado, role de
+     novo para determinar a Ressonância do humano."
+
+     As duas tabelas já estavam em `data-escudo.js` desde sempre
+     — e NINGUÉM AS ROLAVA. Eram dado morto.
+
+     Devolve sempre `{ temperamento, ressonancia }`, com
+     `ressonancia` nula quando o temperamento é equilibrado (o
+     livro não manda rolar a segunda tabela nesse caso).
+     ---------------------------------------------------------- */
+  /* "Esse bônus dura até que a próxima dose de sangue do vampiro o
+     dilua ou até que o sistema do vampiro fique sem sangue ao
+     alcançar Fome 5." (pág. 228) A diluição é a própria
+     `impregnar`, que sobrescreve; a Fome 5 é aqui. (§67) */
+  secarRessonancia(f, eventos) {
+    if ((f.fome || 0) < 5) return false;
+    if (!f.temperamento || f.temperamento === 'nenhum') return false;
+    const r = Ressonancia.por(f.ressonancia);
+    f.temperamento = '';
+    eventos.push({ tipo: 'nota',
+      texto: `Fome 5: o sangue secou. A Ressonância ${r ? r.nome : ''} não vale mais dado.` });
+    return true;
+  },
+
+  sortearBolsa() {
+    const d1 = Dados.d10();
+    const faixa = Escudo.TEMPERAMENTO_ALEATORIO.find(t => d1 >= t.faixa[0] && d1 <= t.faixa[1]);
+    let id = (faixa && faixa.id) || 'nenhum';
+    const rolagens = [d1];
+    /* "9-0: Intenso, potencialmente agudo: role novamente abaixo
+        — 1-8: Intenso, 9-0: Agudo" */
+    if (id === 'intenso') {
+      const d2 = Dados.d10();
+      rolagens.push(d2);
+      if (d2 >= 9) id = 'agudo';
+    }
+    if (id === 'nenhum') return { temperamento: 'nenhum', ressonancia: null, rolagens };
+    const d3 = Dados.d10();
+    rolagens.push(d3);
+    const linha = Escudo.RESSONANCIA_ALEATORIA.find(r => d3 >= r.faixa[0] && d3 <= r.faixa[1]);
+    return { temperamento: id, ressonancia: linha ? linha.ressonancia : null, rolagens };
+  },
+
+  /* O sangue "muda um pouco a própria Ressonância do vampiro"
+     (pág. 226). Aqui é onde isso acontece — e é o que faz o dado
+     da pág. 228 chegar à parada de Disciplina. */
+  impregnar(f, bolsa, eventos) {
+    if (!bolsa || !bolsa.ressonancia) return null;
+    const r = Ressonancia.por(bolsa.ressonancia);
+    const t = Ressonancia.temperamentoPor(bolsa.temperamento);
+    if (!r || !t) return null;
+
+    f.ressonancia = r.id;
+    f.temperamento = t.id;
+    eventos.push({ tipo: 'nota',
+      texto: `Sangue ${r.nome}, temperamento ${t.nome}.${
+        t.dados ? ` +${t.dados} dado em ${Ressonancia.disciplinasDe(r.id)} até diluir ou até a Fome 5.` : ''}` });
+
+    if (t.discrasia) {
+      const lista = Ressonancia.discrasiasDe(r.id);
+      if (!lista.length) {
+        eventos.push({ tipo: 'nota',
+          texto: `${r.nome} agudo, mas animais não fornecem Discrasias (pág. 227).` });
+      } else {
+        eventos.push({ tipo: 'critico',
+          texto: `Temperamento agudo: há uma Discrasia neste sangue. Para usá-la é preciso matar e drenar a bolsa, ou se alimentar dela por três noites (pág. 228).` });
+      }
+    }
+    return { ressonancia: r.id, temperamento: t.id };
+  },
+
+  alimentar(f, fonteNome, bolsa = null) {
     const eventos = [];
     const linha = Arbitro.alimentacaoPor(fonteNome);
     if (!linha) return { eventos: [{ tipo: 'nota', texto: 'Fonte de sangue desconhecida.' }], saciou: 0 };
@@ -200,19 +292,121 @@ const Estado = {
     f.fome = Math.max(0, antes - sacia);
     eventos.push({ tipo: 'fome', texto: `${linha.fonte}: saciou ${sacia}. Fome ${antes} → ${f.fome}. (${linha.tempo})` });
     if (linha.obs) eventos.push({ tipo: 'nota', texto: linha.obs });
-    return { eventos, saciou: sacia };
+
+    /* Sangue de bolsa "nunca oferece Ressonância intensa" — é o que
+       `data-predadores.js` já dizia do Saco de Sangue, e o que a
+       tabela do Escudo confirma. Sangue animal tem Ressonância, mas
+       não tem Discrasia (pág. 227). (§67) */
+    let ressonancia = null;
+    if (sacia > 0 && !/bolsa/i.test(linha.fonte)) {
+      const sorteada = bolsa || (/animal|animais|cavalo|cachorro|gatos|ratos/i.test(linha.fonte)
+        ? Object.assign(this.sortearBolsa(), { ressonancia: 'animal' })
+        : this.sortearBolsa());
+      ressonancia = this.impregnar(f, sorteada, eventos);
+    }
+    return { eventos, saciou: sacia, ressonancia };
   },
 
-  ganharMacula(f, quantidade, motivo) {
-    const n = Math.max(0, quantidade | 0);
+  /* ----------------------------------------------------------
+     MÁCULA A SERVIÇO DE UMA CONVICÇÃO  (§69, item A9)
+
+     Básico, pág. 239, em letra que não deixa dúvida:
+
+       "Se o Princípio foi violado EM RESPEITO A UMA CONVICÇÃO,
+        reduza as Máculas ganhas em UMA OU MAIS."
+
+     E o exemplo da mesma página: Joana esmaga a cabeça de quem ia
+     revelar a natureza dela ao irmão caçula. O ato valeria 3
+     Máculas; como Joana tem a Convicção "minha família deve ser
+     mantida fora disto", ela recebe APENAS 2.
+
+     `porConviccao` é o texto da Convicção invocada. A redução é de
+     1 por padrão — o mínimo do livro —, e `reducao` permite mais,
+     que é a parte que fica com o Narrador. Pode zerar: o livro não
+     dá piso, e uma Mácula única a serviço de uma Convicção é
+     justamente o caso em que não sobra nada para marcar.
+     ---------------------------------------------------------- */
+  ganharMacula(f, quantidade, motivo, { porConviccao = '', reducao = 1 } = {}) {
+    const bruto = Math.max(0, quantidade | 0);
+    let n = bruto;
+    const eventos = [];
+
+    if (porConviccao) {
+      const menos = Math.min(bruto, Math.max(1, reducao | 0));
+      n = bruto - menos;
+      eventos.push({ tipo: 'nota',
+        texto: `Em respeito à Convicção "${porConviccao}": ${bruto} Mácula${
+          bruto === 1 ? '' : 's'} vira${bruto - menos === 1 ? '' : 'm'} ${n} (pág. 239).` });
+    }
+
     f.maculas = (f.maculas || 0) + n;
     const t = this.trilhas(f);
-    const eventos = [{ tipo: 'macula',
-      texto: `${n} Mácula${n === 1 ? '' : 's'}${motivo ? ' — ' + motivo : ''}. Total: ${f.maculas}.` }];
+    eventos.push({ tipo: 'macula',
+      texto: `${n} Mácula${n === 1 ? '' : 's'}${motivo ? ' — ' + motivo : ''}. Total: ${f.maculas}.` });
     if (t.humanidade.vazias === 0) {
       eventos.push({ tipo: 'critico', texto: 'As Máculas ultrapassaram a trilha: teste de Remorso agora.' });
     }
     return { eventos, precisaRemorso: t.humanidade.vazias === 0 };
+  },
+
+  /* ----------------------------------------------------------
+     PERDER UM PILAR DERRUBA A CONVICÇÃO  (§69, item A8)
+
+     Básico, pág. 173:
+
+       "Uma vez perdida uma dessas pessoas, a Convicção a ela
+        associada TAMBÉM ESTARÁ PERDIDA."
+
+     A regra estava escrita no `regras.md` desde sempre e nenhuma
+     linha a executava: o mortal morria e a Convicção continuava na
+     ficha, valendo redução de Mácula (A9) e alívio de fim de sessão.
+
+     `porSuasAcoes` escolhe a linha da tabela de Máculas do Escudo
+     — 2 pela perda, 3 se foi você. É a mesma tabela que já estava
+     em `MACULAS_POR_ATO`, e que ninguém consultava para isto.
+
+     A Convicção NÃO é apagada do vetor: ela é esvaziada na posição,
+     porque Convicção e Pilar são pareados por índice e mexer no
+     comprimento desalinharia os outros pares. Esvaziar é o que a
+     ficha já entende como "não existe".
+     ---------------------------------------------------------- */
+  perderPilar(f, indice, { porSuasAcoes = false, motivo = '' } = {}) {
+    const i = indice | 0;
+    const eventos = [];
+    const pilar = (f.marcos || [])[i];
+    const conviccao = (f.conviccoes || [])[i];
+
+    if (!pilar && !conviccao) {
+      eventos.push({ tipo: 'nota', texto: 'Não há Pilar nessa posição.' });
+      return { eventos, perdeu: false };
+    }
+
+    f.marcos[i] = '';
+    f.conviccoes[i] = '';
+    eventos.push({ tipo: 'critico',
+      texto: `${pilar || 'O Pilar'} se foi${motivo ? ` — ${motivo}` : ''}.` });
+    if (conviccao) eventos.push({ tipo: 'critico',
+      texto: `A Convicção que ele encarnava cai junto: "${conviccao}" (pág. 173).` });
+
+    const linha = Arbitro.maculasPor(porSuasAcoes ? 'Pilar destruído por suas ações' : 'Pilar destruído');
+    if (linha) {
+      const m = this.ganharMacula(f, linha.maculas, linha.ato);
+      eventos.push(...m.eventos);
+    }
+
+    /* Ficar sem NENHUMA Convicção não tem regra própria no livro, mas
+       é um fato que a mesa precisa ver: a bússola moral do personagem
+       ficou sem nada a que se prender.
+
+       (A trava de `podeComprarHumanidade` é do Sabá, e lá a âncora é
+       um Ritae, não um mortal — não cabe aqui. O primeiro rascunho
+       desta função a chamava, e o teste mostrou que ela nunca
+       dispararia para quem tem Pilar mortal.) */
+    const restam = (f.conviccoes || []).filter(Boolean).length;
+    if (!restam) eventos.push({ tipo: 'critico',
+      texto: 'Sem nenhuma Convicção: não sobrou linha que você não cruze.' });
+
+    return { eventos, perdeu: true, pilar, conviccao, conviccoesRestantes: restam };
   },
 
   bussolaDe(f) {
@@ -380,7 +574,8 @@ const Estado = {
       eventos.push(...this.ganharMacula(f, 1, resultado.tipo === 'perigo' ? 'Sucesso em Perigo' : 'Falha Bestial').eventos);
     } else if (/fome/i.test(alvo)) {
       if ((f.fome || 0) < 5) { f.fome = (f.fome || 0) + 1;
-        eventos.push({ tipo: 'fome', texto: `A Fome sobe para ${f.fome}.` }); }
+        eventos.push({ tipo: 'fome', texto: `A Fome sobe para ${f.fome}.` });
+        this.secarRessonancia(f, eventos); }
     } else if (/agravado/i.test(alvo)) {
       eventos.push(...this.aplicarDano(f, { quantidade: 1, tipo: 'agravado', fonte: 'Falha Bestial' }).eventos);
     } else if (/compulsão|compulsao/i.test(alvo)) {
@@ -413,6 +608,49 @@ const Estado = {
     return fn ? fn(novoNivel) : null;
   },
 
+  /* ----------------------------------------------------------
+     O DESEJO PAGA NA HORA  (§69, item A7)
+
+     Básico, pág. 174:
+
+       "Uma vez por sessão, quando o personagem decididamente agir
+        para promover ou realizar seu Desejo, ele poderá recuperar
+        IMEDIATAMENTE um ponto de dano Superficial à Força de
+        Vontade."
+
+     E a mesma página diz para que serve:
+
+       "Esta mecânica oferece intencionalmente aos jogadores um
+        incentivo para que o personagem AJA, em vez de esperar
+        passivamente pela trama ou ficar procrastinando
+        defensivamente."
+
+     O motor pagava só no fechamento da sessão. O ponto chegava, mas
+     chegava depois de a noite acabar — quer dizer, o incentivo a
+     agir agora não existia.
+
+     `desejoUsadoNaSessao` segue o padrão de `ritaeUsadoNaSessao`:
+     marca na ficha, e `fimDeSessao` limpa.
+     ---------------------------------------------------------- */
+  realizarDesejo(f, { desejo = '' } = {}) {
+    const eventos = [];
+    if (f.desejoUsadoNaSessao) {
+      eventos.push({ tipo: 'nota', texto: 'O Desejo já rendeu Vontade nesta sessão. Uma vez por sessão.' });
+      return { eventos, pagou: false, usado: true };
+    }
+    f.desejoUsadoNaSessao = true;
+    const alvo = desejo || f.desejo || '';
+    if (!(f.danoVontade || 0)) {
+      eventos.push({ tipo: 'nota',
+        texto: `Agiu pelo Desejo${alvo ? ` — "${alvo}"` : ''}, mas não há Vontade Superficial para recuperar.` });
+      return { eventos, pagou: false };
+    }
+    f.danoVontade = Math.max(0, f.danoVontade - 1);
+    eventos.push({ tipo: 'cura',
+      texto: `Agiu pelo Desejo${alvo ? ` — "${alvo}"` : ''}: 1 de Vontade Superficial recuperada, na hora (pág. 174).` });
+    return { eventos, pagou: true };
+  },
+
   fimDeSessao(f, { cumpriuAmbicao = false, cumpriuDesejo = false, beneficiouPilar = false } = {}) {
     const eventos = [];
     let xp = 1;
@@ -420,7 +658,12 @@ const Estado = {
     const cura = this.curar(f, { trilha: 'vontade' });
     eventos.push(...cura.eventos);
 
-    if (cumpriuDesejo && (f.danoVontade || 0) > 0) {
+    /* O Desejo é pago na hora por `realizarDesejo` (A7). Este ramo
+       continua existindo para quem só marca no fechamento — e não
+       paga duas vezes na mesma sessão. */
+    if (cumpriuDesejo && f.desejoUsadoNaSessao) {
+      eventos.push({ tipo: 'nota', texto: 'O Desejo já foi pago durante a sessão.' });
+    } else if (cumpriuDesejo && (f.danoVontade || 0) > 0) {
       f.danoVontade = Math.max(0, f.danoVontade - 1);
       eventos.push({ tipo: 'cura', texto: 'Agiu conforme o Desejo: mais 1 de Vontade Superficial recuperado.' });
     }
@@ -438,6 +681,9 @@ const Estado = {
       const rem = this.testeDeRemorso(f);
       eventos.push(...rem.eventos);
     }
+
+    /* A sessão acabou: o Desejo volta a poder ser cobrado (A7). */
+    delete f.desejoUsadoNaSessao;
 
     if (this.bussolaDe(f).tipo === 'caminho') {
       const d = Seitas.dados(f, 'sabbat');

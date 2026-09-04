@@ -199,8 +199,22 @@ export function validar(saida, { pessoas = [], locais = [], fios = [] } = {}) {
 
   const corpo = saida.cronica || saida.dossie || '';
   const n = corpo.trim().split(/\s+/).filter(Boolean).length;
-  if (corpo && (n < 60 || n > 260)) {
-    problemas.push(`tamanho fora da faixa: ${n} palavras, esperado entre 60 e 260`);
+  /* SÓ O MÍNIMO. O teto de 260 palavras saiu na §55, por decisão do
+     usuário, e a razão é boa: crônica é o fecho de uma noite inteira, e
+     um fecho comprido não é defeito — é uma noite que rendeu. Reprovar
+     por isso jogava fora texto bom e obrigava a uma segunda chamada só
+     para encurtar.
+
+     O mínimo fica. Ele pega outra coisa: crônica de trinta palavras é o
+     modelo desistindo, e isso não se conserta lendo — se conserta
+     reprovando. O esquema continua PEDINDO 120 a 200 palavras na
+     descrição do campo, que orienta sem rejeitar.
+
+     O Narrador mantém o teto dele, e a diferença é de propósito: ali é
+     UM TURNO, e narração de 400 palavras a cada ação inunda a tela do
+     jogador. Aqui é a noite inteira, uma vez. */
+  if (corpo && n < 60) {
+    problemas.push(`curta demais: ${n} palavras, esperado ao menos 60`);
   }
   if (/\?\s*$/.test(corpo.trim())) problemas.push('a prosa termina perguntando ao jogador');
 

@@ -53,6 +53,27 @@ export default async function* relator(fonte) {
   const falhas = [];
   let passaram = 0, reprovaram = 0, pulados = 0;
 
+  /* EVIDÊNCIA — o que o teste realmente viu.
+
+     "✓ dois dez valem 4 sucessos" diz que passou. Não diz quais dados
+     saíram, nem quantos sucessos foram contados. Quem audita a suíte
+     precisa do segundo, e um registro que só tem o primeiro obriga a
+     abrir o código para saber o que foi conferido.
+
+     O teste anexa com `t.diagnostic(...)`, que é o mecanismo nativo do
+     runner.
+
+     ELAS CHEGAM DEPOIS do resultado do teste a que pertencem — o runner
+     emite `test:pass` e só então as diagnósticas daquele teste. A
+     primeira versão deste relator supôs o contrário e pendurou cada
+     evidência no teste SEGUINTE: o registro ficou coerente, legível e
+     errado, dizendo que "o 6 conta e o 5 não" tinha visto `[6,7,8,9]`.
+
+     Por isso a evidência vai para o ÚLTIMO teste fechado naquele
+     arquivo. As linhas de resumo do próprio runner ("tests 435") também
+     vêm por aqui e se distinguem por não terem arquivo. */
+  const ultimoDoArquivo = new Map();
+
   const guardar = (arquivo, item) => {
     const chave = curto(arquivo);
     if (!porArquivo.has(chave)) porArquivo.set(chave, []);
@@ -61,6 +82,12 @@ export default async function* relator(fonte) {
 
   for await (const evento of fonte) {
     const d = evento.data || {};
+
+    if (evento.type === 'test:diagnostic' && d.file) {
+      const dono = ultimoDoArquivo.get(curto(d.file));
+      if (dono) dono.evidencias.push(String(d.message || ''));
+      continue;
+    }
 
     if (evento.type === 'test:pass' || evento.type === 'test:fail') {
       /* O runner emite um evento por teste E um por grupo. O grupo tem
@@ -74,9 +101,12 @@ export default async function* relator(fonte) {
         ok,
         pulado: !!(d.skip || d.todo),
         duracao: d.details && d.details.duration_ms,
-        erro: (d.details && d.details.error) || null
+        erro: (d.details && d.details.error) || null,
+        evidencias: []
       };
       guardar(d.file, item);
+      /* o próximo diagnóstico deste arquivo pertence a este teste */
+      if (!ehGrupo) ultimoDoArquivo.set(curto(d.file), item);
 
       if (!ehGrupo) {
         if (item.pulado) pulados++;
@@ -84,7 +114,8 @@ export default async function* relator(fonte) {
         else reprovaram++;
       }
       if (!ok && !ehGrupo) {
-        falhas.push({ arquivo: curto(d.file), nome: item.nome, erro: item.erro, linha: d.line });
+        falhas.push({ arquivo: curto(d.file), nome: item.nome, erro: item.erro,
+                      linha: d.line, evidencias: item.evidencias });
       }
     }
   }
@@ -107,6 +138,9 @@ export default async function* relator(fonte) {
   L.push(`| Reprovaram | ${reprovaram} |`);
   if (pulados) L.push(`| Pulados | ${pulados} |`);
   L.push(`| Arquivos | ${porArquivo.size} |`);
+  const comEvidencia = [...porArquivo.values()].flat()
+    .filter(i => i.evidencias && i.evidencias.length).length;
+  L.push(`| Com evidência | ${comEvidencia} |`);
   L.push('');
   L.push('> O runner do Node imprime um número maior — ele conta cada GRUPO como');
   L.push('> um teste, além dos testes dentro dele. Aqui só as folhas são contadas,');
@@ -123,6 +157,14 @@ export default async function* relator(fonte) {
       L.push('');
       L.push(`\`${f.arquivo}${f.linha ? ':' + f.linha : ''}\``);
       L.push('');
+      if (f.evidencias && f.evidencias.length) {
+        /* O que o teste viu antes de reprovar. Numa falha é onde ela mais
+           serve: diz com que entrada o defeito apareceu. */
+        L.push('O que o teste viu:');
+        L.push('');
+        f.evidencias.forEach(x => L.push(`- ${x}`));
+        L.push('');
+      }
       const e = f.erro;
       if (e) {
         L.push('```');
@@ -155,6 +197,9 @@ export default async function* relator(fonte) {
         L.push(`- ${marca} **${i.nome}** — ${ms(i.duracao)}`);
       } else {
         L.push(`${'  '.repeat(i.nivel)}- ${marca} ${i.nome} — ${ms(i.duracao)}`);
+      }
+      for (const e of i.evidencias || []) {
+        L.push(`${'  '.repeat(i.nivel + 1)}· ${e}`);
       }
     }
     L.push('');

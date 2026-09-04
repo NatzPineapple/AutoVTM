@@ -477,7 +477,7 @@ test('Escada — o primeiro que responde vence', async (t) => {
     assert.equal(passo.degrau.custa, false);
   });
 
-  await t.test('cena com material resolve local em 100% das tentativas', () => {
+  await t.test('cena com material resolve local em 100% das tentativas', (t2) => {
     /* Este é o número que sustenta a meta de "70% dos turnos sem LLM"
        (§3): quando há material, o degrau 3 responde SEMPRE. */
     const ctx = {
@@ -491,10 +491,11 @@ test('Escada — o primeiro que responde vence', async (t) => {
     };
     let aceitou = 0;
     for (let i = 0; i < 200; i++) if (Recombinador.tentar(ctx)) aceitou++;
+    t2.diagnostic(`cena com gente, fato e fio: ${aceitou} de 200 resolvidos no degrau 3`);
     assert.equal(aceitou, 200, `recusou ${200 - aceitou} de 200 com material de sobra`);
   });
 
-  await t.test('e a recusa existe, mesmo que rara', () => {
+  await t.test('e a recusa existe, mesmo que rara', (t2) => {
     /* MEDIDO, não suposto: com cena vazia o degrau 3 ainda aceita ~96%
        das vezes — a recusa vem do SORTEIO dos fragmentos, não da falta
        de material. Ou seja: dois turnos idênticos podem cair em degraus
@@ -512,6 +513,8 @@ test('Escada — o primeiro que responde vence', async (t) => {
     };
     let recusou = 0;
     for (let i = 0; i < 400; i++) if (!Recombinador.tentar(pobre)) recusou++;
+    t2.diagnostic(`cena VAZIA: recusou ${recusou} de 400 ` +
+                  `(${(100 - recusou / 4).toFixed(1)}% ainda resolve local — item A9)`);
     assert.ok(recusou > 0, 'o caminho de recusa nunca é alcançado em 400 tentativas');
     assert.ok(recusou < 400, 'passou a recusar sempre — a meta de 70% local caiu');
   });
@@ -573,10 +576,13 @@ test('Crônica — o orçamento por peso', async (t) => {
     assert.deepEqual(ordens, ordens.slice().sort((a, b) => a - b), 'a ordem se perdeu');
   });
 
-  await t.test('sessão longa é cortada, e respeita o teto', () => {
+  await t.test('sessão longa é cortada, e respeita o teto', (t2) => {
     const m = Cronica.memoriaDe({ mesa: sessaoLonga(600) });
-    const cabidos = Cronica.caber(m, Cronica.coletar(m));
+    const brutos = Cronica.coletar(m);
+    const cabidos = Cronica.caber(m, brutos);
     const total = cabidos.reduce((a, x) => a + custo(x.texto), 0);
+    t2.diagnostic(`600 turnos → ${brutos.length} eventos brutos, ${cabidos.length} mantidos, ` +
+                  `${m.cortados} cortados · ${total} de ${Cronica.ORCAMENTO_TOKENS} tokens`);
     assert.ok(m.cortados > 0, 'não cortou nada numa sessão de 600 turnos');
     assert.ok(total <= Cronica.ORCAMENTO_TOKENS,
       `estourou o orçamento: ${total} de ${Cronica.ORCAMENTO_TOKENS}`);
@@ -907,7 +913,7 @@ test('Crônica — fatos e fios também têm teto (§51.2)', async (t) => {
       `estourou a reserva: ${r.tokens} de ${Cronica.RESERVA_ESTADO_TOKENS}`);
   });
 
-  await t.test('o fio aberto tem piso, e não é espremido pelos fatos', () => {
+  await t.test('o fio aberto tem piso, e não é espremido pelos fatos', (t2) => {
     /* MEDIDO, e foi por isso que o piso existe: com peso puro, 80 fatos
        e 40 fios davam UM fio. Fato pesa 100, fio pesa 95, então fato
        ganhava sempre — e fio aberto é o gancho do próximo capítulo.
@@ -915,6 +921,9 @@ test('Crônica — fatos e fios também têm teto (§51.2)', async (t) => {
        dela. Com o piso de um terço da reserva, sobrevivem 19. */
     const r = Cronica.caberEstado(comEstado(80, 40));
     const abertos = r.fios.filter(f => f.estado !== 'fechado').length;
+    t2.diagnostic(`80 fatos + 40 fios → ${r.fatos.length} fatos e ${r.fios.length} fios ` +
+                  `(${abertos} abertos), ${r.cortados} cortados · ` +
+                  `${r.tokens} de ${Cronica.RESERVA_ESTADO_TOKENS} tokens`);
     assert.ok(abertos >= 5, `sobrou ${abertos} fio aberto de 40 — os ganchos morreram`);
     assert.ok(r.tokens <= Cronica.RESERVA_ESTADO_TOKENS, 'o piso furou a reserva');
   });

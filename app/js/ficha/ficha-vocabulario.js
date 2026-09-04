@@ -43,7 +43,10 @@ const FICHA_VAZIA = () => ({
   conviccoes: ['', '', ''],
   marcos: ['', '', ''],
   ambicao: '', desejo: '',
-  ressonancia: '',
+  /* `temperamento` entrou na §67: sem ele a regra da pág. 228 —
+     temperamento intenso dá um dado na Disciplina correspondente —
+     não tem como ser aplicada. Vazio significa "nenhum". */
+  ressonancia: '', temperamento: '',
   // estado de jogo
   fome: 1, humanidadeMod: 0, danoSuperficial: 0, danoAgravado: 0, danoVontade: 0,
   // retrato e registro (campos do modelo oficial)

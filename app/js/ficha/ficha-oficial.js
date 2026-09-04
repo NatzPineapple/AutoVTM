@@ -123,7 +123,12 @@ function ofFolha1(F) {
   <div class="rodape-1">
     <div class="grupo" style="flex:1">
       <span class="rot">Ressonância</span>
-      <span class="leader">${esc(r?.nome || '')}</span>
+      <span class="leader">${esc(r?.nome || '')}${(() => {
+        /* O temperamento é o que dá o dado (pág. 228) — imprimir só a
+           Ressonância é imprimir metade do fato. (§67) */
+        const t = Ressonancia.temperamentoPor(F.temperamento);
+        return t && t.id !== 'nenhum' ? ` · ${t.nome}` : '';
+      })()}</span>
     </div>
     <div class="grupo"><span class="rot">Fome</span>${ofQuadros(F.fome, 5)}</div>
     <div class="grupo"><span class="rot">Humanidade</span>${ofQuadros(d.humanidade, 10, true)}</div>

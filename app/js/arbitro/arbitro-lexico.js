@@ -48,8 +48,13 @@ const Lexico = {
     },
     abrir: {
       nome: 'Abrir', dominio: 'tecnica', manipulacao: true, exigeAberto: true,
+      /* 'derrubar a porta' veio de lutar na §63: é abrir na força, não
+         atacar alguém. Pela tabela do livro, derrubar uma porta de madeira
+         é Força 3 e não se rola nada (básico, pág. 409) — a rota de força
+         abaixo é para quando a porta é mais que madeira. */
       frases: ['abrir', 'abro', 'destampar', 'levantar a tampa', 'puxo a gaveta',
-               'escancaro', 'abrir a porta'],
+               'escancaro', 'abrir a porta', 'derrubar a porta', 'derrubo a porta',
+               'arrebento a porta', 'chuto a porta', 'ponho o ombro na porta'],
       exige: ['maos'],
       rotas: [
         { atributo: 'destreza', pericia: 'furto', enquadramento: 'você abre com jeito', risco: 'demora' },
@@ -77,10 +82,18 @@ const Lexico = {
       frases: ['arrombar', 'arrombo', 'destrancar', 'destranco', 'forcar a fechadura', 'ladroagem',
                'abrir o cofre', 'picking', 'chaveiro', 'quebrar a porta'],
       exige: ['maos', 'visao'],
+      /* PARADAS DE INVASÃO USAM SEMPRE LADROAGEM (básico, pág. 410). O que muda
+         é o ATRIBUTO, conforme a tarefa. Era Força + Briga e Inteligência +
+         Tecnologia; Briga é perícia de combate e não abre fechadura, e o
+         caminho eletrônico o livro só permite para sistema PURAMENTE
+         eletrônico, com +1 de Dificuldade. §63, A4. */
       rotas: [
         { atributo: 'destreza', pericia: 'furto', enquadramento: 'você trabalha a fechadura', risco: 'demora' },
-        { atributo: 'forca', pericia: 'briga', enquadramento: 'você arromba com o ombro', risco: 'barulho' },
-        { atributo: 'inteligencia', pericia: 'tecnologia', enquadramento: 'você burla a fechadura eletrônica', risco: 'registro no sistema' }
+        { atributo: 'inteligencia', pericia: 'furto', enquadramento: 'você lê o mecanismo antes de tocá-lo', risco: 'demora' },
+        { atributo: 'forca', pericia: 'furto', enquadramento: 'você força sem estragar', risco: 'barulho' },
+        { atributo: 'inteligencia', pericia: 'tecnologia', dificuldade: 1,
+          enquadramento: 'você burla a fechadura eletrônica', risco: 'registro no sistema',
+          nota: 'só para sistema puramente eletrônico, e o livro cobra +1 de Dificuldade' }
       ]
     },
     achar_escondido: {
@@ -130,8 +143,13 @@ const Lexico = {
     },
     lutar: {
       nome: 'Atacar corpo a corpo', dominio: 'confronto',
+      /* 'derrubar/derrubo' SAIU daqui na §63 (A4). 'derrubo a porta com o ombro'
+         virava ataque corpo a corpo e ABRIA O PAINEL DE COMBATE, sem ninguém na
+         frase. Derrubar porta é força bruta: pela tabela do livro, porta de
+         madeira é Força 3 e não se rola nada (básico, pág. 409). Derrubar
+         PESSOA continua sendo luta, e as frases de luta pegam isso. */
       frases: ['atacar', 'ataco', 'bater', 'bato', 'socar', 'soco', 'brigar', 'brigo', 'agarrar',
-               'agarro', 'derrubar', 'derrubo', 'esfaquear', 'golpear', 'parto pra cima'],
+               'agarro', 'esfaquear', 'golpear', 'parto pra cima'],
       exige: ['movimento', 'corpo'], alcance: 'toque',
       rotas: [
         { atributo: 'forca', pericia: 'briga', enquadramento: 'você vai com tudo', risco: 'barulho e sangue' },
@@ -155,15 +173,123 @@ const Lexico = {
       exige: ['movimento'], alcance: 'toque',
       rotas: []
     },
+    /* RASTREAR e ESPREITAR são duas ações no livro, com paradas diferentes.
+       Rastrear é seguir EVIDÊNCIA FÍSICA em área selvagem — pegada, sangue,
+       grama amassada (pág. 408). Seguir alguém que você está VENDO é
+       espreitamento, e é disputa (pág. 410). As frases de seguir alguém
+       mudaram de dono na §63 (A4). */
     rastrear: {
       nome: 'Rastrear', dominio: 'rua',
-      frases: ['rastrear', 'rastreio', 'seguir', 'sigo', 'perseguir', 'persigo', 'na pista',
-               'atras dele', 'atras dela', 'farejar'],
+      frases: ['rastrear', 'rastreio', 'na pista', 'seguir o rastro', 'sigo o rastro',
+               'seguir a pista', 'pegadas', 'seguir as pegadas', 'farejar o rastro'],
       exige: ['movimento'],
       rotas: [
         { atributo: 'raciocinio', pericia: 'sobrevivencia', enquadramento: 'você lê o rastro', risco: 'demora' },
         { atributo: 'raciocinio', pericia: 'manha', enquadramento: 'você pergunta a quem sabe', risco: 'alguém avisa o alvo' },
         { atributo: 'inteligencia', pericia: 'investigacao', enquadramento: 'você cruza informação', risco: 'deixa registro' }
+      ]
+    },
+    /* ----------------------------------------------------------
+       AS CINCO AÇÕES DO APÊNDICE I  (§63, item A4)
+
+       O livro tem um catálogo de ações comuns COM A PARADA DE CADA
+       UMA (básico, págs. 407–410) — a mesma forma deste dicionário.
+       Cinco delas não existiam aqui, e o efeito era grave: o léxico
+       devolvia `(nenhuma)`, o turno subia para o Narrador, e ele
+       narrava SEM TESTE. O jogador escalava a fachada e nunca corria
+       o risco de cair.
+
+       As paradas abaixo são as do livro, com a página em cada uma.
+       As rotas alternativas seguem o que o próprio Apêndice manda:
+       "sempre é o Narrador quem determina qual parada [...] e ele
+       sempre pode mudar a parada no melhor interesse da narrativa"
+       (pág. 407).
+       ---------------------------------------------------------- */
+    escalar: {
+      nome: 'Escalar', dominio: 'rua', movimento: true,
+      frases: ['escalar', 'escalo', 'subir pela', 'subo pela', 'trepar', 'me penduro',
+               'escada de incendio', 'pela fachada', 'subo o muro', 'pulo o muro',
+               'subo pela parede', 'me iço', 'galgar'],
+      exige: ['maos', 'movimento'],
+      /* Destreza + Atletismo (pág. 410). Falha total: emaranhado e preso,
+         ou cai — e a queda tem regra própria, na Parte II §15. Corda e
+         equipamento de montanhismo dão −2 ou mais na Dificuldade. */
+      rotas: [
+        { atributo: 'destreza', pericia: 'atletismo', enquadramento: 'você sobe no impulso', risco: 'queda: 1 Superficial por metro' },
+        { atributo: 'forca', pericia: 'atletismo', enquadramento: 'você sobe na força dos braços', risco: 'demora, e barulho' },
+        { atributo: 'raciocinio', pericia: 'sobrevivencia', enquadramento: 'você lê a parede antes de tocá-la', risco: 'margem menor' }
+      ]
+    },
+    dirigir: {
+      nome: 'Dirigir', dominio: 'rua', movimento: true,
+      frases: ['dirigir', 'dirijo', 'acelero', 'acelerar', 'piso fundo', 'guiar', 'guio',
+               'manobro', 'manobrar', 'saio de carro', 'pego o carro', 'fujo de carro',
+               'derrapo', 'cavalo de pau', 'sigo o carro'],
+      exige: ['maos', 'visao', 'movimento'],
+      /* Não se rola para dirigir normalmente (pág. 409). Rola-se quando há
+         complicação: velocidade, manobra, trânsito → Destreza + Condução;
+         visibilidade ruim → Raciocínio + Condução. Cada complicação soma
+         +1 sobre a Dificuldade 3 padrão. */
+      rotas: [
+        { atributo: 'destreza', pericia: 'conducao', enquadramento: 'você força o volante', risco: 'batida' },
+        { atributo: 'raciocinio', pericia: 'conducao', enquadramento: 'você dirige pelo que consegue enxergar', risco: 'demora' }
+      ]
+    },
+    pesquisar: {
+      nome: 'Pesquisar', dominio: 'investigacao',
+      frases: ['pesquisar', 'pesquiso', 'levantar informacao', 'levanto informacao',
+               'busco no arquivo', 'consulto os registros', 'leio sobre', 'estudo o caso',
+               'procuro na internet', 'busco na internet', 'googlar', 'descobrir sobre',
+               'descubro sobre', 'me informo sobre'],
+      exige: ['visao', 'mente'],
+      /* Inteligência + A HABILIDADE RELEVANTE, e o livro insiste que não é
+         só Erudição ou Ciência: "qualquer coisa, de Finanças a Ocultismo"
+         (pág. 408). Dificuldade 3 para quase tudo, no máximo 4; informação
+         obscura sobe, e costuma pedir teste estendido. */
+      rotas: [
+        { atributo: 'inteligencia', pericia: 'academicos', enquadramento: 'você procura onde a informação é guardada', risco: 'demora' },
+        { atributo: 'inteligencia', pericia: 'investigacao', enquadramento: 'você cruza o que já sabe', risco: 'deixa registro' },
+        { atributo: 'inteligencia', pericia: 'ocultismo', enquadramento: 'você procura no que não está catalogado', risco: 'chama atenção errada' },
+        { atributo: 'inteligencia', pericia: 'financas', enquadramento: 'você segue o dinheiro', risco: 'alguém percebe a consulta' }
+      ]
+    },
+    hackear: {
+      nome: 'Hackear', dominio: 'tecnica',
+      frases: ['hackear', 'hackeio', 'invadir o sistema', 'invado o sistema', 'quebro a senha',
+               'acesso as cameras', 'acessar as cameras', 'derrubo o sistema', 'entro no servidor',
+               'invado o computador', 'burlo o sistema'],
+      exige: ['maos', 'visao', 'mente'],
+      /* Inteligência + Tecnologia (pág. 409). Dificuldade pelo alvo: 4 para
+         segurança corporativa adequada, 6 para base de dados segura, 8+ para
+         a NSA. FALHA TOTAL ALERTA A SEGURANÇA — o risco abaixo é regra, não
+         tempero. E o livro lembra que a maior parte do hackeamento real é
+         engenharia social, que rola outra coisa. */
+      rotas: [
+        { atributo: 'inteligencia', pericia: 'tecnologia', enquadramento: 'você entra pelo código', risco: 'falha total alerta a segurança' },
+        { atributo: 'manipulacao', pericia: 'labia', enquadramento: 'você convence alguém a abrir a porta por você', risco: 'a pessoa lembra da sua voz' },
+        { atributo: 'inteligencia', pericia: 'manha', enquadramento: 'você compra o acesso de quem já tem', risco: 'quem vendeu pode vender você' }
+      ]
+    },
+    espreitar: {
+      nome: 'Espreitar alguém', dominio: 'furtividade',
+      frases: ['seguir', 'sigo', 'perseguir', 'persigo', 'atras dele', 'atras dela',
+               'sigo ele', 'sigo ela', 'vou atras', 'na cola', 'espreitar', 'espreito',
+               'sigo de longe', 'acompanho de longe'],
+      exige: ['visao', 'movimento'],
+      /* ESPREITAR ≠ RASTREAR, e o livro separa as duas (pág. 410).
+         Rastrear é ler evidência física em área selvagem. Espreitar é
+         seguir alguém QUE VOCÊ ESTÁ VENDO, e é DISPUTA: Raciocínio +
+         Percepção contra Determinação + Manha do alvo.
+
+         Área agitada dá +1 dado; área abarrotada ou com muitas saídas,
+         +2. Trabalho em equipe SÓ beneficia quem espreita. E se todos
+         souberem o que está acontecendo, não é mais espreitamento: virou
+         perseguição. */
+      disputa: { atributo: 'determinacao', pericia: 'manha' },
+      rotas: [
+        { atributo: 'raciocinio', pericia: 'consciencia', enquadramento: 'você mantém o alvo à vista sem colar', risco: 'ele olha para trás' },
+        { atributo: 'raciocinio', pericia: 'furtividade', enquadramento: 'você some e reaparece', risco: 'perde o alvo de vista' },
+        { atributo: 'raciocinio', pericia: 'manha', enquadramento: 'você antecipa para onde ele vai', risco: 'chuta errado' }
       ]
     },
     falar_com_animais: {
@@ -345,6 +471,29 @@ const Lexico = {
       .replace(/\s+/g, ' ').trim();
   },
 
+  /* Casamento por PALAVRA INTEIRA, e não por substring.
+
+     O defeito apareceu na §57, quando a caixa única passou a mandar
+     "Grito:" para o léxico: "rito" está dentro de "grito", e o turno
+     era lido como "Celebrar um Ritae" — rito do Sabbat. Casos iguais
+     estavam por toda parte: "mordaça" dentro de "amordaçado", "ir"
+     dentro de "sair", "ler" dentro de "valer".
+
+     A checagem certa já existia neste arquivo: `regexDeTermo`, que
+     marca os termos na tela. O que havia era uma DISCORDÂNCIA — o
+     matcher aceitava o que o marcador depois não pintava, e ninguém
+     via porque o pedaço casado não aparecia grifado.
+
+     Agora os dois usam a mesma regra. */
+  contemTermo(normalizado, termoNormalizado) {
+    if (!termoNormalizado) return false;
+    const corpo = termoNormalizado
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\s+/g, '\\s+');
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${corpo}(?=[^\\p{L}\\p{N}]|$)`, 'u')
+      .test(normalizado);
+  },
+
   interpretar(texto, modo) {
     const n = this.normalizar(texto);
     if (!n) return { intencao: null, confianca: 0, termos: [] };
@@ -355,14 +504,14 @@ const Lexico = {
       for (const frase of acao.frases) {
         const f = this.normalizar(frase);
         if (!f) continue;
-        if (n.includes(f)) { peso += f.split(' ').length * 2 + f.length / 8; termos.push(frase); }
+        if (this.contemTermo(n, f)) { peso += f.split(' ').length * 2 + f.length / 8; termos.push(frase); }
       }
       if (peso > 0) marcados.push({ id, acao, peso, termos });
     }
 
     for (const h of Object.values(HABILIDADES).flatMap(g => g.lista)) {
       const hn = this.normalizar(h.nome);
-      if (n.includes(hn)) {
+      if (this.contemTermo(n, hn)) {
         const alvo = marcados.find(m => m.acao.rotas.some(r => r.pericia === h.id));
         if (alvo) { alvo.peso += 3; alvo.termos.push(h.nome); }
       }
@@ -371,14 +520,14 @@ const Lexico = {
     for (const [did, d] of Object.entries(DISCIPLINAS)) {
       for (const nivel of Object.values(d.poderes || {})) {
         for (const p of nivel) {
-          if (n.includes(this.normalizar(p.nome))) {
+          if (this.contemTermo(n, this.normalizar(p.nome))) {
             marcados.push({ id: 'poder:' + did + ':' + p.nome, peso: 12,
               termos: [p.nome], poder: { disciplina: did, nome: p.nome },
               acao: { nome: p.nome, exige: [], rotas: [], dominio: null } });
           }
         }
       }
-      if (n.includes(this.normalizar(d.nome))) {
+      if (this.contemTermo(n, this.normalizar(d.nome))) {
         marcados.push({ id: 'disciplina:' + did, peso: 8, termos: [d.nome],
           disciplina: did, acao: { nome: d.nome, exige: [], rotas: [], dominio: null } });
       }

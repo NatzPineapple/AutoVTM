@@ -136,7 +136,11 @@ const Cadeia = {
     return {
       possivel: c.possivel,
       leitura: { intencao: c.intencao, acao: c.acao,
-                 confianca: saida.plano.confianca, termos: saida.plano.termos || [] },
+                 confianca: saida.plano.confianca, termos: saida.plano.termos || [],
+                 /* §57 — a saída crua do extrator. A mesa lê dela o
+                    `speech`, para o caso de o jogador ter escrito a fala
+                    sem aspas. Vem null no caminho do léxico. */
+                 bruta: saida.plano.bruta || null },
       acao: c.acao,
       bloqueios: c.bloqueios,
       avisos: c.avisos,

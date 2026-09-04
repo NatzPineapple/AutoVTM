@@ -154,13 +154,12 @@ const Arbitro = {
   },
 
   PODER_EXIGE: {
-    'Sussurro Sedutor':   { capacidades: ['fala'], alcance: 'voz',
+    'Voz Irresistível':   { capacidades: ['fala'], alcance: 'voz',
                             nota: 'Dispensa contato visual: basta a voz, mesmo por telefone.' },
-    'Chamado Silencioso': { capacidades: [], alcance: 'ilimitado' },
-    'Convocação':         { capacidades: [], alcance: 'ilimitado' },
-    'Terror':             { capacidades: ['visao'], alcance: 'ambiente' },
-    'Admiração':          { capacidades: ['visao'], alcance: 'ambiente' },
-    'Manto das Sombras':  { capacidades: [], alcance: 'toque' },
+    'Convocar':           { capacidades: [], alcance: 'ilimitado' },
+    'Olhar Aterrorizante':{ capacidades: ['visao'], alcance: 'ambiente' },
+    'Fascínio':           { capacidades: ['visao'], alcance: 'ambiente' },
+    'Manto de Sombras':   { capacidades: [], alcance: 'toque' },
     'Sentir a Besta':     { capacidades: [], alcance: 'ambiente' },
     'Toque do Espírito':  { capacidades: ['maos'], alcance: 'toque' },
     'Clarividência':      { capacidades: ['mente'], alcance: 'ilimitado' },
@@ -177,14 +176,32 @@ const Arbitro = {
                             formula: (nivel) => nivel * 2 },
     'Precognição Fatal':  { capacidades: ['sangue'], alcance: 'visao',
                             nota: 'Precisa ver ou ouvir o alvo. Não funciona em vampiros.' },
-    'Garras da Fera':     { capacidades: ['maos', 'corpo'], alcance: 'toque' },
+    'Armas Ferais':       { capacidades: ['maos', 'corpo'], alcance: 'toque' },
     'Forma de Névoa':     { capacidades: ['corpo'], alcance: 'toque' },
-    'Poder Letal':        { capacidades: ['maos', 'corpo'], alcance: 'toque' }
+    'Corpo Letal':        { capacidades: ['maos', 'corpo'], alcance: 'toque' }
   },
 
-  AMALGAMAS: {
-    'Braços de Arimã':   { disciplina: 'potencia', nivel: 2 },
-    'Precognição Fatal': { disciplina: 'auspicios', nivel: 2 }
+  /* AMÁLGAMAS SÃO DERIVADAS DO DADO.  (§64)
+
+     Isto era uma lista escrita à mão com DUAS entradas, ao lado de um
+     `data-disciplinas.js` que anota a amálgama no próprio poder. Duas
+     listas para o mesmo fato, e elas discordavam: o livro tem oito
+     amálgamas só no básico, e o motor conhecia duas.
+
+     Agora há uma fonte só. Poder novo com `amalgama` no dado passa a
+     valer sem ninguém lembrar de mexer aqui — que é o erro que esta
+     função existe para não deixar acontecer de novo. */
+  get AMALGAMAS() {
+    if (this._amalgamas) return this._amalgamas;
+    const mapa = {};
+    for (const d of Object.values(DISCIPLINAS)) {
+      for (const nivel of Object.values(d.poderes || {})) {
+        for (const poder of nivel) {
+          if (poder.amalgama) mapa[poder.nome] = poder.amalgama;
+        }
+      }
+    }
+    return (this._amalgamas = mapa);
   },
 
   MODIFICADORES: [
@@ -418,6 +435,9 @@ const Arbitro = {
       return Object.assign({}, pf, {
         atributo: r.atributo, pericia: r.pericia, atributo2: r.atributo2,
         enquadramento: r.enquadramento, risco: r.risco,
+        /* §63 (A4): algumas rotas custam Dificuldade a mais — o caminho
+           eletrônico do arrombamento é +1 (básico, pág. 410). */
+        dificuldadeExtra: r.dificuldade || 0, nota: r.nota || '',
         piscina: pf.total, viavel: pf.total > 0
       });
     }).filter(r => r.viavel);
@@ -498,9 +518,14 @@ const Arbitro = {
     }
     const bonusPS = this.bonusDePotencia(ficha, disciplina);
     if (bonusPS) mods.push(bonusPS);
+    const bonusRes = this.bonusDeRessonancia(ficha, disciplina);
+    if (bonusRes) mods.push(bonusRes);
 
     const soma = mods.reduce((a, m) => a + m.dados, 0);
-    const total = Math.max(0, base.total + pen.dados + soma);
+    /* Piso de 1 dado (§63, A1). Era Math.max(0, ...), e zero fazia a rota ser
+       descartada por `viavel` — a ação nem era oferecida. O livro manda rolar
+       o dado (básico, págs. 119 e 120). */
+    const total = Math.max(1, base.total + pen.dados + soma);
     return {
       base: base.total, especializacao: base.especializacao,
       modificadores: mods, penalidadeEstado: pen.dados, causasEstado: pen.causas,
@@ -509,6 +534,32 @@ const Arbitro = {
         ? `${nomeAtributo(rota.atributo)} + ${nomeHabilidade(rota.pericia)}`
         : `${nomeAtributo(rota.atributo)} + ${nomeAtributo(rota.atributo2)}`
     };
+  },
+
+  /* ----------------------------------------------------------
+     O DADO DA RESSONÂNCIA  (§67)
+
+     Básico, pág. 228: "Beber sangue com temperamento intenso
+     confere ao bebedor um dado adicional em paradas de dados
+     relacionadas a uma Disciplina que corresponda àquela
+     Ressonância."
+
+     Duas travas, e as duas são do livro:
+       — só vale se a Disciplina em uso for uma das DUAS que
+         aquela Ressonância alimenta (tabela da pág. 227);
+       — só vale com temperamento INTENSO ou AGUDO. Efêmero não
+         dá dado nenhum, e a maioria das vítimas é efêmera.
+
+     Antes da §67 a Ressonância era um nome no rodapé da ficha:
+     com ou sem ela, a parada dava o mesmo número.
+     ---------------------------------------------------------- */
+  bonusDeRessonancia(ficha, disciplina) {
+    if (!disciplina || !ficha || typeof Ressonancia === 'undefined') return null;
+    const r = Ressonancia.por(ficha.ressonancia);
+    if (!r || !r.disciplinas.includes(disciplina)) return null;
+    const t = Ressonancia.temperamentoPor(ficha.temperamento);
+    if (!t || !t.dados) return null;
+    return { nome: `Ressonância ${r.nome} (${t.nome})`, dados: t.dados, tipo: 'ressonancia' };
   },
 
   bonusDePotencia(ficha, disciplina) {

@@ -9,8 +9,18 @@ const Dados = {
     return piscinaDaFicha(ficha, atributoId, periciaId);
   },
 
+  /* A PARADA MÍNIMA É 1.  (§63, item A1)
+
+     O livro diz duas vezes: "Nenhuma parada de dados pode ser inferior a 1,
+     portanto uma rolagem de uma parada vazia ainda é feita com um dado"
+     (básico, pág. 119), e "Penalidades jamais podem diminuir uma parada para
+     menos de um dado" (pág. 120).
+
+     Rolar zero dado devolvia zero sucesso sempre — o oposto do que o V5 quer.
+     Onde o livro dá ao desesperado um dado, com chance real de sucesso E de
+     falha bestial, o app dizia que não dava. */
   rolar({ piscina, fome = 0, dificuldade = 0, rotulo = '' }) {
-    const total = Math.max(0, piscina | 0);
+    const total = Math.max(1, piscina | 0);
     const nFome = Math.max(0, Math.min(fome | 0, total));
     const nNormais = total - nFome;
     const normais = Array.from({ length: nNormais }, () => this.d10());
@@ -18,25 +28,61 @@ const Dados = {
     return this._apurar({ normais, dadosFome, dificuldade, piscina: total, fome: nFome, rotulo });
   },
 
+  /* ----------------------------------------------------------
+     O RETESTE ACEITA QUALQUER DADO COMUM.  (§63, item A2)
+
+     O livro não restringe o reteste às falhas. Ele diz o contrário,
+     e nomeia o caso:
+
+       "o jogador pode (e deve) optar por rerrolar, gastando, para
+        isso, Força de Vontade, seja para SE LIVRAR DE 0s COMUNS e
+        assim NEUTRALIZAR UM CRÍTICO BESTIAL, ou para transformar
+        uma rolagem fracassada em um sucesso"   (básico, pág. 205)
+
+     E o exemplo da pág. 206 mostra Mario rerrolando um 10 junto com
+     duas falhas, de uma vez.
+
+     O que havia aqui filtrava por `< 6` em DOIS lugares: na sugestão
+     (o que é certo, e continua) e no próprio reteste (o que travava).
+     Pior: `podeRetestar` devolvia false quando não havia falha — logo
+     a rolagem que MAIS precisa do reteste, o crítico bestial sem
+     falhas, era a única que não podia ser retestada.
+
+     Dados de Fome continuam fora, e essa trava é do livro (pág. 206):
+     `r.normais` é o único vetor que este código toca.
+     ---------------------------------------------------------- */
+
+  /* A sugestão da interface. Falhas primeiro, da pior para a melhor —
+     é o caso comum. Mas num crítico bestial não há o que ganhar
+     rerrolando falha: o que se quer é quebrar o par de 10 que fez o
+     crítico, e para isso o alvo é o 10 COMUM. */
   dadosRetestaveis(r) {
-    return r.normais
-      .map((v, i) => ({ i, v }))
-      .filter(x => x.v < 6)
-      .sort((a, b) => a.v - b.v)
-      .slice(0, 3)
-      .map(x => x.i);
+    const porValor = (a, b) => a.v - b.v;
+    const comIndice = r.normais.map((v, i) => ({ i, v }));
+
+    /* `tipo: 'perigo'` é o Crítico Bestial — o id interno guarda o nome
+       antigo ("Sucesso em Perigo"), que a §58 aposentou na prosa. */
+    if (r.tipo === 'perigo') {
+      const dezes = comIndice.filter(x => x.v === 10);
+      if (dezes.length) return dezes.slice(0, 3).map(x => x.i);
+    }
+    return comIndice.filter(x => x.v < 6).sort(porValor).slice(0, 3).map(x => x.i);
   },
 
+  /* Pode retestar se ainda não retestou e há dado comum na mesa.
+     Não depende de haver falha: ver o comentário acima. */
   podeRetestar(r) {
-    return !r.retestado && this.dadosRetestaveis(r).length > 0;
+    return !r.retestado && r.normais.length > 0;
   },
 
   retestarVontade(r, indices) {
+    /* Sem escolha explícita, cai na sugestão. Com escolha, o único
+       filtro é existir: o jogador manda no próprio ponto de Vontade. */
     const validos = (indices && indices.length ? indices : this.dadosRetestaveis(r))
-      .filter(i => i >= 0 && i < r.normais.length && r.normais[i] < 6);
-    const alvo = validos.slice(0, 3);
+      .filter(i => Number.isInteger(i) && i >= 0 && i < r.normais.length);
+    const alvo = [...new Set(validos)].slice(0, 3);
     const normais = r.normais.slice();
-    alvo.forEach(i => { if (i >= 0 && i < normais.length) normais[i] = this.d10(); });
+    alvo.forEach(i => { normais[i] = this.d10(); });
     const novo = this._apurar({
       normais, dadosFome: r.dadosFome.slice(),
       dificuldade: r.dificuldade, piscina: r.piscina, fome: r.fome, rotulo: r.rotulo

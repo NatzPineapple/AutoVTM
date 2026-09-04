@@ -146,15 +146,19 @@ const Escudo = {
     5 : { surto: '+4 dados', recuperada: '3 superficiais', bonusDisciplina: '+2 dados',
          rerrolagem: 'Até Nível 3', perdicao: 4,
          penalidade: 'Animal e ensacado não saciam; sacia 1 a menos por humano; precisa drenar e matar para descer abaixo de 2' },
+    /* PS 6 e 7 dividem a MESMA célula no livro (básico, pág. 216), e ela diz
+       'sacia 2 a menos'. Estava 1 aqui: a célula é mesclada entre duas linhas,
+       e foi lida na altura da linha de baixo. Corrigido na §59. */
     6 : { surto: '+4 dados', recuperada: '3 superficiais', bonusDisciplina: '+3 dados',
          rerrolagem: 'Até Nível 3', perdicao: 4,
-         penalidade: 'Animal e ensacado não saciam; sacia 1 a menos por humano; precisa drenar e matar para descer abaixo de 2' },
+         penalidade: 'Animal e ensacado não saciam; sacia 2 a menos por humano; precisa drenar e matar para descer abaixo de 2' },
     7 : { surto: '+5 dados', recuperada: '3 superficiais', bonusDisciplina: '+3 dados',
          rerrolagem: 'Até Nível 4', perdicao: 5,
          penalidade: 'Animal e ensacado não saciam; sacia 2 a menos por humano; precisa drenar e matar para descer abaixo de 2' },
+    /* Mesmo caso: PS 8 e 9 dividem a célula, e ela diz 'abaixo de 3'. §59. */
     8 : { surto: '+5 dados', recuperada: '4 superficiais', bonusDisciplina: '+4 dados',
          rerrolagem: 'Até Nível 4', perdicao: 5,
-         penalidade: 'Animal e ensacado não saciam; sacia 2 a menos por humano; precisa drenar e matar para descer abaixo de 2' },
+         penalidade: 'Animal e ensacado não saciam; sacia 2 a menos por humano; precisa drenar e matar para descer abaixo de 3' },
     9 : { surto: '+6 dados', recuperada: '4 superficiais', bonusDisciplina: '+4 dados',
          rerrolagem: 'Até Nível 5', perdicao: 6,
          penalidade: 'Animal e ensacado não saciam; sacia 2 a menos por humano; precisa drenar e matar para descer abaixo de 3' },
@@ -233,10 +237,15 @@ const Escudo = {
     { substancia: 'Veneno',                        efeito: '−1 em todas as paradas e 1 a 3 de dano Superficial por cena' }
   ],
 
+  /* Os nomes vêm do BÁSICO, pág. 228, e não da tabela do Escudo do
+     Mestre. As duas trazem as mesmas faixas, mas o Escudo traduz
+     "Efêmero" como "Fugaz" e "Agudo" como "Apurada" — e, na mesma
+     página, "Celeridade" como "Rapiz" e "Proteanismo" como
+     "Metamorfose". Onde os dois discordam, vale o básico. (§67) */
   TEMPERAMENTO_ALEATORIO: [
-    { faixa: [1, 5],  temperamento: 'Balanceado', nota: 'ressonância insignificante' },
-    { faixa: [6, 8],  temperamento: 'Fugaz' },
-    { faixa: [9, 10], temperamento: 'Intensa', nota: 'role de novo: 1-8 Intensa, 9-10 Apurada' }
+    { faixa: [1, 5],  temperamento: 'Equilibrada', id: 'nenhum', nota: 'ressonância insignificante' },
+    { faixa: [6, 8],  temperamento: 'Efêmero', id: 'efemero' },
+    { faixa: [9, 10], temperamento: 'Intenso', id: 'intenso', nota: 'role de novo: 1-8 Intenso, 9-10 Agudo' }
   ],
 
   RESSONANCIA_ALEATORIA: [

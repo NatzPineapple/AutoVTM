@@ -789,8 +789,15 @@ function painelAlma() {
       <span class="fita" style="background:linear-gradient(90deg,${r.cor},transparent)"></span>
       <div class="cla-nome">${esc(r.nome)}</div>
       <p class="quiet" style="margin:.3rem 0">${esc(r.humor)}</p>
-      <div class="cla-discs">Alimenta: ${esc(r.disc)}</div>
+      <div class="cla-discs">Alimenta: ${esc(Ressonancia.disciplinasDe(r.id))}</div>
     </div>`).join('');
+
+  /* O TEMPERAMENTO é o que decide se a Ressonância vale dado (pág. 228).
+     Sem este campo a regra não existia — §67. */
+  const temp = TEMPERAMENTOS.map(t => `
+    <span class="chip ${S.temperamento === t.id || (!S.temperamento && t.id === 'nenhum') ? 'on' : ''}"
+      data-acao="temperamento" data-id="${t.id}" title="${esc(t.desc)}">${esc(t.nome)}${
+      t.dados ? ` · +${t.dados} dado` : ''}</span>`).join('');
 
   return `
   <div class="painel-cabeca">
@@ -827,6 +834,13 @@ function painelAlma() {
   <p class="quiet" style="margin-top:0">O sabor de sangue que sua Besta procura. Determina quais Disciplinas
   ficam mais fáceis de alimentar.</p>
   <div class="grade g3">${ress}</div>
+
+  <h4 style="margin:1rem 0 .4rem">Temperamento</h4>
+  <p class="quiet" style="margin-top:0">É ele que decide se a Ressonância vale alguma coisa no dado
+  (básico, pág. 228). <b>Efêmero não dá nada</b> — e é o caso da maioria das vítimas. Intenso e agudo
+  dão <b>um dado</b> nas paradas das Disciplinas que aquela Ressonância alimenta; o agudo ainda traz
+  uma Discrasia.</p>
+  <div class="chips">${temp}</div>
 
   <hr class="ornamento">
   <h3 class="sub" style="margin-bottom:.8rem">Registro</h3>

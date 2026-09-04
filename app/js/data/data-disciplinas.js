@@ -1,289 +1,308 @@
 /* ============================================================
-   VITAE — Disciplinas e poderes (V5 / Livro das Disciplinas)
-   Cada nivel lista os poderes disponiveis para escolha.
+   VITÆ — Disciplinas e poderes
+
+   REESCRITO NA §64, PÁGINA POR PÁGINA, contra o manual básico
+   (págs. 244–288). A lista anterior tinha 126 poderes e batia com
+   o livro em cerca de um terço: nomes plausíveis nos lugares
+   errados, poderes que não existem, e poderes do livro ausentes.
+   Animalismo tinha ONZE poderes e só um deles — Sentir a Besta —
+   estava certo.
+
+   Regra desta lista, e ela é dura:
+
+     UM PODER SÓ ENTRA AQUI SE ESTIVER NA PÁGINA.
+
+   Cada disciplina traz a página de origem. Quem for acrescentar
+   poder de suplemento, marque a fonte junto — o que não tem fonte
+   não deveria estar aqui.
+
+   Oblívio é a exceção declarada: não existe no básico, e vem do
+   `Livros/Regras/Oblivio.pdf`, que pela tabela de autoridade de
+   `docs/regras.md` manda na matéria dele. Está por conferir.
+
+   AMÁLGAMAS estão anotadas no poder E em `Arbitro.AMALGAMAS` —
+   as duas listas precisam concordar, e há teste que confere.
    ============================================================ */
 
 const DISCIPLINAS = {
   animalismo: {
-    nome: 'Animalismo', simbolo: '🜛', cor: '#6b7a3f',
+    nome: 'Animalismo', simbolo: '🜛', cor: '#6b7a3f', pagina: '244–247',
     resumo: 'Comando sobre bestas e sobre a Besta alheia. O sangue reconhece o sangue selvagem.',
     poderes: {
       1: [
-        { nome: 'Sussurro da Vespa', desc: 'Chame um enxame de criaturas da região. Elas obedecem grosseiramente.' },
-        { nome: 'Sentir a Besta', desc: 'Perceba raiva, fome sobrenatural e Besta desperta em quem estiver por perto.' }
+        { nome: 'Famulus Enlaçado', desc: 'Enlace um animal e transforme-o em famulus: vínculo mental, ordens simples, e ele defende você. Um por vampiro.' },
+        { nome: 'Sentir a Besta', desc: 'Sinta a Besta em mortais, vampiros e outros seres — hostilidade, Fome, e se há algo sobrenatural ali.' }
       ],
       2: [
-        { nome: 'Companheiro Feral', desc: 'Um animal se torna aliado leal e permanente.' },
-        { nome: 'Atiçar a Fera Adormecida', desc: 'Desperte a Besta de outro Membro, empurrando-o ao frenesi.' }
+        { nome: 'Sussurros Selvagens', desc: 'Comunicação em mão dupla com animais, e convocação de um tipo de animal que esteja presente.' }
       ],
       3: [
-        { nome: 'Cavalgar a Onda Selvagem', desc: 'Projete sua mente para dentro de um animal e o controle à distância.' },
-        { nome: 'Aquietar a Besta', desc: 'Sufoque a Besta de alguém: nada de frenesi, nada de fúria, nada de medo.' },
-        { nome: 'Latido Ancestral', desc: 'Um grito primal que congela mortais e animais de terror.' }
+        { nome: 'Enxame Não Vivo', desc: 'Estenda o Animalismo a enxames de insetos, tratando o enxame como uma criatura. Amálgama: Ofuscação 2.',
+          amalgama: { disciplina: 'ofuscacao', nivel: 2 } },
+        { nome: 'Subjugar a Besta', desc: 'Encare o alvo e adormeça a Besta dele: mortais ficam apáticos; vampiros não podem Surto de Sangue e ficam imunes a crítico bestial.' },
+        { nome: 'Suculência Animal', desc: 'Sangue animal sacia 1 nível a mais, e consumir o próprio famulus sacia 4 de Fome.' }
       ],
       4: [
-        { nome: 'Súplica de Sangue', desc: 'Chame animais de longe; eles vêm e se oferecem para você beber.' },
-        { nome: 'Súbito Frenesi', desc: 'Force outro vampiro ao frenesi de fome ou fúria, sem chance de resistir facilmente.' }
+        { nome: 'Comunhão de Espíritos', desc: 'Transfira sua mente para o corpo de um animal e o controle livremente. Seu corpo fica imóvel, como em Torpor.' }
       ],
       5: [
-        { nome: 'Animais Ancestrais', desc: 'Sua manada ganha inteligência e obedece a ordens complexas.' },
-        { nome: 'Coabitação', desc: 'Aloje a alma de outro vampiro dentro de um animal — indefinidamente.' }
+        { nome: 'Controle Animal', desc: 'Comande bandos inteiros como extensões do próprio corpo. Animais morrem às dúzias para apaziguar você.' },
+        { nome: 'Expulsar a Besta', desc: 'Projete sua Besta para um alvo próximo: ele entra no frenesi no seu lugar.' }
       ]
     }
   },
 
   auspicios: {
-    nome: 'Auspícios', simbolo: '👁', cor: '#7a6aa8',
+    nome: 'Auspícios', simbolo: '👁', cor: '#7a6aa8', pagina: '248–251',
     resumo: 'Sentidos afiados até a dor. Ver o que ninguém deveria ver — e não conseguir desver.',
     poderes: {
       1: [
-        { nome: 'Sentidos da Fera', desc: 'Todos os sentidos elevados. Adicione dados a percepção e a defesas de emboscada.' },
-        { nome: 'Sentir o Invisível', desc: 'Detecte o sobrenatural ativo ao seu redor: magia, Disciplinas, presenças ocultas.' }
+        { nome: 'Sentidos Aguçados', desc: 'Ver no escuro total, ouvir ultrassom, farejar medo. Some o valor de Auspícios às rolagens de percepção.' },
+        { nome: 'Sentir o Invisível', desc: 'Perceba o que se esconde à vista: Ofuscação, fantasmas, feitiços e rituais inativos.' }
       ],
       2: [
-        { nome: 'Premonição', desc: 'Lampejos do que está por vir. O Narrador lhe entrega um aviso — cifrado.' }
+        { nome: 'Premonição', desc: 'Arrepios, intuições e visões curtas que tiram você do perigo ou revelam o que estava escondido.' }
       ],
       3: [
-        { nome: 'Toque do Espírito', desc: 'Toque um objeto e leia o eco emocional das mãos que passaram por ele.' },
-        { nome: 'Compartilhar Sentidos', desc: 'Enxergue e ouça através dos sentidos de outra pessoa, à distância.' }
+        { nome: 'Compartilhar os Sentidos', desc: 'Estenda a mente e sinta o ambiente pelos sentidos de outra pessoa.' },
+        { nome: 'Perscrutar a Alma', desc: 'Leia a aura: estado emocional, Ressonância, se é sobrenatural, se está sob Feitiçaria, se cometeu Diablerie no último ano.' }
       ],
       4: [
-        { nome: 'Sondagem Espiritual', desc: 'Leia superficialmente a mente do alvo: emoções, intenções, mentiras.' }
+        { nome: 'Toque do Espírito', desc: 'Toque um objeto ou lugar e sinta o resíduo de quem passou por ali — quem, o quê e em que circunstância.' }
       ],
       5: [
-        { nome: 'Clarividência', desc: 'Projete seus sentidos para qualquer lugar que você conheça bem.' },
-        { nome: 'Possessão', desc: 'Expulse a alma de um mortal e habite o corpo dele.' },
-        { nome: 'Telepatia', desc: 'Converse mente a mente e vasculhe pensamentos em profundidade.' }
+        { nome: 'Clarividência', desc: 'Em transe, reúna informação de uma área inteira: movimentação, boatos, o que fugiu do comum.' },
+        { nome: 'Possessão', desc: 'Domine a vontade de um mortal e ocupe o corpo dele por completo. Amálgama: Dominação 3.',
+          amalgama: { disciplina: 'dominacao', nivel: 3 } },
+        { nome: 'Telepatia', desc: 'Leia pensamentos superficiais e projete os seus. Contra vampiro involuntário, custa Força de Vontade.' }
       ]
     }
   },
 
   celeridade: {
-    nome: 'Celeridade', simbolo: '⚡', cor: '#c9a227',
-    resumo: 'O tempo dos vivos é lento demais. Você se move nos intervalos entre os batimentos deles.',
+    nome: 'Celeridade', simbolo: '⚡', cor: '#c9a227', pagina: '252–254',
+    resumo: 'Velocidade sobrenatural. Você chega antes de a frase terminar.',
     poderes: {
       1: [
-        { nome: 'Graça Felina', desc: 'Sucesso automático em qualquer teste de equilíbrio.' },
-        { nome: 'Reflexos Rápidos', desc: 'Some dados à sua defesa e à iniciativa.' }
+        { nome: 'Graça Felina', desc: 'Equilíbrio perfeito: passa automaticamente em qualquer rolagem de Destreza ou Atletismo para se equilibrar.' },
+        { nome: 'Reflexos Rápidos', desc: 'Sem penalidade de defesa por falta de cobertura contra armas de fogo, e uma ação menor de graça por turno.' }
       ],
       2: [
-        { nome: 'Velocidade Sobrenatural', desc: 'Corra em disparada impossível — vultos e rastros.' },
-        { nome: 'Reflexos Aprimorados', desc: 'Reaja antes de qualquer mortal conseguir processar.' }
+        { nome: 'Rapidez', desc: 'Some o valor de Celeridade às paradas de Destreza fora de combate, e uma vez por turno à defesa com Destreza + Atletismo.' }
       ],
       3: [
-        { nome: 'Golpe do Vento', desc: 'Ataque múltiplas vezes em um único turno.' },
-        { nome: 'Passo Sopro', desc: 'Cruze uma distância enorme antes que alguém pisque.' }
+        { nome: 'Piscadela', desc: 'Cubra até 50 metros em linha reta e ainda aja no mesmo turno. Para quem olha, parece teleporte.' },
+        { nome: 'Travessia', desc: 'Corra ou escale qualquer superfície em alta velocidade, inclusive vertical e líquida.' }
       ],
       4: [
-        { nome: 'Enxame de Golpes', desc: 'Uma tempestade de ataques contra vários alvos.' },
-        { nome: 'Fuga Instintiva', desc: 'Escape reflexivamente de qualquer ataque que você veja chegar.' }
+        { nome: 'Elegância Direto da Fonte', desc: 'Quem beber do seu Sangue ganha metade da sua Celeridade por uma noite.' },
+        { nome: 'Mira Infalível', desc: 'O mundo desacelera: o ataque à distância é feito contra Dificuldade 1, sem defesa. Amálgama: Auspícios 2.',
+          amalgama: { disciplina: 'auspicios', nivel: 2 } }
       ],
       5: [
-        { nome: 'Vento Repentino', desc: 'Movimente-se tão rápido que testemunhas nem registram sua passagem.' },
-        { nome: 'Aparar Balas', desc: 'Desvie ou intercepte projéteis com as mãos.' }
+        { nome: 'Fração de Segundo', desc: 'Reaja antes do fato: substitua a narração do Narrador dentro do razoável — a porta que fecha, a emboscada que começou.' },
+        { nome: 'Golpe Relâmpago', desc: 'Ataque com Briga ou Armas Brancas antes que o oponente possa se defender: Dificuldade 1, sem esquiva.' }
       ]
     }
   },
 
   dominacao: {
-    nome: 'Dominação', simbolo: '☉', cor: '#a8863c',
-    resumo: 'A voz que a vítima confunde com a própria vontade. Olhe nos olhos e assine por ela.',
+    nome: 'Dominação', simbolo: '☉', cor: '#a8863c', pagina: '254–257',
+    resumo: 'A vontade do outro como instrumento. Exige o olhar, e a voz que a vítima entenda.',
     poderes: {
       1: [
-        { nome: 'Fascinação', desc: 'Uma ordem de uma palavra, obedecida no ato.' },
-        { nome: 'Coagir', desc: 'Uma ordem curta que o alvo executa sem questionar.' }
+        { nome: 'Compelir', desc: 'Uma ordem curta, de uma frase, cumprida ao pé da letra em um único turno.' },
+        { nome: 'Nublar Memória', desc: '"Esqueça!" — a vítima perde os últimos minutos. O bastante para mascarar uma alimentação.' }
       ],
       2: [
-        { nome: 'Domínio Mesmerizante', desc: 'Implante uma sugestão complexa que o alvo cumprirá mais tarde.' },
-        { nome: 'Sussurro Sedutor', desc: 'Comande pela voz apenas, sem contato visual — na multidão ou pelo telefone.' }
+        { nome: 'Dementação', desc: 'Conversa casual que agita os demônios internos da vítima até afogar a razão dela. Amálgama: Ofuscação 2.',
+          amalgama: { disciplina: 'ofuscacao', nivel: 2 } },
+        { nome: 'Mesmerismo', desc: 'Comandos complexos, executados no melhor da capacidade da vítima. Nada de condicional.' }
       ],
       3: [
-        { nome: 'A Névoa do Esquecimento', desc: 'Apague ou reescreva memórias recentes do alvo.' },
-        { nome: 'Submissão', desc: 'Domine outro vampiro apesar da diferença de geração.' }
+        { nome: 'Diretriz Submersa', desc: 'Sugestão pós-hipnótica que dorme até um gatilho: uma data, uma pessoa, uma frase. Nunca expira.' },
+        { nome: 'A Mente Esquecida', desc: 'Reescreva fragmentos inteiros da memória da vítima, que os aceita como seus.' }
       ],
       4: [
-        { nome: 'Condicionamento', desc: 'Moldar o alvo até que resistir a você seja quase impossível.' },
-        { nome: 'Alterar Lembranças', desc: 'Reconstrua um passado inteiro dentro da cabeça de alguém.' }
+        { nome: 'Racionalizar', desc: 'A vítima passa a acreditar que tudo o que fez sob Dominação foi decisão dela, e defende o absurdo.' }
       ],
       5: [
-        { nome: 'Passar por Cima', desc: 'Domine uma multidão inteira com uma única ordem.' },
-        { nome: 'Fantoche de Carne', desc: 'Assuma o controle motor completo de um mortal.' }
+        { nome: 'Decreto Terminal', desc: 'Comandos que levam a vítima a se ferir ou morrer passam a ser possíveis — resistidos, mas possíveis.' },
+        { nome: 'Manipulação em Massa', desc: 'Amplifique qualquer outro poder seu para atingir uma multidão. Todos precisam ver seus olhos.' }
       ]
     }
   },
 
   fortitude: {
-    nome: 'Fortitude', simbolo: '🛡', cor: '#7b6a4f',
-    resumo: 'A carne morta que se recusa a ceder. Não é coragem: é teimosia entranhada no osso.',
+    nome: 'Fortitude', simbolo: '🛡', cor: '#7b6a4f', pagina: '257–259',
+    resumo: 'Resistir. Ao golpe, ao fogo, ao encantamento — e continuar de pé como se nada tivesse acontecido.',
     poderes: {
       1: [
-        { nome: 'Resiliência', desc: 'Some sua Fortitude à absorção de dano superficial.' },
-        { nome: 'Inabalável', desc: 'Dados extras para resistir a coerção, terror e Disciplinas mentais.' }
+        { nome: 'Mente Inescrutável', desc: 'Some Fortitude a toda rolagem para resistir a coerção, intimidação, sedução — e a Dominação e Presença.' },
+        { nome: 'Resiliência', desc: 'Some o valor de Fortitude à sua trilha de Vitalidade.' }
       ],
       2: [
-        { nome: 'Escudo de Aço', desc: 'Converta dano agravado em superficial uma vez por cena.' },
-        { nome: 'Obstinado', desc: 'Recupere Força de Vontade ao ser desafiado.' }
+        { nome: 'Feras Tenazes', desc: 'Estenda a Fortitude aos animais que você influencia. Amálgama: Animalismo 1.',
+          amalgama: { disciplina: 'animalismo', nivel: 1 } },
+        { nome: 'Tenacidade', desc: 'Subtraia Fortitude de todo dano Superficial sofrido, antes da divisão pela metade. Nunca reduz a menos de um.' }
       ],
       3: [
-        { nome: 'Fortalecer o Interior', desc: 'Compartilhe sua resistência com um aliado próximo.' },
-        { nome: 'Peles do Fundador', desc: 'Sua pele resiste até a fogo e luz por instantes preciosos.' }
+        { nome: 'Desafio à Perdição', desc: 'Converta dano Agravado em Superficial, até o seu valor de Fortitude. O convertido não cura naquela cena.' },
+        { nome: 'Fortificar a Fachada Interior', desc: 'Proteja a mente do escrutínio sobrenatural: aumenta a Dificuldade de Perscrutar a Alma, Telepatia e afins.' }
       ],
       4: [
-        { nome: 'Alma de Aço', desc: 'Reduza dano agravado de qualquer fonte, inclusive fogo e sol.' },
-        { nome: 'Sangue do Mártir', desc: 'Absorva o golpe destinado a outra pessoa.' }
+        { nome: 'Resistência Direto da Fonte', desc: 'Quem beber do seu Sangue ganha metade da sua Fortitude por uma noite.' }
       ],
       5: [
-        { nome: 'Fúria de Prometeu', desc: 'Continue de pé mesmo quando deveria estar em torpor.' },
-        { nome: 'Carne de Mármore', desc: 'Torne-se praticamente imune a dano físico por uma cena.' }
+        { nome: 'Pele de Mármore', desc: 'Ignore a primeira fonte de dano físico de cada turno, fogo incluído — mas não luz solar.' }
       ]
     }
   },
 
   ofuscacao: {
-    nome: 'Ofuscação', simbolo: '🌑', cor: '#4a4a58',
-    resumo: 'Não é invisibilidade: é a mentira que a mente do observador conta para si mesma.',
+    nome: 'Ofuscação', simbolo: '🌑', cor: '#4a4a58', pagina: '260–263',
+    resumo: 'Não ser visto, não ser lembrado, não ser você. A Disciplina de quem prefere não ter estado ali.',
     poderes: {
       1: [
-        { nome: 'Manto das Sombras', desc: 'Fique imperceptível enquanto não se mover nem falar.' },
-        { nome: 'Presença Silenciosa', desc: 'Passe despercebido mesmo em movimento, desde que ninguém o procure.' }
+        { nome: 'Manto de Sombras', desc: 'Parado e em silêncio, você se mistura ao ambiente. Só detecção mecânica ou sobrenatural o encontra.' },
+        { nome: 'Silêncio da Morte', desc: 'Anula todo som que você produz. Não engana microfone, e só afeta a audição.' }
       ],
       2: [
-        { nome: 'Manto do Desconhecido', desc: 'A imperceptibilidade acompanha você em movimento.' },
-        { nome: 'Rosto Esquecível', desc: 'Ninguém consegue descrever você depois — nem lembrar direito.' }
+        { nome: 'Passagem Invisível', desc: 'Circule por aí funcionalmente invisível, dentro das limitações de Ofuscação.' }
       ],
       3: [
-        { nome: 'Máscara das Mil Faces', desc: 'Assuma um rosto e um corpo comuns, sem identidade fixa.' },
-        { nome: 'Manto Compartilhado', desc: 'Estenda seu véu a companheiros próximos.' }
+        { nome: 'Fantasma na Máquina', desc: 'A Ofuscação passa a valer por meios eletrônicos: câmeras, transmissões e vigilância automatizada.' },
+        { nome: 'Máscara de Mil Faces', desc: 'Em vez de sumir, pareça um estranho qualquer — e interaja normalmente com quem encontrar.' }
       ],
       4: [
-        { nome: 'Rosto Roubado', desc: 'Copie a aparência exata de uma pessoa real.' },
-        { nome: 'Alma Sem Reflexo', desc: 'Torne-se imune a leituras de mente e detecção sobrenatural.' }
+        { nome: 'Desaparecer', desc: 'Ative Manto de Sombras e Passagem Invisível mesmo sendo observado. A memória de quem viu fica nublada.' },
+        { nome: 'Ocultar', desc: 'Esconda um objeto inanimado — porta, carro, casa pequena — e tudo que estiver dentro. Amálgama: Auspícios 3.',
+          amalgama: { disciplina: 'auspicios', nivel: 3 } }
       ],
       5: [
-        { nome: 'Vestir o Rebanho', desc: 'Cubra um grupo inteiro com seu véu.' },
-        { nome: 'Impostor Impecável', desc: 'A imitação é perfeita até para quem convive com o original.' }
+        { nome: 'Disfarce do Impostor', desc: 'Assuma a aparência de um indivíduo específico, depois de estudá-lo. Pré-requisito: Máscara de Mil Faces.' },
+        { nome: 'Ocultar o Grupo', desc: 'Estenda a sua Ofuscação a companheiros voluntários. Se um for revelado, os outros continuam escondidos.' }
       ]
     }
   },
 
   potencia: {
-    nome: 'Potência', simbolo: '✊', cor: '#8e2f2f',
-    resumo: 'Força que rasga porta de aço e crânio com a mesma indiferença.',
+    nome: 'Potência', simbolo: '✊', cor: '#8e2f2f', pagina: '263–265',
+    resumo: 'Força além do que o corpo comporta. A Besta solta pelos punhos.',
     poderes: {
       1: [
-        { nome: 'Poder Letal', desc: 'Seus golpes desarmados causam dano agravado a mortais.' },
-        { nome: 'Salto Sobrenatural', desc: 'Salte alturas e distâncias absurdas.' }
+        { nome: 'Corpo Letal', desc: 'Ataques desarmados causam dano Agravado a mortais, e ignoram um nível de armadura por ponto de Potência.' },
+        { nome: 'Salto Vertiginoso', desc: 'Salte três vezes o seu nível de Potência em metros na vertical, e cinco vezes na horizontal, sem impulso.' }
       ],
       2: [
-        { nome: 'Impulso Selvagem', desc: 'Some sua Potência aos testes de Força por uma cena.' },
-        { nome: 'Punho de Ferro', desc: 'Quebre objetos e ossos sem precisar de teste.' }
+        { nome: 'Poderio', desc: 'Some Potência ao dano desarmado e a feitos de Força, e metade dela ao dano com Armas Brancas.' }
       ],
       3: [
-        { nome: 'Fúria Brutal', desc: 'Dobre o dano de um único golpe devastador.' },
-        { nome: 'Investida', desc: 'Atravesse a cena e derrube o alvo no mesmo movimento.' }
+        { nome: 'Alimentação Brutal', desc: 'O "Beijo Selvagem": drene um humano em segundos, a marteladas. Cada Fome saciada causa um Agravado na vítima.' },
+        { nome: 'Centelha de Fúria', desc: 'Incite fúria e frenesi em espectadores tão facilmente quanto fascinação. Amálgama: Presença 3.',
+          amalgama: { disciplina: 'presenca', nivel: 3 } },
+        { nome: 'Pegada Sobrenatural', desc: 'Crave os dedos em quase qualquer superfície: escale e fique pendurado sem apoio, sem teste.' }
       ],
       4: [
-        { nome: 'Golpe Terrível', desc: 'Um ataque que arranca membros e destrói veículos.' },
-        { nome: 'Desperdício', desc: 'Danifique tudo ao redor com uma explosão de força.' }
+        { nome: 'Força Direto da Fonte', desc: 'Quem beber do seu Sangue ganha metade da sua Potência por uma noite.' }
       ],
       5: [
-        { nome: 'Força Fatal', desc: 'Trate objetos maciços como papel e mortais como insetos.' },
-        { nome: 'Força de Aço', desc: 'Some pontos permanentes de Potência aos testes de Força.' }
+        { nome: 'Punho de Caim', desc: 'Com as mãos vazias, cause dano Agravado a mortais e sobrenaturais: desmembre, perfure, decapite.' },
+        { nome: 'Terremoto', desc: 'Um golpe no chão cria uma onda de choque num raio de cinco metros. Uma vez por cena.' }
       ]
     }
   },
 
   presenca: {
-    nome: 'Presença', simbolo: '❥', cor: '#b8446b',
-    resumo: 'A gravidade do desejo. As pessoas se aproximam sabendo que vão se machucar.',
+    nome: 'Presença', simbolo: '❥', cor: '#b8446b', pagina: '265–268',
+    resumo: 'Atrair ou repelir. A Disciplina que mexe com a emoção, e não com a mente — a vítima sabe, e não se importa.',
     poderes: {
       1: [
-        { nome: 'Admiração', desc: 'Torne-se irresistivelmente simpático a quem estiver ao seu redor.' },
-        { nome: 'Terror', desc: 'Inspire pavor imediato: mortais fogem, vampiros hesitam.' }
+        { nome: 'Amedontrar', desc: 'Some Presença a rolagens de Intimidação. Atacar você exige um teste de Determinação + Autocontrole.' },
+        { nome: 'Fascínio', desc: 'A atenção de todos se volta para você. Some Presença a Persuasão e Performance.' }
       ],
       2: [
-        { nome: 'Presença Fatal', desc: 'Some dados a testes Sociais contra qualquer alvo que o veja.' },
-        { nome: 'Chamado Silencioso', desc: 'Convoque alguém à distância; a pessoa virá sem saber por quê.' }
+        { nome: 'Beijo Indelével', desc: 'O seu Beijo vicia: a vítima fica fortalecida, obcecada, e vem atrás de outra dose.' }
       ],
       3: [
-        { nome: 'Convocação', desc: 'Chame um alvo específico de qualquer distância; ele viajará até você.' },
-        { nome: 'Manto do Predador', desc: 'Sua presença abre caminho: todos se afastam do seu percurso.' }
+        { nome: 'Olhar Aterrorizante', desc: 'Mostre as presas e o rosto predador: mortais fogem, vampiros travam ou entram em Rötschreck.' },
+        { nome: 'Transe', desc: 'Concentre a atração em uma pessoa só. Ela faz o que puder para permanecer nas suas boas graças.' }
       ],
       4: [
-        { nome: 'Espírito Irresistível', desc: 'Todos que o veem tornam-se propensos a obedecer e a proteger você.' },
-        { nome: 'Coração Suspenso', desc: 'Torne alguém obcecado por você por uma noite inteira.' }
+        { nome: 'Convocar', desc: 'Chame para si quem já sofreu Fascínio, Transe ou Majestade, ou provou o seu Sangue. Ele sabe onde você está.' },
+        { nome: 'Voz Irresistível', desc: 'A sua Presença vira canal para Dominação: basta a voz, sem contato visual. Amálgama: Dominação 1.',
+          amalgama: { disciplina: 'dominacao', nivel: 1 } }
       ],
       5: [
-        { nome: 'Majestade', desc: 'Ninguém consegue agir contra você sem gastar Força de Vontade.' },
-        { nome: 'Estrela', desc: 'Torne-se o centro absoluto de qualquer ambiente; ninguém olha para outro lugar.' }
+        { nome: 'Magnetismo de Estrela', desc: 'A Presença passa a afetar quem o vê ao vivo em transmissão ou o ouve por telefone. Gravação não retém.' },
+        { nome: 'Majestade', desc: 'Quem o vir fica incapaz de agir ou falar contra você. Opor-se exige vencer uma disputa, e a liberdade dura turnos.' }
       ]
     }
   },
 
+  /* O livro chama esta Disciplina de PROTEANISMO (pág. 269). O id
+     `metamorfose` fica: ele é interno, aparece em `data-clans.js` e
+     nas fichas gravadas, e trocá-lo custaria mais do que rende.
+     Mesma divisão do `piscina` × "parada de dados" da §58: o
+     identificador fica, o nome segue o livro.
+
+     E "Metamorfose" continua existindo — como o PODER de nível 4. */
   metamorfose: {
-    nome: 'Metamorfose', simbolo: '🐺', cor: '#5b6b3a',
-    resumo: 'A carne lembra que já foi outra coisa. Garras, névoa, terra, bicho.',
+    nome: 'Proteanismo', simbolo: '🐺', cor: '#5b6b3a', pagina: '269–271',
+    resumo: 'A carne que não aceita a própria forma. Garras, névoa, terra e bicho.',
     poderes: {
       1: [
-        { nome: 'Olhos da Fera', desc: 'Enxergue perfeitamente no escuro e intimide com o olhar bestial.' },
-        { nome: 'Peso da Pena', desc: 'Torne-se leve como pluma; quedas não o machucam.' }
+        { nome: 'Olhos da Besta', desc: 'Enxergue na ausência total de luz. Os olhos ficam inumanos: +2 em Intimidação contra mortais.' },
+        { nome: 'Peso Pena', desc: 'Reduza sua massa efetiva: evite sensores de pressão e dano de queda, colisão e impacto.' }
       ],
       2: [
-        { nome: 'Garras da Fera', desc: 'Garras que causam dano agravado até a outros vampiros.' },
-        { nome: 'Terra Acolhedora', desc: 'Afunde na terra para dormir protegido do sol.' }
+        { nome: 'Armas Ferais', desc: 'Unhas viram garras e presas viram adagas: arma leve e perfurante, +2 de dano, sem penalidade de ataque localizado.' }
       ],
       3: [
-        { nome: 'Forma de Fera', desc: 'Transforme-se em lobo, morcego ou outro animal predador.' },
-        { nome: 'Sangue Ferido', desc: 'Redistribua ferimentos pelo corpo e continue funcional.' }
+        { nome: 'Fusão com a Terra', desc: 'Afunde no solo natural e volte a emergir na noite seguinte. Não funciona sobre concreto ou asfalto.' },
+        { nome: 'Mudança de Forma', desc: 'Assuma a forma de um animal de massa parecida — geralmente lobo, felino ou cobra grande.' }
       ],
       4: [
-        { nome: 'Forma de Névoa', desc: 'Vire vapor: atravesse frestas, ignore ataques físicos.' },
-        { nome: 'Metamorfose', desc: 'Remodele o próprio corpo em qualquer forma humana.' }
+        { nome: 'Metamorfose', desc: 'Uma forma animal a mais, agora podendo mudar de tamanho: morcego, rato, inseto enorme, cobra. Pré-requisito: Mudança de Forma.' }
       ],
       5: [
-        { nome: 'A Forma Sem Nome', desc: 'Torne-se um enxame ou uma massa amorfa de matéria viva.' },
-        { nome: 'Carne Mutável', desc: 'Molde carne alheia como se fosse sua — uma vez por noite.' }
+        { nome: 'Coração Vagante', desc: 'O coração solta-se e passeia pelo peito: estacar você fica quase impossível, e dá para se livrar da estaca.' },
+        { nome: 'Forma de Névoa', desc: 'Vire uma nuvem de névoa, intocável exceto por fogo, luz solar e ataque sobrenatural.' }
       ]
     }
   },
 
   feiticaria: {
-    nome: 'Feitiçaria do Sangue', simbolo: '⛧', cor: '#8b2942',
-    resumo: 'Transformar Vitae em fórmula. Tremere e Banu Haqim escrevem em veias.',
+    nome: 'Feitiçaria de Sangue', simbolo: '⛧', cor: '#8b2942', pagina: '271–274',
     ritual: true,
+    resumo: 'Subjugar o próprio Sangue. Nenhum mortal usaria magia deste modo. Destrava Rituais até o seu nível.',
     poderes: {
       1: [
-        { nome: 'Corrupção do Sangue', desc: 'Apodreça o sangue de um alvo à distância, causando dano.' },
-        { nome: 'Vermes de Sangue', desc: 'Transforme uma poça de sangue em vermes vorazes.' }
+        { nome: 'Um Gosto por Sangue', desc: 'Prove uma gota e saiba Ressonância, se é mortal ou vampiro, a Potência de Sangue e se houve Diablerie no último ano.' },
+        { nome: 'Vitae Corrosivo', desc: 'Torne o próprio Vitae corrosivo a matéria morta: corrói cerca de 35 cm por Checagem de Sangue.' }
       ],
       2: [
-        { nome: 'Extinguir a Vitae', desc: 'Queime a Vitae de outro vampiro, aumentando a Fome dele.' },
-        { nome: 'Roubo de Vitae', desc: 'Puxe sangue de um alvo sem tocá-lo.' }
+        { nome: 'Extinguir Vitae', desc: 'Coagule o Sangue de outro vampiro à vista: a Fome dele sobe um, ou dois num crítico.' }
       ],
       3: [
-        { nome: 'Sangue Escaldante', desc: 'Faça o sangue da vítima ferver dentro das veias.' },
-        { nome: 'Chamado do Sangue', desc: 'Encontre qualquer pessoa de quem você já bebeu.' }
+        { nome: 'Picada de Escorpião', desc: 'Transmute o Sangue em veneno paralisante. Incapacita mortais; em vampiros, atrapalha.' },
+        { nome: 'Sangue Potente', desc: 'Aumente a própria Potência de Sangue em um por uma cena — e exceda o limite da geração enquanto durar.' }
       ],
       4: [
-        { nome: 'Ferver o Sangue', desc: 'Provoque hemorragia devastadora com um gesto.' },
-        { nome: 'Sangue Idêntico', desc: 'Disfarce a assinatura do seu sangue como a de outro.' }
+        { nome: 'Roubo de Vitae', desc: 'Abra uma artéria à distância e beba a torrente do outro lado do aposento. Não deixa traço ao terminar.' }
       ],
       5: [
-        { nome: 'Rapina de Baal', desc: 'Explosão de sangue que fere todos ao redor.' },
-        { nome: 'Cauterizar a Ferida', desc: 'Impeça permanentemente que um alvo se cure.' }
+        { nome: 'Caldeirão de Sangue', desc: 'Ferva o sangue da vítima nas próprias veias. Cada ponto de margem é um Agravado, e custa Mácula.' },
+        { nome: 'Carícia de Baal', desc: 'Veneno letal para mortais e Membros: mortal que sofra um ponto morre; vampiro ferido cai em Torpor ao dormir.' }
       ]
-    },
-    rituais: {
-      1: ['Sentir o Sangue', 'Sangue Cadavérico', 'Sanguinária', 'Vigor Empurrado', 'Círculo de Proteção'],
-      2: ['Sangue Coagulado', 'Poço da Verdade', 'Vermes das Escrituras', 'Comunicar com o Sire'],
-      3: ['Marca de Caim', 'Danos ao Espelho', 'Sangue Envenenado', 'Alistamento do Ferro'],
-      4: ['Defesa do Sangue Sagrado', 'Escudo Escarlate', 'Incorporar a Chama'],
-      5: ['Chamado do Grande Rebanho', 'Cerco de Ferro', 'Passagem para o Abismo']
     }
   },
 
+  /* NÃO ESTÁ NO MANUAL BÁSICO. Vem de `Livros/Regras/Oblivio.pdf`,
+     que pela tabela de autoridade manda na matéria dele. Continua
+     POR CONFERIR — a §64 leu só o básico. */
   oblivio: {
-    nome: 'Oblívio', simbolo: '🜏', cor: '#3f3a5c',
+    nome: 'Oblívio', simbolo: '🜏', cor: '#3f3a5c', pagina: 'Oblivio.pdf — por conferir',
     resumo: 'O nada entre as coisas. Lasombra o chamam de Abismo; Hecata, de outro lado. É o mesmo silêncio.',
     ritual: true,
     poderes: {
@@ -295,8 +314,10 @@ const DISCIPLINAS = {
       ],
       2: [
         { nome: 'Projetar Sombra', desc: 'Conjure uma sombra sobrenatural própria, da qual outros poderes podem partir.' },
-        { nome: 'Braços de Arimã', desc: 'Tentáculos de sombra que agarram, sufocam e atacam à distância. Amálgama: Potência 2.' },
-        { nome: 'Precognição Fatal', desc: 'Veja a morte futura de alguém que não seja vampiro. Amálgama: Auspícios 2.' },
+        { nome: 'Braços de Arimã', desc: 'Tentáculos de sombra que agarram, sufocam e atacam à distância. Amálgama: Potência 2.',
+          amalgama: { disciplina: 'potencia', nivel: 2 } },
+        { nome: 'Precognição Fatal', desc: 'Veja a morte futura de alguém que não seja vampiro. Amálgama: Auspícios 2.',
+          amalgama: { disciplina: 'auspicios', nivel: 2 } },
         { nome: 'Onde a Mortalha Afina', desc: 'Sinta onde o véu entre os vivos e as Terras Sombrias está fino.' }
       ],
       3: [
@@ -312,42 +333,37 @@ const DISCIPLINAS = {
       5: [
         { nome: 'Passo Sombrio', desc: 'Entre numa sombra e saia de outra, em qualquer lugar conhecido.' },
         { nome: 'Avatar Tenebroso', desc: 'Torne-se sombra viva: intangível, devastador e quase impossível de ferir.' },
-        { nome: 'Skulds Realizada', desc: 'Force o destino previsto a se cumprir agora.' },
-        { nome: 'Espírito em Declínio', desc: 'Provoque decadência espiritual em vampiros e mortais.' }
+        /* 'Tempestade de Ossos' e 'Chamado do Além' estavam aqui e NÃO
+           EXISTEM: nenhuma ocorrência no Oblivio.pdf. A lista certa já
+           estava em regras.md §14.7 desde sempre, e o dado é que tinha
+           dois poderes inventados. Corrigido na §65, e agora há teste
+           que compara as duas listas. */
+        { nome: 'Skulds Realizada', desc: 'O que estava destinado se cumpre: o Oblívio realiza no alvo aquilo que já era o fim dele.' },
+        { nome: 'Espírito em Declínio', desc: 'Arraste um espírito para o declínio final, ou empurre uma alma até a dissolução.' }
       ]
-    },
-    rituaisRotulo: 'Cerimônias',
-    rituais: {
-      1: ['A Dádiva da Vida Falsa', 'Invocar o Espírito', 'Cadáver Irracional'],
-      2: ['Despertar do Servo Homuncular', 'Obrigar Espíritos', 'Servo Homuncular'],
-      3: ['Espírito Anfitrião', 'Hordas Trôpegas', 'Cadáver Violento'],
-      4: ['Vincular o Espírito', 'Rasgar a Mortalha'],
-      5: ['Ex Nihilo', 'Benção Lazarena']
     }
   },
 
   alquimia: {
-    nome: 'Alquimia de Sangue Fraco', simbolo: '⚗', cor: '#7f8a4a',
-    resumo: 'Sangue destilado em fórmula. O único poder que a 14ª geração consegue fabricar.',
-    exclusivaSangueFraco: true,
+    nome: 'Alquimia de Sangue-Ralo', simbolo: '⚗', cor: '#7f8a4a', pagina: '282–287',
+    resumo: 'O sangue ralo como reagente. Destila-se o que não se herda — e um poder por vez.',
     poderes: {
       1: [
-        { nome: 'Efeito Duplo', desc: 'Uma fórmula que imita um poder de Disciplina de nível 1.' },
-        { nome: 'Ressonância Roubada', desc: 'Extraia e engarrafe a ressonância de um mortal.' }
+        { nome: 'Longo Alcance', desc: 'Agarre, segure e empurre objetos ou pessoas sem tocar: até 100 kg, a até 10 metros.' },
+        { nome: 'Neblina', desc: 'Uma névoa que segue você, ocultando a identidade: −2 na parada de quem tentar identificá-lo ou alvejá-lo à distância.' }
       ],
       2: [
-        { nome: 'Concocção Envolvente', desc: 'Fórmula que imita poderes de nível 2.' },
-        { nome: 'Fórmula do Sol Falso', desc: 'Resista brevemente à luz solar.' }
+        { nome: 'Envolver', desc: 'Uma névoa cola no alvo, cegando-o — e, em mortais, sufocando. −3 em detecção visual e ataque à distância.' },
+        { nome: 'Defracionar', desc: 'Elixir homeopático que devolve o frescor a sangue hospitalar fracionado, para quem não tem Esôfago de Ferro.' }
       ],
       3: [
-        { nome: 'Destilação Profunda', desc: 'Fórmulas de nível 3, com efeitos duradouros.' },
-        { nome: 'Sopro de Vida', desc: 'Simule sinais vitais completos por horas.' }
+        { nome: 'Hieros Gamos Profano', desc: 'Molda o corpo humano à forma idealizada de quem bebe. Permanente até ser refeito, e pode manifestar Defeitos.' }
       ],
       4: [
-        { nome: 'Elixir Aprimorado', desc: 'Fórmulas de nível 4 e mistura de efeitos.' }
+        { nome: 'Ímpeto Aéreo', desc: 'Erga-se do solo e voe ou paire à velocidade de corrida, carregando até a massa de um humano médio.' }
       ],
       5: [
-        { nome: 'Grande Obra', desc: 'Fórmulas de nível 5 — e a promessa de reverter a maldição.' }
+        { nome: 'Despertar Adormecido', desc: 'Elixir que, misturado a sangue humano, desperta um vampiro do Torpor conforme a Potência de Sangue dele.' }
       ]
     }
   }

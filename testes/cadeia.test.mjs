@@ -61,11 +61,12 @@ test('Navegação — onde o alvo está', async (t) => {
     assert.equal(r.linhaDeTiro, true);
   });
 
-  await t.test('alvo no ambiente ao lado custa −2, e NÃO é bloqueio', () => {
+  await t.test('alvo no ambiente ao lado custa −2, e NÃO é bloqueio', (t2) => {
     /* A escolha de projeto: aproximar-se é a ação da rodada, então o
        golpe sai em movimento. Barrar seria mais fácil e mais errado —
        ninguém desiste de socar alguém por estar na sala ao lado. */
     const r = navegar(cena('beco'), 'capanga');
+    t2.diagnostic(`você no Bar, alvo no Beco → ${Navegacao.descrever(r)}`);
     assert.equal(r.relacao, 'adjacente');
     assert.equal(r.bloqueado, false);
     assert.equal(r.penalidade, -2);
@@ -73,8 +74,9 @@ test('Navegação — onde o alvo está', async (t) => {
     assert.ok(r.nota, 'não explicou o preço');
   });
 
-  await t.test('alvo em outra zona é travessia, e aí sim é bloqueio', () => {
+  await t.test('alvo em outra zona é travessia, e aí sim é bloqueio', (t2) => {
     const r = navegar(cena(), 'longe');
+    t2.diagnostic(`você no Bar (centro), alvo na Zona Sul → ${r.motivo}`);
     assert.equal(r.bloqueado, true);
     assert.ok(r.motivo, 'bloqueou sem motivo');
   });
@@ -109,8 +111,9 @@ test('Navegação — linha de tiro e cobertura', async (t) => {
     return gr;
   };
 
-  await t.test('o que está dentro de algo fechado não tem linha de visão', () => {
+  await t.test('o que está dentro de algo fechado não tem linha de visão', (t2) => {
     const r = navegar(comCofre('trancado'), 'joia');
+    t2.diagnostic(`joia dentro de cofre trancado → ${r.motivo}`);
     assert.equal(r.linhaDeTiro, false);
     assert.ok(r.motivo, 'negou sem motivo');
   });

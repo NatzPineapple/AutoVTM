@@ -82,9 +82,22 @@ const ACOES_MESA = {
         const nome = campo ? campo.value.trim() : '';
         if (!nome) { toast('Escreva o que você está pegando.'); return; }
         M.bolsa = M.bolsa || [];
-        M.bolsa.push({ nome, arma: id === 'arma',
+        /* Item do livro da categoria "arma" já entra como arma, mesmo
+           guardado pelo botão comum — quem escreveu "Coquetel Molotov"
+           não guardou um souvenir (§66). */
+        const doLivro = Combate.itemPor(nome);
+        M.bolsa.push({ nome, arma: id === 'arma' || !!(doLivro && doLivro.categoria === 'arma'),
                        comoVeio: `Pego em ${M.cena.hora || 'algum momento'}`, ts: Date.now() });
         anunciar([{ tipo: 'nota', texto: `Você guarda: ${nome}.` }]);
+        salvarMesa(); renderMesa(); return;
+  },
+
+  'apagar-fogo'(id, alvo) {
+        const lista = (M.combate && M.combate.queimas) || [];
+        const q = lista[+id];
+        if (!q) return;
+        lista.splice(+id, 1);
+        anunciar([{ tipo: 'nota', texto: `O fogo de ${q.item} apagou.` }]);
         salvarMesa(); renderMesa(); return;
   },
 
@@ -149,6 +162,7 @@ const ACOES_MESA = {
           arma: M.combate.arma, armadura: o.armadura,
           estadosAtacante: estadosAtuais(), estadosDefensor: o.estados, alvoVampiro: false,
           terreno: terrenoDoOponente(o) });
+        if (r.queima) pegarFogo(o, r.queima, o.nome);
         if (r.destruido) anunciar([{ tipo: 'critico', texto: `${o.nome} não levanta mais.` }]);
         if (rod && !rod.encerrada && r.possivel !== false) {
           avancarVez();
@@ -175,6 +189,7 @@ const ACOES_MESA = {
           arma: escolha.arma, armadura: null,
           estadosAtacante: o.estados, estadosDefensor: estadosAtuais(), alvoVampiro: true,
           terreno: terrenoDoOponente(o) });
+        if (r.queima) pegarFogo(M.combate, r.queima, 'Você');
         if (r.torpor) anunciar([{ tipo: 'critico', texto: 'Você caiu em torpor.' }]);
         salvarMesa(); renderMesa(); return;
   },
@@ -218,8 +233,43 @@ const ACOES_MESA = {
         return;
   },
 
+  /* A atenuante vale para a PRÓXIMA Mácula e se apaga depois de usada
+     — invocar a Convicção é sobre um ato, não um estado (§69, A9). */
+  'atenuante'(id, alvo) {
+        M.atenuante = M.atenuante === +id ? null : +id;
+        salvarMesa(); renderMesa(); return;
+  },
+
   'macula'(id, alvo) {
-        aplicarNoEstado(f => Estado.ganharMacula(f, +id, 'marcada na doca'));
+        const i = M.atenuante;
+        const cv = (i != null && M.ficha) ? (M.ficha.conviccoes || [])[i] : '';
+        aplicarNoEstado(f => Estado.ganharMacula(f, +id, 'marcada na doca',
+          cv ? { porConviccao: cv } : {}));
+        if (cv) { M.atenuante = null; salvarMesa(); renderMesa(); }
+        return;
+  },
+
+  'perder-pilar'(id, alvo) {
+        /* "Uma vez perdida uma dessas pessoas, a Convicção a ela
+           associada também estará perdida." (pág. 173) — §69, A8. */
+        const i = +id;
+        const nome = (M.ficha.marcos || [])[i] || 'esse Pilar';
+        if (!confirm(`Perder ${nome}? A Convicção que ele encarna cai junto, e isso não se desfaz.`)) return;
+        aplicarNoEstado(f => Estado.perderPilar(f, i, { porSuasAcoes: false }));
+        return;
+  },
+
+  'perder-pilar-culpa'(id, alvo) {
+        const i = +id;
+        const nome = (M.ficha.marcos || [])[i] || 'esse Pilar';
+        if (!confirm(`Foi você. Perder ${nome} por ação sua? A Convicção cai junto.`)) return;
+        aplicarNoEstado(f => Estado.perderPilar(f, i, { porSuasAcoes: true }));
+        return;
+  },
+
+  'desejo-agora'(id, alvo) {
+        /* O Desejo paga NA HORA, uma vez por sessão (pág. 174) — A7. */
+        aplicarNoEstado(f => Estado.realizarDesejo(f));
         return;
   },
 
@@ -326,19 +376,15 @@ const ACOES_MESA = {
         M.docaAberta = false; renderDoca(); return;
   },
 
-  'modo'(id, alvo) {
-        M.modo = id;
-        renderCompositor();
-        return;
-  },
-
+  /* §57 — correção à mão do que foi LIDO do texto. Vale por
+     esta mensagem: enviarTurno zera os dois depois de enviar. */
   'volume'(id, alvo) {
-        M.volume = id;
-        if (M.alvoFala !== 'geral') {
+        M.volumeManual = id;
+        if (M.alvoManual) {
           const permitidos = (id === 'mensagem' ? pessoasComContato() : pessoasNaCena()).map(p => p.id);
-          if (!permitidos.includes(M.alvoFala)) M.alvoFala = 'geral';
+          if (!permitidos.includes(M.alvoManual)) M.alvoManual = null;
         }
-        renderCompositor();
+        renderLeitura();
         return;
   },
 

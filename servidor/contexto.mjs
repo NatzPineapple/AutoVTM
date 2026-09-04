@@ -28,7 +28,7 @@ const MANIFESTO = [
     extrair: 'texto', rotulo: 'premissa',
     porque: 'O gênero. Sem isso o resumo vira relatório.' },
 
-  { arquivo: 'docs/cenario.md', secao: '9. Contrato de coerência para a IA',
+  { arquivo: 'docs/cenario.md', secao: '10. Contrato de coerência para a IA',
     extrair: 'texto', rotulo: 'coerencia',
     porque: 'O que nunca pode ser inventado nem resolvido de graça.' },
 

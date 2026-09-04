@@ -19,8 +19,32 @@ const Combate = {
                     defesa: ['destreza', ['briga', 'atletismo']], natureza: 'agravado', alcance: 'toque' }
   },
 
+  /* O capítulo "Itens" (págs. 378–381) vem ANTES da tabela do Escudo,
+     e por um motivo medido: sem ele, "lança-chamas" e "coquetel
+     molotov" caíam no caso final e viravam dano 0, Superficial —
+     exatamente as armas que o livro escreveu para queimar vampiro.
+     (§66) */
+  /* Casa o texto escrito na bolsa com um item da lista. Sem regex
+     frouxa: primeiro o nome inteiro, depois o texto do jogador
+     CONTENDO o nome do item — "meu velho lança-chamas" é um
+     lança-chamas, "chama" não é. Ganha o nome mais longo, para
+     "lançador de estacas" não virar "estaca". */
+  itemPor(nome) {
+    if (!nome || typeof ITENS === 'undefined') return null;
+    const n = Arbitro.normalizar(nome);
+    let achado = null;
+    for (const it of ITENS) {
+      const alvo = Arbitro.normalizar(it.nome);
+      if (n === alvo) return it;
+      if (n.includes(alvo) && (!achado || alvo.length > Arbitro.normalizar(achado.nome).length)) achado = it;
+    }
+    return achado;
+  },
+
   armaPor(nome) {
     if (!nome) return { dano: 0, armas: 'Desarmado' };
+    const item = this.itemPor(nome);
+    if (item) return { dano: item.dano || 0, armas: item.nome, item };
     const n = Arbitro.normalizar(nome);
     for (const a of Escudo.DANO_ARMA) {
       const partes = Arbitro.normalizar(a.armas).split(/[;,()]/).map(x => x.trim()).filter(Boolean);
@@ -36,16 +60,29 @@ const Combate = {
       || { valor: 0, tipo: nome };
   },
 
-  piscinaDefesa(ficha, defesa, estados, cobertura = 0) {
+  /* `esquivar` é a escolha do defensor (§63, A3):
+       true  → só Atletismo, se estiver entre as opções
+       false → só perícia de combate
+       null  → a maior parada, como sempre foi
+     O livro garante ao defensor o direito de esquivar SEMPRE em Briga
+     e Armas Brancas (pág. 125); quando Atletismo não é opção do modelo
+     de ataque, o pedido é ignorado e o motor diz por quê. */
+  piscinaDefesa(ficha, defesa, estados, cobertura = 0, esquivar = null) {
     if (!defesa) return null;
     const [atr, opcoes] = defesa;
-    let melhor = { total: 0, periciaId: opcoes[0] };
-    for (const p of opcoes) {
+    let candidatas = opcoes;
+    if (esquivar === true)  candidatas = opcoes.filter(p => p === 'atletismo');
+    if (esquivar === false) candidatas = opcoes.filter(p => p !== 'atletismo');
+    if (!candidatas.length) candidatas = opcoes;
+
+    let melhor = { total: 0, periciaId: candidatas[0] };
+    for (const p of candidatas) {
       const cand = Dados.piscinaDe(ficha, atr, p);
       if (cand.total > melhor.total) melhor = cand;
     }
     const pen = Arbitro.penalidadeDeEstados(estados || [], 'fisico');
-    return { total: Math.max(0, melhor.total + pen.dados + cobertura), periciaId: melhor.periciaId,
+    /* Piso de 1 dado, como toda parada (§63, A1). */
+    return { total: Math.max(1, melhor.total + pen.dados + cobertura), periciaId: melhor.periciaId,
              atributoId: atr, penalidade: pen.dados, cobertura };
   },
 
@@ -61,7 +98,7 @@ const Combate = {
   resolver({ atacante, defensor, tipo = 'desarmado', arma = null, armadura = null,
              estadosAtacante = [], estadosDefensor = [], cobertura = null,
              alvoVampiro = true, distancia = null, estacionario = false,
-             penalidadeTerreno = 0 }) {
+             penalidadeTerreno = 0, esquivar = null }) {
     const eventos = [];
     const modelo = this.ATAQUES[tipo] || this.ATAQUES.desarmado;
     const info = this.armaPor(arma);
@@ -75,7 +112,13 @@ const Combate = {
         bloqueios.push(`${Arbitro.CAPACIDADES[c]} é necessário, e o atacante está ${capAtq.removidas[c]}.`);
       }
     }
-    const alcance = Arbitro.ALCANCES[modelo.alcance];
+    /* Alcance do ITEM manda sobre o do modelo de ataque: uma escopeta
+       com munição sopro de dragão alcança 15 m, não a linha de visão
+       (pág. 380); o hafla alcança 80 m. (§66) */
+    const alcanceModelo = Arbitro.ALCANCES[modelo.alcance];
+    const alcance = (info.item && info.item.alcance != null)
+      ? { nome: `${info.item.nome} — alcance efetivo`, metros: info.item.alcance }
+      : alcanceModelo;
     let penAlcance = 0;
     if (distancia != null && distancia > alcance.metros) {
       if (modelo.aDistancia) {
@@ -93,7 +136,12 @@ const Combate = {
     const penTerreno = Math.min(0, penalidadeTerreno | 0);
     if (penTerreno) eventos.push({ tipo: 'nota',
       texto: `Terreno: ${penTerreno} dados para chegar ao alvo.` });
-    let piscinaAtq = Math.max(0, base.total + penAtq.dados + penAlcance + penTerreno);
+    /* Arma camuflada: "penalizam a parada de dados de ataque do
+       usuário em um dado" (pág. 379). (§66) */
+    const penItem = (info.item && info.item.penalidadeAtaque) || 0;
+    if (penItem) eventos.push({ tipo: 'nota',
+      texto: `${info.item.nome}: ${penItem} dado no ataque — não dá para equilibrar direito.` });
+    let piscinaAtq = Math.max(1, base.total + penAtq.dados + penAlcance + penTerreno + penItem);
 
     let modCobertura = 0;
     if (modelo.aDistancia && cobertura) {
@@ -104,15 +152,67 @@ const Combate = {
       }
     }
 
+    /* ----------------------------------------------------------
+       ESQUIVAR É ESCOLHA DO DEFENSOR, E TEM PREÇO.  (§63, item A3)
+
+       O livro (básico, pág. 125):
+
+         "Quando engajado em uma Briga ou conflito com Armas Brancas,
+          o defensor SEMPRE PODE OPTAR por usar Destreza + Atletismo
+          em vez de uma habilidade de combate para se defender. Caso
+          faça isso, NÃO INFLIGIRÁ NENHUM DANO ao oponente, não
+          importando a sua margem, caso vença."
+
+       Isto era escolhido pelo motor, pela MAIOR PARADA, e o preço não
+       existia. A troca — defender melhor OU poder revidar — é decisão
+       tática de cada turno, e o jogador não a tinha.
+
+       `esquivar` agora manda:
+         true   → força Destreza + Atletismo. Não revida.
+         false  → força a perícia de combate. Conflito bilateral.
+         null   → o motor escolhe a maior parada, como antes, e DIZ
+                  qual escolheu. É o que um PN faz sozinho.
+       ---------------------------------------------------------- */
     const def = estacionario ? null
-      : this.piscinaDefesa(defensor, modelo.defesa, estadosDefensor, modCobertura);
+      : this.piscinaDefesa(defensor, modelo.defesa, estadosDefensor, modCobertura, esquivar);
     if (estacionario) {
       eventos.push({ tipo: 'nota', texto: 'Alvo estacionário: sem parada de defesa, dificuldade 1 fixa.' });
     }
 
+    /* Defesa com Atletismo é esquiva: o defensor não causa dano.
+       Com perícia de combate, o conflito é BILATERAL — os dois podem
+       ferir, e é aí que o empate muda de significado. */
+    const ehEsquiva = !!(def && def.periciaId === 'atletismo');
+    const bilateral = !!(def && !ehEsquiva && !modelo.aDistancia);
+    if (def) {
+      eventos.push({ tipo: 'nota', texto: ehEsquiva
+        ? `${nomeHabilidade(def.periciaId)}: esquiva. Vencendo, não revida.`
+        : `${nomeHabilidade(def.periciaId)}: defende revidando. Empate fere os dois.` });
+    }
+
+    /* Dificuldade mínima do item, quando não há parada de defesa:
+       hafla 3, coquetel Molotov 4 (pág. 380). Contra alvo que se
+       defende, a disputa continua sendo a disputa. (§66) */
+    const difMin = (info.item && info.item.dificuldadeMin) || 1;
+    if (!def && difMin > 1) eventos.push({ tipo: 'nota',
+      texto: `${info.item.nome}: Dificuldade mínima ${difMin}.` });
+
     const rolAtq = Dados.rolar({ piscina: piscinaAtq, fome: atacante.fome || 0,
-      dificuldade: def ? 0 : 1,
+      dificuldade: def ? 0 : difMin,
       rotulo: `${nomeAtributo(modelo.atributo)} + ${nomeHabilidade(modelo.pericia)}` });
+
+    /* Arma incendiária caseira: numa FALHA TOTAL, o fogo volta para as
+       mãos e o rosto de quem atirou — 3 de Agravado (pág. 379). */
+    let coice = null;
+    if (info.item && info.item.coice && rolAtq.tipo === 'total') {
+      const c = info.item.coice;
+      eventos.push({ tipo: 'perigo',
+        texto: `Falha total com ${info.item.nome}: o fogo pega nas suas mãos e no seu rosto.` });
+      const q = Estado.aplicarDano(atacante, { quantidade: c.dano, tipo: c.natureza,
+        fonte: info.item.nome, semMetade: true });
+      eventos.push(...q.eventos);
+      coice = { dano: c.dano, natureza: c.natureza };
+    }
 
     let rolDef = null, margem;
     if (def) {
@@ -123,30 +223,104 @@ const Combate = {
       margem = rolAtq.sucessos - 1;
     }
 
+    /* ---------- o empate ---------- */
+
+    /* Conflito BILATERAL: "Um empate resulta em ambos os lados
+       infligindo dano no outro como se os dois tivessem obtido vitória
+       com uma margem de um." (pág. 125) */
+    const empate = def && margem === 0;
+    let revide = null;
+
+    if (empate && bilateral) {
+      eventos.push({ tipo: 'combate',
+        texto: `Empate em ${rolAtq.sucessos}: os dois acertam, com margem 1.` });
+      revide = this._aplicarRevide(atacante, defensor, 1, eventos, estadosDefensor, modelo);
+      margem = 1;
+    } else if (margem < 0 && bilateral) {
+      /* O defensor venceu com perícia de combate: quem venceu subtrai
+         os sucessos do perdedor e aplica o resto como dano (pág. 125).
+         Com Atletismo isso não acontece — é o preço da esquiva. */
+      eventos.push({ tipo: 'combate',
+        texto: `Defesa venceu por ${-margem}: o defensor revida.` });
+      revide = this._aplicarRevide(atacante, defensor, -margem, eventos, estadosDefensor, modelo);
+      return { possivel: true, acertou: false, margem, rolAtq, rolDef, eventos, dano: 0,
+               esquiva: ehEsquiva, bilateral, revide, coice };
+    }
+
     if (margem <= 0) {
       eventos.push({ tipo: 'combate', texto: def
         ? `Ataque bloqueado: ${rolAtq.sucessos} contra ${rolDef.sucessos} de defesa.`
         : `Errou: ${rolAtq.sucessos} sucesso(s) contra dificuldade 1.` });
-      return { possivel: true, acertou: false, margem, rolAtq, rolDef, eventos, dano: 0 };
+      return { possivel: true, acertou: false, margem, rolAtq, rolDef, eventos, dano: 0,
+               esquiva: ehEsquiva, bilateral, revide, coice };
     }
 
-    const bruto = margem + info.dano;
-    const dano = Math.max(0, bruto - arm.valor);
-    if (arm.valor) eventos.push({ tipo: 'nota', texto: `${arm.tipo} absorve ${Math.min(arm.valor, bruto)}.` });
+    const item = info.item || null;
+
+    /* Hafla: "três níveis de dano Agravado imediatamente" — além da
+       margem, e não no lugar dela (pág. 380). (§66) */
+    const imediato = (item && item.danoImediato) || 0;
+    const bruto = margem + info.dano + imediato;
+
+    /* Raufoss "ignora qualquer armadura pessoal" (pág. 380). */
+    const absorve = (item && item.ignoraArmadura) ? 0 : arm.valor;
+    if (item && item.ignoraArmadura && arm.valor) eventos.push({ tipo: 'nota',
+      texto: `${item.nome} atravessa ${arm.tipo}: a armadura não absorve nada.` });
+    const dano = Math.max(0, bruto - absorve);
+    if (absorve) eventos.push({ tipo: 'nota', texto: `${arm.tipo} absorve ${Math.min(absorve, bruto)}.` });
 
     let natureza = modelo.natureza;
     const comArma = ['branca', 'branca_duas', 'fogo', 'fogo_no_corpo', 'arremesso'].includes(tipo);
     if (!alvoVampiro && comArma) natureza = 'agravado';
+    /* A natureza do ITEM manda: fogo é Agravado em vampiro, e é esse o
+       ponto do capítulo inteiro. `contraVampiro` marca o caso da
+       munição sopro de dragão, que só vira Agravado contra vampiro. */
+    if (item && item.natureza && (!item.contraVampiro || alvoVampiro)) natureza = item.natureza;
 
-    eventos.push({ tipo: 'combate',
-      texto: `Acerto com margem ${margem}${info.dano ? ` + ${info.dano} da arma` : ''}: ${dano} de dano ${
-        natureza === 'agravado' ? 'Agravado' : 'Superficial'}.` });
+    if (imediato) eventos.push({ tipo: 'combate',
+      texto: `${item.nome}: ${imediato} níveis de dano Agravado no ato.` });
 
-    const aplicado = Estado.aplicarDano(defensor, { quantidade: dano, tipo: natureza,
-      fonte: info.armas, semMetade: !alvoVampiro });
-    eventos.push(...aplicado.eventos);
+    /* Lançador de redes: "o dano é subtraído da Destreza do alvo, e
+       não da sua Vitalidade" (pág. 380). */
+    let aplicado = { eventos: [], destruido: false, torpor: false };
+    let enredado = null;
+    if (item && item.alvoDano === 'destreza') {
+      const antes = (defensor.atributos && defensor.atributos.destreza) || 0;
+      const metade = Math.ceil(dano / 2);   /* "diminuído pela metade como dano Superficial" */
+      const agora = Math.max(0, antes - metade);
+      if (defensor.atributos) defensor.atributos.destreza = agora;
+      enredado = { antes, agora, perdeu: antes - agora, imobilizado: agora === 0 };
+      eventos.push({ tipo: 'combate',
+        texto: `Rede: ${metade} de Destreza (${antes} → ${agora}).${
+          agora === 0 ? ' Enredado por completo: não pode atacar.' : ''}` });
+      eventos.push({ tipo: 'nota', texto: item.regra });
+    } else {
+      eventos.push({ tipo: 'combate',
+        texto: `Acerto com margem ${margem}${info.dano ? ` + ${info.dano} da arma` : ''}: ${dano} de dano ${
+          natureza === 'agravado' ? 'Agravado' : 'Superficial'}.` });
+      aplicado = Estado.aplicarDano(defensor, { quantidade: dano, tipo: natureza,
+        fonte: info.armas, semMetade: !alvoVampiro });
+      eventos.push(...aplicado.eventos);
+    }
 
-    if (tipo === 'branca' && /estaca/i.test(arma || '') && dano >= 5) {
+    /* A queima continua depois do turno. O motor não roda o relógio
+       da cena sozinho: ele DEVOLVE a queima, e quem toca o turno
+       chama `Combate.queimar`. */
+    let queima = null;
+    if (item && item.queima) {
+      queima = { item: item.nome, pontos: item.queima.pontos, apaga: item.queima.apaga,
+                 ambiente: !!item.queima.ambiente, pagina: item.pagina };
+      eventos.push({ tipo: 'perigo',
+        texto: `${item.nome}: o alvo pega fogo — ${item.queima.pontos} de Agravado por turno até apagar. Apaga com: ${item.queima.apaga}.` });
+      eventos.push({ tipo: 'nota', texto: 'Fogo exposto também é gatilho de frenesi de Terror (pág. 220).' });
+    }
+
+    /* O lançador de estacas da SI atira "quase à queima-roupa" e causa
+       o dano de estacas comuns (pág. 381) — a regra da estaca no
+       coração vale para ele igual, e antes da §66 não valia porque o
+       teste exigia `tipo === 'branca'`. */
+    const ehEstaca = /estaca/i.test(arma || '') && (tipo === 'branca' || (item && item.id === 'lancador_de_estacas'));
+    if (ehEstaca && dano >= 5) {
       eventos.push({ tipo: 'critico', texto: Escudo.NOTA_ESTACA });
     }
 
@@ -156,9 +330,81 @@ const Combate = {
 
     return { possivel: true, acertou: true, margem, dano, natureza,
              arma: info, armadura: arm, rolAtq, rolDef, eventos,
+             /* §63 (A3): num empate bilateral os dois acertam, então
+                `acertou` e `revide` podem vir juntos. */
+             esquiva: ehEsquiva, bilateral, revide, coice, queima, enredado,
              destruido: aplicado.destruido, torpor: aplicado.torpor };
   },
 
+
+  /* ----------------------------------------------------------
+     A QUEIMA CONTINUA DEPOIS DO TURNO  (§66)
+
+     Toda arma incendiária das págs. 379–381 termina do mesmo jeito:
+     tantos pontos de Agravado POR TURNO, até apagar. `resolver`
+     devolve isso em `queima`; quem toca o relógio da cena chama
+     aqui, uma vez por turno, com as queimas ativas.
+
+     O motor não decide sozinho quando apaga — cada item diz o que
+     apaga ele, e isso é ação de alguém. O que ele faz é não deixar a
+     queima ser esquecida.
+
+     O lança-chamas é o caso de zero pontos: "+0 dano Agravado ao
+     atingir o alvo e a cada turno depois disso" (pág. 380). Zero é
+     zero, e o motor diz isso em vez de inventar um número.
+     ---------------------------------------------------------- */
+  queimar(ficha, queimas = []) {
+    const eventos = [];
+    let total = 0;
+    for (const q of (queimas || [])) {
+      if (!q || q.apagada) continue;
+      const pontos = q.pontos | 0;
+      total += pontos;
+      if (!pontos) {
+        eventos.push({ tipo: 'nota',
+          texto: `${q.item} continua queimando, mas o livro dá +0 por turno (pág. ${q.pagina}). O dano vem da margem do ataque.` });
+        continue;
+      }
+      const r = Estado.aplicarDano(ficha, { quantidade: pontos, tipo: 'agravado',
+        fonte: q.item, semMetade: true });
+      eventos.push({ tipo: 'perigo', texto: `${q.item} queima: ${pontos} de Agravado neste turno.` });
+      eventos.push(...r.eventos);
+    }
+    if (queimas && queimas.length) eventos.push({ tipo: 'nota',
+      texto: 'Enquanto queimar, é gatilho de frenesi de Terror (pág. 220).' });
+    return { total, eventos };
+  },
+
+
+  /* ----------------------------------------------------------
+     O REVIDE DO DEFENSOR  (§63, item A3)
+
+     Num conflito bilateral, o vencedor "subtrai os sucessos do
+     perdedor do seu total e aplica o restante na forma de dano"
+     (básico, pág. 125) — e isso vale para os dois lados. Quando o
+     defensor vence com perícia de combate, quem apanha é o atacante.
+
+     A arma do defensor não é modelada: ele reage com o que tem no
+     corpo. Por isso o dano é a margem crua, natureza Superficial —
+     que é o que Briga e Armas Brancas causam a vampiro.
+     ---------------------------------------------------------- */
+  _aplicarRevide(atacante, defensor, margem, eventos, estadosDefensor, modelo) {
+    const capDef = Arbitro.capacidadesDe(estadosDefensor || []);
+    if (!capDef.ativas.has('corpo') || !capDef.ativas.has('movimento')) {
+      eventos.push({ tipo: 'nota', texto: 'O defensor venceu, mas não tem corpo para revidar.' });
+      return null;
+    }
+    const dano = Math.max(0, margem | 0);
+    if (!dano) return null;
+
+    eventos.push({ tipo: 'combate',
+      texto: `Revide: ${dano} de dano Superficial no atacante.` });
+    const aplicado = Estado.aplicarDano(atacante, { quantidade: dano, tipo: 'superficial',
+      fonte: 'revide em combate' });
+    eventos.push(...aplicado.eventos);
+    return { dano, natureza: 'superficial',
+             destruido: aplicado.destruido, torpor: aplicado.torpor };
+  },
   gerarMortal(modelo = 'comum', profissao = null) {
     const m = Escudo.MODELOS_MORTAIS[modelo] || Escudo.MODELOS_MORTAIS.comum;
     const cotas = {

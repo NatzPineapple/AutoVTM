@@ -235,6 +235,7 @@ const Especialista = {
           return Object.assign({}, pf, {
             atributo: r.atributo, pericia: r.pericia, atributo2: r.atributo2,
             enquadramento: r.enquadramento, risco: r.risco,
+            dificuldadeExtra: r.dificuldade || 0, nota: r.nota || '',
             piscina: pf.total, viavel: pf.total > 0, detalhe: pf
           });
         }).filter(r => r.viavel);
@@ -284,8 +285,25 @@ const Especialista = {
     }
 
     return {
-      possivel: m.escalar ? null : (m.bloqueios.length ? false : true),
-      escalar: !!m.escalar,
+      /* BLOQUEIO VENCE ESCALAR.  (§57)
+
+         A ordem era a inversa, e ela vinha de uma leitura razoável:
+         "o léxico não reconheceu a intenção, deixa o Narrador
+         descrever". Só que ela apagava bloqueio JÁ ENCONTRADO — e o
+         caso é grave: amordaçado, com o turno subindo para o Narrador,
+         que então narrava o personagem falando.
+
+         Isso ficou visível quando a caixa única (§57) tornou comum o
+         turno de fala pura: `"socorro!"` não tem intenção mecânica
+         nenhuma para o léxico achar, mas tem a regra da voz, e ela
+         barra. Antes da §57 o caso quase não aparecia porque a fala
+         vinha com verbo junto — e o teste que devia pegar isto passava
+         por acidente, casando "grito" com "rito" no léxico.
+
+         A regra certa é a de sempre: quem descreve não decide se pode.
+         Se alguma regra barrou, não há o que escalar. */
+      possivel: m.bloqueios.length ? false : (m.escalar ? null : true),
+      escalar: !!m.escalar && !m.bloqueios.length,
       acao: m.definicao || null,
       intencao: m.intencao,
       bloqueios: m.bloqueios,
