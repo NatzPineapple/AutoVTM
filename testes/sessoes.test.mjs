@@ -73,7 +73,7 @@ test('Sessões — uma chave por sessão (N1)', async (t) => {
       'gravar a sessão nova mexeu no conteúdo da antiga');
   });
 
-  await t.test('o custo de gravar não cresce com o número de sessões', () => {
+  await t.test('o custo de gravar não cresce com o número de sessões', (t2) => {
     /* Não mede tempo — medir tempo em teste é instável. Mede o que
        causava o tempo: quantos bytes a gravação toca. */
     const { g, mem, abrir } = mesa();
@@ -100,6 +100,8 @@ test('Sessões — uma chave por sessão (N1)', async (t) => {
 
     /* O índice cresce — ele tem uma linha por sessão —, mas devagar. O
        que não pode voltar é a sessão inteira de todo mundo. */
+    t2.diagnostic(`bytes tocados por salvarMesa: ${comUma} com 1 sessão, ` +
+                  `${comTreze} com 13 — o custo não acompanha o número de sessões`);
     assert.ok(comTreze < comUma * 4,
       `gravação tocou ${comTreze} bytes com 13 sessões contra ${comUma} com uma`);
   });

@@ -26,10 +26,10 @@ Os outros documentos em `docs/`:
 
 ## Como rodar
 
-Não há build. O servidor de desenvolvimento serve `app/` **sem cache**, para que toda alteração apareça no F5:
+Não há build. O servidor de desenvolvimento serve os arquivos **sem cache**, para que toda alteração apareça no F5:
 
 ```bash
-node servidor/dev.mjs
+node ferramentas/dev.mjs
 ```
 
 Depois abra <http://localhost:5173>.
@@ -38,8 +38,19 @@ Para ligar o **Narrador** e o **Cronista**, use o proxy. Ele serve a mesma coisa
 atende as rotas `/api`:
 
 ```bash
-node servidor/proxy.mjs
+node modulos/gateway/proxy.mjs
 ```
+
+E, desde a §78, há **módulos com processo e porta próprios**. O Gateway sobe sozinho os que
+faltarem — é o que o botão **Ligar tudo**, na capa, faz — mas eles também rodam à mão:
+
+```bash
+node modulos/mesa/mesa-servidor.mjs
+```
+
+No Windows, `ferramentas/iniciar.cmd` sobe **tudo** — ollama, Gateway e módulos — e abre o
+navegador. `ferramentas/desligar.cmd` é o par: pede o desligamento na ordem certa e confere
+porta por porta. Ambos são conveniência; nada depende deles.
 
 Isso fala com o Ollama em `mistral-nemo:12b`, **na sua máquina**. Não há chave, não há conta e
 não há custo por chamada: o projeto não tem provedor pago, por decisão registrada em
@@ -59,7 +70,7 @@ npm run comparar -- --repeticoes 3 mistral-nemo:12b granite4.1:8b
 
 Resultado das medições até agora na **§34.2**, e o que ainda falta na **§14.1**.
 
-**Precisa de servidor.** Abrir `app/index.html` direto no navegador quase funciona — os
+**Precisa de servidor.** Abrir `modulos/cliente/index.html` direto no navegador quase funciona — os
 scripts são clássicos, sem módulos ES — mas as campanhas são carregadas por `fetch` de
 `/campanhas/`, que os dois servidores servem por uma rota própria. Em `file://` isso falha,
 e você fica só com a Noite livre.
@@ -179,7 +190,7 @@ Cada narração mostra no cabeçalho qual modelo a escreveu, ou "simulado".
 
 São **duas**, e elas não competem — cobrem coisas diferentes e falham de jeitos diferentes.
 
-| | `npm test` | `app/diagnostico.html` |
+| | `npm test` | `modulos/cliente/diagnostico.html` |
 |---|---|---|
 | Onde roda | terminal, `node:vm` | navegador, DOM real |
 | O que prova | a **regra** e as **jornadas**: criar ficha, resolver turno, brigar, fechar crônica | a **costura**: render de verdade, os 45 `GET`, o console |
@@ -191,7 +202,7 @@ combate, crônica, as quatro telas —, então conferir uma mudança é rodá-la
 o que só ele responde: os arquivos carregando na ordem, o console limpo e a aparência.
 
 ```bash
-npm test              # 435 testes, dez arquivos, zero dependência
+npm test              # 799 testes, doze arquivos, zero dependência
 npm run testes:log    # o registro da última corrida
 ```
 
@@ -200,14 +211,15 @@ quando um arquivo passa do teto de linhas sem estar na lista, e quando este docu
 contagem que não bate com o disco. É o item X3 da §45.5, e a razão dele é simples: contagem
 escrita à mão em documento envelhece calada.
 
-A página de diagnóstico roda **167 checagens** em dez grupos. Os dois primeiros são os que
+A página de diagnóstico roda **175 checagens** em dezessete grupos. Os dois primeiros são os que
 importam: **referências** (todo id citado existe?) e **comportamento** (a regra chega mesmo ao
-dado?). O segundo pega os defeitos que teste de módulo isolado não pega. Os outros seis cobrem
-áreas, segurança, combate, legado, recombinação e provedor.
+dado?). O segundo pega os defeitos que teste de módulo isolado não pega. Os outros quinze cobrem
+áreas, segurança, combate, grafo, cadeia, intenção, legado, recombinação, crônica, provedor e o
+motor contra o livro básico.
 
 ## Cenário brasileiro
 
-O conteúdo de `app/js/data/data-brasil.js` foi compilado a partir dos manuais em `Livros/`
+O conteúdo de `comum/dados/data-brasil.js` foi compilado a partir dos manuais em `Livros/`
 (Guia do Jogador V5, Camarilla, Anarquistas, Sabá, Sombras na Torre, Livro das Disciplinas,
 Cultos dos Deuses de Sangue, Religiões Proibidas, Palavras de Sangue) e do artigo
 [As Cidades Brasileiras em Vampiro: A Máscara](https://velhinhodorpg.com/2020/06/16/as-cidades-brasileiras-em-vampiro-a-mascara/)
@@ -231,101 +243,133 @@ que seja render, persistência ou regra.
 
 | Área | Pasta | O que é dela |
 |---|---|---|
-| **Ficha** | `app/js/ficha/` | Tudo relacionado à ficha do personagem |
-| **Árbitro** | `app/js/arbitro/` | Tudo relacionado à mecânica do RPG |
-| **Cronista** | `app/js/cronista/` | Tudo relacionado à narrativa |
-| **Front** | `app/js/front/` | O front |
+| **Ficha** | `modulos/ficha/` | Tudo relacionado à ficha do personagem |
+| **Árbitro** | `modulos/arbitro/` | Tudo relacionado à mecânica do RPG |
+| **Cronista** | `modulos/cronista/` | Tudo relacionado à narrativa |
+| **Front** | `modulos/cliente/js/` | O front |
 
 > **Esta seção é a referência para falar de pendência.** Toda lista de pendências, dúvidas ou
 > defeitos deste projeto sai separada por **Ficha · Árbitro · Cronista · Front · Geral**, nessa
 > ordem — que é a ordem de carga. Antes de montar a lista, **releia a tabela abaixo**: é ela que
 > diz quem é dono de quê, e é a divisão que o usuário decidiu na §43.
 >
-> **Geral** é o que atravessa áreas, mais `servidor/`, `testes/`, `campanhas/`, `docs/` e as
-> decisões que estão na mesa do usuário. `app/js/data/` **não é área**: o que for dele vai em
+> **Geral** é o que atravessa áreas, mais `modulos/`, `comum/`, `ferramentas/`, `testes/`, `campanhas/`, `docs/` e as
+> decisões que estão na mesa do usuário. `comum/dados/` **não é área**: o que for dele vai em
 > Geral.
 
-E uma quinta pasta que **não é área**: `app/js/data/` é o vocabulário do jogo, e é
+E uma quinta pasta que **não é área**: `comum/dados/` é o vocabulário do jogo, e é
 compartilhado. Foi medido antes de decidir: `data-disciplinas` é lido por nove arquivos das
 quatro áreas, `data-traits` por oito. Distribuí-lo criaria importação cruzada em tudo e
 destruiria a fronteira que a divisão existe para criar.
 
 ```
-app/
-  index.html             carrega os 45 scripts, na ordem que a seção abaixo explica
-  diagnostico.html       a página de 167 checagens
-  diagnostico.js         as checagens, nos mesmos dados e motores da produção
-  css/
-    vitae.css            estética: piche, oxblood, carne, osso, ouro velho
-    ficha-oficial.css    modelo oficial V5 + toda a regra de impressão
-    mesa.css             layout da mesa de jogo, doca e painel de combate
-    dados.css            desenho e animação dos dados
-  js/
-    data/                        vocabulário do jogo, compartilhado pelas quatro áreas
-      data-traits.js               atributos, habilidades, distribuições, sexos
-      data-clans.js                16 clãs
-      data-disciplinas.js          12 Disciplinas + rituais
-      data-predadores.js           16 tipos de Predador
-      data-vantagens.js            antecedentes, méritos, defeitos, ressonâncias
-      data-brasil.js               cidades, seitas, ameaças nacionais
-      data-sabbat.js               Caminhos, Ritae, matilhas, Arena, Predadores do Sabá
-      data-anarquistas.js          baronia, papéis, favores
-      data-independentes.js        linhagens, negócios, contratos
-      data-seitas.js               perfis de seita: bússola, âncoras, grupo, validações
-      data-mesa.js                 sementes de mesa, campanhas, ficha de exemplo
-      data-recombinacao.js         225 fragmentos do degrau 3
-      data-escudo.js               tabelas do Escudo do Mestre
+modulos/                 UM MÓDULO POR PASTA. A pasta É o módulo, e não onde o
+                         código roda: o Árbitro do navegador e o do servidor
+                         moram juntos, e o dia em que ele virar processo é
+                         mudar de arquivo, não de pasta. `.js` é script
+                         clássico de navegador; `.mjs` é ESM de servidor.
 
-    ficha/                       FICHA — tudo relacionado à ficha
-      ficha-vocabulario.js         o que uma ficha É, traduções de id e a piscina de dados
-      motor-ficha.js               extrator → JSON, Índice de Força interno, calibragem
-      motor-matilha.js             matilha como estado coletivo entre fichas
-      ficha-regras.js              derivados, contagens, pendências, validação de seita
-      ficha-oficial.js             as duas folhas Carta do modelo oficial
-      fichas.js                    biblioteca: guardar, listar, abrir, apagar
+  cliente/               MÓDULO 1, o navegador — só renderiza e captura input
+    index.html             carrega os 48 scripts, na ordem que a seção abaixo explica
+    diagnostico.html       a página de 175 checagens
+    diagnostico.js         as checagens, nos mesmos dados e motores da produção
+    css/
+      vitae.css              estética: piche, oxblood, carne, osso, ouro velho
+      ficha-oficial.css      modelo oficial V5 + toda a regra de impressão
+      mesa.css               layout da mesa de jogo, doca e painel de combate
+      dados.css              desenho e animação dos dados
+    js/
+      ponte.js               a Ponte com os módulos: checkout, espelho, checkin (§85)
+      dados-ui.js            desenho e animação da bandeja de dados
+      criador-paineis.js     os nove painéis do criador
+      app.js                 estado do criador, telas, despachante
+      sessoes.js             persistência das sessões de jogo
+      mesa-render.js         todo o HTML da mesa; não muda estado
+      mesa.js                fluxo do turno, combate, bolsa, mutação de estado
+      mesa-acoes.js          o mapa de ação → função do despachante (§50.4)
 
-    arbitro/                     ÁRBITRO — tudo relacionado à mecânica
-      motor-dados.js               rolagem V5, reteste de Vontade, Provocação
-      motor-arbitro.js             capacidades, estados, alcance, modificadores, rotas, veredito
-      arbitro-lexico.js            texto do jogador → intenção mecânica
-      arbitro-tabelas.js           consultas às tabelas do Escudo
-      motor-estado.js              dano, torpor, Máculas, Remorso, frenesi, alimentação, XP
-      motor-combate.js             golpe disputado, armas, armadura, mortais, e o objeto Rodada
-      motor-grafo.js               o mundo como grafo: continência, tranca, adjacência
-      motor-especialista.js        regras do V5 declarativas, com rastro
-      motor-cadeia.js              orquestra os quatro elos da arbitragem
-      motor-navegacao.js           elo 3: distância, rota, linha de tiro, cobertura
-      motor-intencao.js            elo 1: fala com /api/intencao e traduz o esquema
+  gateway/               MÓDULO 1, o servidor — porta 5173, a única que o navegador conhece
+    proxy.mjs              serve o estático, encaminha /api, e o limite de taxa
 
-    cronista/                    CRONISTA — tudo relacionado à narrativa
-      compilador.js                .md da campanha → grafo de cenas
-      diretor.js                   posição na campanha, gatilhos, desfechos
-      recombinador.js              degrau 3: prosa montada de fragmentos, sem modelo
-      escada.js                    os cinco degraus da decisão, como classes
-      narrador.js                  degrau 4: contrato, adaptador simulado e proxy
-      motor-cronica.js             regras da crônica, com peso e orçamento
-      cronista.js                  orquestra os quatro elos da crônica
-      legado.js                    o que atravessa crônicas, e a conversão em vantagem
+  ficha/                 MÓDULO 2 — porta 5174, tudo relacionado à ficha do personagem
+    ficha-servidor.mjs     o processo: rotas /ficha/… (§83)
+    ficha-guardador.mjs    onde a ficha mora: MongoDB quando houver, pasta quando não
+    ficha-vocabulario.js   o que uma ficha É, traduções de id e a piscina de dados
+    motor-ficha.js         extrator → JSON, Índice de Força interno, calibragem
+    motor-matilha.js       matilha como estado coletivo entre fichas
+    ficha-regras.js        derivados, contagens, pendências, validação de seita
+    ficha-oficial.js       as duas folhas Carta do modelo oficial
+    fichas.js              biblioteca: guardar, listar, abrir, apagar
 
-    front/                       FRONT
-      dados-ui.js                  desenho e animação da bandeja de dados
-      criador-paineis.js           os nove painéis do criador
-      app.js                       estado do criador, telas, despachante
-      sessoes.js                   persistência das sessões de jogo
-      mesa-render.js               todo o HTML da mesa; não muda estado
-      mesa.js                      fluxo do turno, combate, bolsa, mutação de estado
-      mesa-acoes.js                o mapa de ação → função do despachante (§50.4)
+  mesa/                  MÓDULO 3 — porta 5175, o estado da partida ativa (§78)
+    mesa-servidor.mjs      o processo: rotas /mesa/… e o WebSocket /mesa/ws
+    mesa-estado.mjs        o cache de estado: cópia local, autosave, checkin com aceite
+    mesa-pasta.mjs         a pasta da sessão: meta, ficha, mesa e histórico .jsonl
+    cliente-ficha.mjs      o contrato de checkout/checkin com o Módulo 2
 
-servidor/                ESM, zero dependências — as TRÊS camadas de LLM vivem aqui
-  dev.mjs                estático sem cache
-  proxy.mjs              o mesmo, mais as rotas /api e o limite de taxa
-  contexto.mjs           recorta seções dos .md e monta o prefixo do modelo
-  intencao.mjs           elo 1 da cadeia: texto livre → intenção mecânica
-  narrador.mjs           degrau 4: prosa nova, esquema sem número, 11 checagens
-  cronista.mjs           prompt, esquema, validador de 10 checagens, retentativa
-  provedor-ollama.mjs    único transporte, via Ollama local
-  comparador.mjs         mede as três camadas: cronista, narrador e intencao
-  amostras/              as noites de referência, a bateria de intenção e o último resultado
+  arbitro/               MÓDULO 4 — porta 5176, a mecânica. Nunca devolve HTML
+    arbitro-servidor.mjs   o processo: interpretar, pedido e apurar (§84)
+    arbitro-contexto.mjs   roda os MESMOS arquivos do navegador num node:vm
+    motor-dados.js         o pedido, o apuramento e a fonte de acaso instalável (§82)
+    motor-arbitro.js       capacidades, estados, alcance, modificadores, rotas, veredito
+    arbitro-lexico.js      texto do jogador → intenção mecânica
+    arbitro-tabelas.js     consultas às tabelas do Escudo
+    motor-estado.js        dano, torpor, Máculas, Remorso, frenesi, alimentação, XP
+    motor-combate.js       golpe disputado, armas, armadura, mortais, e o objeto Rodada
+    motor-grafo.js         o mundo como grafo: continência, tranca, adjacência
+    motor-especialista.js  regras do V5 declarativas, com rastro
+    motor-cadeia.js        orquestra os quatro elos da arbitragem
+    motor-navegacao.js     elo 3: distância, rota, linha de tiro, cobertura
+    motor-intencao.js      elo 1: fala com /api/intencao e traduz o esquema
+
+  cronista/              MÓDULO 5 — porta 5177, a narrativa e as TRÊS camadas de LLM
+    cronista-servidor.mjs  o processo: narrar, cronicar, intencao (§84)
+    compilador.js          .md da campanha → grafo de cenas
+    diretor.js             posição na campanha, gatilhos, desfechos
+    recombinador.js        degrau 3: prosa montada de fragmentos, sem modelo
+    escada.js              os cinco degraus da decisão, como classes
+    narrador.js            degrau 4: contrato, adaptador simulado e proxy
+    motor-cronica.js       regras da crônica, com peso e orçamento
+    cronista.js            orquestra os quatro elos da crônica
+    legado.js              o que atravessa crônicas, e a conversão em vantagem
+    contexto.mjs           recorta seções dos .md e monta o prefixo do modelo
+    intencao.mjs           elo 1 da cadeia: texto livre → intenção mecânica
+    narrador.mjs           degrau 4: prosa nova, esquema sem número, 11 checagens
+    cronista.mjs           prompt, esquema, validador de 10 checagens, retentativa
+    provedor-ollama.mjs    único transporte, via Ollama local
+    amostras/              as noites de referência, a bateria de intenção e o último resultado
+
+comum/                   O QUE NÃO É DE MÓDULO NENHUM porque é de todos
+  portas.mjs               a tabela das cinco portas — um lugar só
+  ordem-de-carga.mjs       a ordem dos scripts clássicos, e onde cada área mora (§84)
+  origem.mjs               de onde o pedido pode vir — a regra, num lugar só (§86)
+  websocket.mjs            RFC 6455 do lado servidor, à mão, sem dependência
+  servir-estatico.mjs      a URL é o caminho no repositório, e as raízes permitidas
+  sistemas.mjs             o diagnóstico e o ligar/desligar da capa
+  dados/                   vocabulário do jogo, compartilhado pelas quatro áreas
+    data-traits.js           atributos, habilidades, distribuições, sexos
+    data-clans.js            16 clãs
+    data-disciplinas.js      12 Disciplinas + rituais
+    data-predadores.js       16 tipos de Predador
+    data-vantagens.js        antecedentes, méritos, defeitos, ressonâncias
+    data-brasil.js           cidades, seitas, ameaças nacionais
+    data-sabbat.js           Caminhos, Ritae, matilhas, Arena, Predadores do Sabá
+    data-anarquistas.js      baronia, papéis, favores
+    data-independentes.js    linhagens, negócios, contratos
+    data-seitas.js           perfis de seita: bússola, âncoras, grupo, validações
+    data-mesa.js             sementes de mesa, campanhas, ficha de exemplo
+    data-recombinacao.js     225 fragmentos do degrau 3
+    data-escudo.js           tabelas do Escudo do Mestre
+    data-itens.js            armas, munições e incendiários, com a mecânica de cada
+    data-ressonancia.js      humores, temperamentos e as 26 Discrasias
+
+ferramentas/             o que NÃO é o produto: serve para trabalhar nele
+  iniciar.cmd              sobe tudo de uma vez, no Windows: ollama, Gateway e módulos
+  desligar.cmd             o par dele: pede o desligamento na ordem certa e confere
+  dev.mjs                  estático sem cache, sem /api — para mexer no criador
+  comparador.mjs           mede as três camadas: cronista, narrador e intencao
+  _render.mjs              extração de página de PDF, offline
+
 testes/                  `npm test` — runner nativo do Node, sem dependência (§44)
   carregar.mjs             o arreio: roda os scripts clássicos num contexto de vm
   arreio.test.mjs          o arreio conferindo a si mesmo contra o index.html (§44.4)
@@ -338,12 +382,16 @@ testes/                  `npm test` — runner nativo do Node, sem dependência 
   jornada.test.mjs         o jogo inteiro: turno, briga, crônica, telas (§52.1)
   servidor.test.mjs        o proxy por HTTP: travessia, origem, limite de taxa (§53.3)
   front.test.mjs           despachante, HTML gerado e o criador (§50.5)
+  mesa-servidor.test.mjs   o Módulo 3: pasta, checkout/checkin, WebSocket (§78)
+  modulos.test.mjs         os Módulos 2 e 4: guardador, id, pedido e apuramento (§83, §84)
   relator.mjs              escreve o registro de cada corrida em registro/ (§50.7)
   registro/                o que rodou, quando e quanto demorou — fora do git
+
 campanhas/               .md das campanhas, servidos por rota própria
+sessoes/                 as pastas de sessão do Módulo 3 — estado de jogo, fora do git
+fichas/                  as fichas do Módulo 2 quando não há MongoDB — fora do git
 docs/                    regras.md · cenario.md · narracao-ia.md · glossario-traducao.md
 Livros/                  os PDFs de origem; nada em código depende deles em execução
-_render.mjs              renderiza página de PDF como imagem, para conferir regra (§39)
 ```
 
 ### A fronteira de cada área
@@ -451,7 +499,7 @@ material por área, para saber onde mexer.
 **Não há divergência conhecida entre o motor e o livro.** As doze da §40 foram pagas, e a
 última — Agravado em excesso levando à Morte Final sem fogo — na §49.1.
 
-**Motores** — `app/js/ficha/` e `app/js/arbitro/`, nenhum devolve HTML:
+**Motores** — `modulos/ficha/` e `modulos/arbitro/`, nenhum devolve HTML:
 
 | Peça | Arquivo | Estado |
 |---|---|---|
@@ -463,12 +511,12 @@ material por área, para saber onde mexer.
 | Iniciativa, rodadas, oponente agindo sozinho | `motor-combate.js` · `Rodada` | ✅ Pronto — §31 |
 | Matilha como estado coletivo | `motor-matilha.js` | ✅ Pronto — §20 |
 | **Grafo de conhecimento** | `motor-grafo.js` | ✅ Pronto — §38.2 |
-| **Extrator de intenção** | `servidor/intencao.mjs` · `motor-intencao.js` | ✅ Pronto — 69/69 medido, §42 |
+| **Extrator de intenção** | `modulos/cronista/intencao.mjs` · `motor-intencao.js` | ✅ Pronto — 69/69 medido, §42 |
 | **Navegação em combate** | `motor-navegacao.js` | ✅ Pronto — distância, rota, linha de tiro, cobertura, §48.3 |
 | **Sistema especialista** | `motor-especialista.js` | ✅ Pronto — 16 regras com rastro, §38.4 |
 | **Cadeia de arbitragem** | `motor-cadeia.js` | ✅ **Os quatro elos ligados ao turno**, com queda para o Árbitro direto — §48.1 |
 
-**Camada de jogo** — `app/js/`:
+**Camada de jogo** — `modulos/`:
 
 | Peça | Arquivo | Estado |
 |---|---|---|
@@ -476,8 +524,8 @@ material por área, para saber onde mexer.
 | Diretor: posição, gatilhos, desfechos | `diretor.js` | ✅ Pronto — §7 |
 | Escada de decisão, 5 degraus polimórficos | `escada.js` | ✅ Pronto — §22 |
 | Degrau 3 — recombinação | `recombinador.js` · `data-recombinacao.js` | ✅ 225 fragmentos, §18 |
-| **Narrador** — degrau 4 | `narrador.js` · `servidor/narrador.mjs` | ✅ Pronto — §8 |
-| **Cronista** — capítulo e dossiê | `cronista.js` · `servidor/cronista.mjs` | ✅ Pronto — §9 |
+| **Narrador** — degrau 4 | `narrador.js` · `modulos/cronista/narrador.mjs` | ✅ Pronto — §8 |
+| **Cronista** — capítulo e dossiê | `cronista.js` · `modulos/cronista/cronista.mjs` | ✅ Pronto — §9 |
 | Legado entre crônicas | `legado.js` | ✅ Pronto — §29, e §32 para o efeito mecânico |
 | Biblioteca de fichas | `fichas.js` | ✅ Pronto — §37.2 |
 | Persistência de sessões | `sessoes.js` | ⚠️ Funciona; reescreve tudo a cada clique, §14.1 item 3 |
@@ -485,7 +533,7 @@ material por área, para saber onde mexer.
 | Criador: nove passos, cinco seitas | `app.js` · `criador-paineis.js` · `ficha-regras.js` | ✅ Pronto |
 | Folha oficial do V5 | `ficha-oficial.js` | ✅ Pronto — recebe a ficha por parâmetro, §37.7 |
 
-**Servidor** — `servidor/`, ESM, zero dependências:
+**Servidor** — os `.mjs` de `modulos/` e `comum/`, ESM, zero dependências:
 
 | Peça | Arquivo | Estado |
 |---|---|---|
@@ -499,9 +547,9 @@ material por área, para saber onde mexer.
 
 | Peça | Onde | Estado |
 |---|---|---|
-| Testes automatizados | `testes/` | ✅ **435 testes**, dez arquivos, 2,8 s — as quatro áreas, as jornadas do jogo e o servidor |
+| Testes automatizados | `testes/` | ✅ **799 testes**, doze arquivos, 5,9 s — as quatro áreas, os módulos, as jornadas do jogo e o servidor. Mais de cem com evidência do que viram |
 | Registro de cada corrida | `testes/registro/` | ✅ O que rodou, quando e por que falhou — §50.7 |
-| Página de diagnóstico | `app/diagnostico.html` | ✅ **167 checagens**, dez grupos, §21 |
+| Página de diagnóstico | `modulos/cliente/diagnostico.html` | ✅ **175 checagens**, dezessete grupos, §21 |
 | Regras compiladas dos livros | `docs/regras.md` | ✅ Quatro partes |
 | Cenário, seitas, matrizes de relação | `docs/cenario.md` | ✅ Base do Narrador |
 | Voz do Narrador e lista negra | `docs/narracao-ia.md` | ✅ Fonte única do validador |
@@ -918,7 +966,7 @@ por personagem: vínculos, marcas, posses e fios em aberto atravessam de uma cr�
 
 > **Reconstruída a partir do código.** As §§8.2 a 8.5 foram perdidas numa edição
 > automatizada minha e não havia backup — o `git init` deste projeto nunca teve commit.
-> O texto abaixo foi reescrito lendo `servidor/narrador.mjs`, que é a fonte de verdade;
+> O texto abaixo foi reescrito lendo `modulos/cronista/narrador.mjs`, que é a fonte de verdade;
 > a prosa original se perdeu, os fatos não.
 
 O Narrador responde num esquema JSON fechado (`ESQUEMA`, em `narrador.mjs`), e a regra que
@@ -956,8 +1004,12 @@ Nenhuma envolve o modelo: são regex e comparação de conjunto.
    antes do teste, então diálogo em português não é falso positivo. O que sobra é o
    travessão usado para explicar, que o guia proíbe.
 3. **Reticências em excesso** — mais de uma ocorrência.
-4. **Tamanho fora da faixa** — 40 a 260 palavras. A faixa do validador é mais larga que a
-   do prompt (80 a 180) de propósito: o prompt pede o alvo, o validador reprova o absurdo.
+4. **Curta demais** — menos de 40 palavras. **Não há teto**: o de 260 palavras saiu na
+   §56, junto com o do Cronista. O prompt continua pedindo 80 a 180, e o esquema repete no
+   campo — isso orienta sem rejeitar, que é a diferença entre alvo e portão. Uma cena que
+   pede 300 palavras não é defeito do modelo, e reprovar por isso jogava fora texto bom e
+   pagava uma segunda chamada só para encurtar. O mínimo fica porque pega outra coisa:
+   narração de vinte palavras é o modelo desistindo, não escolha de ritmo.
 
 **Regra** — a que protege a §3.2:
 
@@ -1040,7 +1092,7 @@ nenhuma, e o esquema de saída faz o trabalho que elas fariam.
 
 Aqui está o coração da peça, e é onde a documentação do projeto vira insumo de produção.
 
-`servidor/contexto.mjs` guarda um **manifesto**: uma lista fechada de seções de `.md`,
+`modulos/cronista/contexto.mjs` guarda um **manifesto**: uma lista fechada de seções de `.md`,
 cada uma com o motivo de estar lá. Nenhum documento sobe inteiro; sobe a seção nomeada.
 
 | Bloco | Vem de | Por quê |
@@ -1048,7 +1100,7 @@ cada uma com o motivo de estar lá. Nenhum documento sobe inteiro; sobe a seçã
 | `estilo` | `narracao-ia.md` §5 | A voz. É o bloco escrito para caber no orçamento. |
 | `exemplos` | `narracao-ia.md` §5.1 | **Condicional:** só na camada Cronista. Três pares registro→crônica. |
 | `premissa` | `cenario.md` §1 | Sem isso o resumo vira relatório. |
-| `coerencia` | `cenario.md` §9 | O que nunca se inventa nem se resolve de graça. |
+| `coerencia` | `cenario.md` §10 | O que nunca se inventa nem se resolve de graça. |
 | `matriz-seitas` | `cenario.md` §3.1 | Define o tom de toda relação registrada. |
 | `matriz-clas` | `cenario.md` §4.1 | Idem, no nível de clã. |
 | `textura` | `cenario.md` §8.1 | Impede o dossiê de soar traduzido. |
@@ -1079,7 +1131,7 @@ guia muda o validador; não existe duas versões da regra para divergirem.
 
 **Dez** checagens determinísticas: vocabulário proibido, travessão explicativo,
 reticências em excesso, número de regra na prosa (em qualquer ordem), eco do registro
-copiado cru, tamanho fora da faixa de 60 a 260 palavras, pergunta final dirigida ao
+copiado cru, crônica com menos de 60 palavras (não há teto, §56), pergunta final dirigida ao
 jogador, idioma, e id de entidade inexistente em relação ou fio. Falhou → uma retentativa
 dizendo o que reprovou → se falhar de novo, o texto vai marcado como reprovado, e a
 interface diz isso.
@@ -1102,7 +1154,7 @@ só uma implementação, e por decisão (§16.2) vai continuar assim.
 | `ollama` | `provedor-ollama.mjs` | `mistral-nemo:12b` | nenhuma, `fetch` nativo |
 
 ```bash
-VITAE_MODELO=mistral-nemo:12b node servidor/proxy.mjs
+VITAE_MODELO=mistral-nemo:12b node modulos/gateway/proxy.mjs
 ```
 
 No Ollama o JSON Schema vai no campo `format`, que faz **decodificação restrita por
@@ -1111,8 +1163,8 @@ modelo. Nas corridas locais, nenhuma falhou de esquema. Isso não é mérito do 
 
 ### 9.5 O comparador, e o que ele mediu
 
-`servidor/comparador.mjs` roda a mesma noite N vezes em cada modelo e usa **o validador da
-produção como juiz**. A amostra fica em `servidor/amostras/noite-carnaval.json`: 19
+`ferramentas/comparador.mjs` roda a mesma noite N vezes em cada modelo e usa **o validador da
+produção como juiz**. A amostra fica em `modulos/cronista/amostras/noite-carnaval.json`: 19
 eventos, 3 pessoas, 2 fios, uma Falha Bestial com testemunha.
 
 ```bash
@@ -1236,17 +1288,17 @@ chave — ver §13.
 Problema original: o app é HTML estático, e chamar uma API remota do navegador exigiria
 `dangerouslyAllowBrowser` e deixaria uma chave à mostra.
 
-**Resolvido duas vezes.** Primeiro pelo proxy: `servidor/proxy.mjs` serve `app/` sem
+**Resolvido duas vezes.** Primeiro pelo proxy: `modulos/gateway/proxy.mjs` serve o estático sem
 cache, exatamente como o `dev.mjs`, **e** atende as rotas `/api/`. Depois pela §16.2, que
 removeu o provedor remoto: hoje o navegador fala com o proxy, o proxy fala com o `ollama`
 em `127.0.0.1`, e nenhum byte do jogo sai da máquina.
 
 ```bash
-node servidor/proxy.mjs
+node modulos/gateway/proxy.mjs
 ```
 
 Sem o ollama no ar, o servidor sobe do mesmo jeito e anuncia no console que o Cronista está
-em modo determinístico. `servidor/dev.mjs` continua existindo para quem não quer IA
+em modo determinístico. `ferramentas/dev.mjs` continua existindo para quem não quer IA
 nenhuma.
 
 | Rota | O que faz |
@@ -1299,30 +1351,82 @@ Pendências desta fase: a matilha continua sendo estado coletivo guardado numa f
 individual (§10.1 de regras.md Parte III), e ainda não existe o interruptor de "só
 material oficial" que esconderia o que é Storytellers Vault.
 
-### 14.1 O que falta, em ordem de peso
+### 14.1 O que falta
 
 **Esta é a única lista que manda.** Se outra aparecer noutro canto do documento, ela está velha.
-A §45 corta o mesmo material por área — útil para saber onde mexer, e não para saber o que fazer
-em seguida.
+A §45 corta o mesmo material com mais detalhe de código — útil para saber *onde* mexer.
 
-> **Ao APRESENTAR pendência, separe por área.** Ficha · Árbitro · Cronista · Front · Geral, nessa
-> ordem, e conferindo antes a tabela da **Parte A → Estrutura**, que é quem define os donos. Esta
-> §14.1 é ordenada por peso porque responde "o que fazer em seguida"; a apresentação por área
-> responde "onde mexer", e é a que o usuário pediu para ser o padrão.
+> **A lista sai separada por área:** Ficha · Árbitro · Cronista · Front · Geral, nessa ordem, que
+> é a ordem de carga. Antes de montar, **releia a tabela da Parte A → Estrutura**: é ela que diz
+> quem é dono de quê. **Geral** é o que atravessa áreas, mais `modulos/`, `comum/`, `ferramentas/`, `testes/`, `campanhas/`,
+> `docs/` e as decisões que estão na mesa do usuário. `comum/dados/` não é área — ver §43.2.
+>
+> A ordem por PESO, para responder "o que fazer em seguida", está no fim, em §14.1.2.
 
 Nada aqui bloqueia jogar: o jogo roda do criador ao dossiê, com ou sem modelo.
 
-> **O que saiu da lista desde a última revisão:** as doze divergências entre o motor e o manual
-> básico (§40), a lista inteira da Ficha — F1 a F5 (§47) —, a do Árbitro — A1 a A7 (§48, §49) —,
-> cinco dos sete itens do front (§47, §50), as duas checagens que envelheciam — X2 e X3 (§50) —,
-> **o teste do Cronista** e **o juiz cego** (§51).
->
-> **Não há mais divergência conhecida entre o motor e o livro, e a rede de testes está fechada:
-> as quatro áreas têm suíte.**
+---
+
+#### Ficha — **nada aberto**
+
+F1 a F5 pagos na §47. A área carrega sozinha, com duas pastas: `['data', 'ficha']`.
 
 ---
 
-**1. As cinco campanhas não são jogáveis** — *alto para o jogo, e é trabalho de escrita*
+#### Árbitro — **fechada de novo**
+
+A1 a A4 foram achadas lendo o livro (§58 a §62) e **pagas na §63**. Um sexto item, A6,
+apareceu enquanto eu escrevia o teste do terceiro, e foi pago junto.
+
+| # | O que era | Onde foi parar |
+|---|---|---|
+| A1 | A parada de dados podia chegar a zero, e a rota era **descartada** — a ação nem aparecia para o jogador | Piso de 1 dado em três lugares. §63.1 |
+| A2 | O reteste de Vontade só aceitava falha; o crítico bestial sem falhas era o único que **não podia ser retestado** | Aceita qualquer dado comum, e a sugestão aponta o 10 que desfaz o crítico. §63.2 |
+| A3 | Empate em combate era "ataque bloqueado", e o motor escolhia a esquiva pelo jogador | Empate bilateral fere os dois com margem 1; esquivar é escolha, e não revida. §63.3 |
+| A4 | Cinco ações do Apêndice I não existiam; três paradas erradas; porta arrombada abria o painel de combate | Cinco ações novas, invasão sempre com Ladroagem, `derrubar` fora de `lutar`. §63.4 |
+| A6 | **Dano Superficial dividido para baixo** — 1 virava 0, e isso estava escrito como regra em três lugares | `Math.ceil`. O livro diz "arredondando para cima" (pág. 126). §63.5 |
+| A7 | O **Desejo** era pago só no fechamento da sessão; o livro paga **na hora** em que o personagem age | `Estado.realizarDesejo`, uma vez por sessão, e o fechamento não paga duas vezes. §69.1 |
+| A8 | **Perder um Pilar não derrubava a Convicção associada** — regra escrita no `regras.md` sem uma linha de código | `Estado.perderPilar` esvazia o par, cobra 2 Máculas (3 se foi por ação sua) e avisa quando não sobra Convicção. §69.2 |
+| A9 | Mácula **a serviço de uma Convicção** não era reduzida | `ganharMacula` aceita `porConviccao`; o exemplo da pág. 239 (3 → 2) é teste. §69.3 |
+| H1 | A **especialização dava +1 dado sempre** — "Lobisomens" em Briga valia ao socar um segurança | O livro condiciona à tarefa (pág. 159). Agora quem enquadra é o texto da ação, e a arma no combate. §73.1 |
+
+**A7, A8 e A9 vieram da §68**, achadas enquanto eu só documentava o capítulo Crenças: as três
+estavam escritas no `regras.md` em português claro, e nenhuma tinha código atrás. Pagas na §69.
+
+**A6 é o pior item que este projeto já teve, e não por tamanho:** era uma **crença
+documentada** — o código, `regras.md`, o README e um teste que a defendia pelo nome, todos
+concordando entre si, e nenhum olhando para o livro. Nenhuma revisão interna pegaria; só a
+página.
+
+---
+
+#### Cronista — **um item, medido**
+
+**C1. O degrau 3 aceita ou recusa por sorteio** — *baixo* · era o A9, e o dono é a Escada
+
+Cena com material resolve local em 100% das tentativas; cena **vazia** ainda é aceita em 96%. A
+recusa vem do sorteio dos fragmentos, não da falta de material — dois turnos idênticos podem cair
+em degraus diferentes, e o custo em LLM varia sem ninguém ter escolhido isso. Números na §51.3.
+
+Não é urgente: o efeito é ~5% de turnos indo ao Narrador sem motivo. Está aqui porque foi medido,
+e porque a meta de "70% local" merece um número estável.
+
+---
+
+#### Front — **nada aberto**
+
+N1 a N4 e N7 pagos nas §47, §50 e §54. **N5 e N6 fecharam por decisão sua** (§16.2 — framework
+**não entra**): sem framework, dividi-los seria mover template string de um arquivo para outro.
+
+A §57 ainda encolheu o maior deles: o compositor perdeu a fileira de modos, a linha de volume e a
+de alvo. O que substituiu não ficou no front — foi para `arbitro/motor-entrada.js`, onde dá para
+testar sem desenhar nada.
+
+---
+
+#### Geral
+
+**G1. As cinco campanhas não são jogáveis** — *alto para o jogo, e é trabalho de escrita*
 
 Os cinco `.md` em `campanhas/` são documentos de extração dos PDFs, não campanhas no esquema da
 §6. Compilam sem erro e devolvem grafo vazio — 0 opções, quase nenhuma narração. **Hoje só
@@ -1335,52 +1439,154 @@ Duas frentes, e a segunda é barata:
   inclusive "Nenhum capítulo encontrado". O que falta é a mesa parar em vez de entrar com zero
   opções — hoje ela mostra um toast e segue. Vinte linhas.
 
-**2. Qualidade do Narrador local** — *decisão sua, §35.6*
+**G2. Reler `Livros/Regras` e `Livros/Adição-Narrativa`, e atualizar os arquivos** — *médio* ·
+item 1 da sua lista
+
+**A Parte I do manual básico fechou na §60:** as 17 seções de regra (§2 a §18) estão
+conferidas contra o livro, com a página em cada uma. A §1 saiu de lá — virou vocabulário, em
+`narracao-ia.md` §4.7 — e a §19 é inventário do motor, não regra.
+
+**Cuidado com a palavra "fechou":** o que fechou é a **Parte I do meu documento**, e não o
+livro. Contadas as citações de página, `regras.md` e `narracao-ia.md` conferiram **36 das
+~394 páginas de conteúdo do básico — cerca de 9%**. Capítulos inteiros nunca foram abertos, e
+vários deles alimentam dado que o motor usa hoje. O mapa está na §61.
+
+**Ler valeu a pena, e o número diz quanto.** Seis rodadas de leitura (§58 a §64) renderam
+**cinco divergências de motor** (A1 a A4 e A6, todas pagas na §63), **dez correções de
+documento**, **duas de dado** e a **reescrita inteira das Disciplinas** — 112 poderes, dos
+quais só cerca de um terço batia com o livro. E confirmaram o que já estava certo, incluindo
+a correção mais delicada que este projeto fez no motor (A5, §49.1).
+
+Isso não quer dizer que o motor estivesse errado por toda parte: as doze divergências
+conhecidas foram pagas na §40. Quer dizer que **o que não foi lido não foi conferido** — e
+que documento velho não é inofensivo só porque o código está certo, porque **quem lê o
+documento programa por ele**.
+
+**G3. Terminar de ler as campanhas** — *médio, offline* · item 2 da sua lista, e é a Fase 5
+
+Extrair tom, ganchos e bancos de complicações dos PDFs em `Livros/Campanhas`. É o que mais
+melhoraria o material pré-escrito — de onde sai a qualidade dos degraus 1 a 3. Anda junto com G1.
+
+A trava de idioma caiu: a campanha nasce em **português do Brasil** (§16.2). O compilador não
+traduz, e não vai passar a traduzir.
+
+**G4. O extrator de intenção erra o arremesso** — *baixo, e defensável* · item 3 da sua lista
+
+"jogo o cinzeiro na cabeça dela" vira `melee_attack`, consistente nas duas repetições. Deveria ser
+`ranged_attack`: **todo arremesso é ataque à distância** no V5.
+
+Mitigação já aplicada: o papel do extrator diz isso em letra dura ("e TODO arremesso — jogar,
+atirar, arremessar qualquer objeto contra alguém") e há um few-shot exatamente desse caso. **Não
+foi medido de novo depois disso** — precisa de ollama no ar.
+
+O jogo não para por causa dele: `melee_attack` vira "lutar", que é uma ação válida com teste
+válido. O que muda é a rota e o alcance.
+
+**G5. Qualidade do Narrador local** — *decisão sua, §35.6*
 
 `mistral-nemo:12b` é o padrão desde a §34: **8/20** no Narrador contra 0/10 do granite, **6/10**
 no Cronista contra 2/10, e português correto contra um que escrevia "o fechadura". Melhorou muito,
 e ainda não é bom o bastante — o que sobra é o modelo violando o próprio guia de estilo.
 
-**Não mexa nisto antes do item 3.** É a lição da §34.4, e ela vale exatamente aqui.
+**Não mexa nisto antes de G3.** É a lição da §34.4, e ela vale exatamente aqui. E o instrumento de
+medida foi consertado na §51.5: o `comparador.mjs` agora imprime intervalo de confiança e se
+recusa a declarar vencedor quando os intervalos se cruzam — 6/10 e 2/10, com n=10, **não são
+distinguíveis**.
 
-**3. Fase 5 — estilo das campanhas oficiais** — *médio, offline*
+**G6. A leitura de fala pelo modelo não foi medida** — *baixo* · nasceu na §57
 
-Extrair tom, ganchos e bancos de complicações dos PDFs em `Livros/Campanhas`. É o item 4 da §10, e
-o que mais melhoraria o material pré-escrito — de onde sai a qualidade dos degraus 1 a 3. Anda
-junto com o item 1.
+Os campos `speech` e `speech_volume` do extrator têm o esquema e o `normalizar` afirmados em
+teste, mas **nenhuma medição com modelo de verdade** — não há ollama no ar. O que está verificado
+é o caminho determinístico, que é o padrão e é completo.
 
-A trava de idioma caiu: a campanha nasce em **português do Brasil** (§16.2). O compilador não
-traduz, e não vai passar a traduzir.
+**G7. O gasto de experiência não exige a Ressonância correspondente** — *médio* · nasceu na §67
 
-**4. O que restou de tamanho, e depende de você** — *baixo*
+O básico, pág. 231: para justificar gasto de experiência numa Disciplina, o personagem **deve se
+alimentar de sangue com a Ressonância correspondente**, e o Narrador pode exigir Ressonâncias cada
+vez mais potentes — até Discrasias — para valores mais altos.
 
-Três arquivos do front passam de 750 linhas: `criador-paineis.js`, `mesa-render.js` e `app.js`.
-Os três travam na mesma pergunta, que está na sua mesa desde a §16.1: **framework no navegador**.
-Sem essa decisão, dividi-los seria mover template string de um arquivo para outro.
+O motor não cobra. A §67 pagou tudo o mais do capítulo (o dado do temperamento intenso, o sorteio
+da bolsa, a impregnação, a Fome 5) e **deixou este de fora dizendo que deixou**: está no
+`regras.md` §11.6 marcado como pendência, e não como regra cumprida. A diferença entre as duas
+coisas é a única que importa aqui.
 
-`mesa.js` saiu desta lista na §50: o despachante de 48 casos virou mapa, e o arquivo caiu de 1.503
-para 1.203 linhas. `motor-arbitro.js` saiu na §48, dividido em três.
+**G8. O Apêndice II — Projetos — não existe no motor** — *médio* · nasceu na §70
 
-> **Os números não moram mais aqui.** `testes/fronteiras.test.mjs` confere o teto a cada
-> `npm test`, mantém a lista dos que passam dele **com o motivo**, reprova quando um incha demais
-> ou quando um arquivo já não é grande e continua listado — e confere se este documento afirma
-> contagem que não bate. Item X3 da §45.5.
+Básico, págs. 415–417. Um subsistema fechado de planos de longo prazo: Escopo, Incremento, Dado do
+Projeto contando de 10 a 0, rolagem de Lançamento (Habilidade + Antecedente), rolagem de Objetivo
+com parada igual ao Dado atual, pontos de Antecedente **congelados** como risco, e a *Longue Durée*
+jogada em Memoriam.
 
-**5. O degrau 3 aceita ou recusa por sorteio** — *baixo, e foi medido*
+**Cabe bem numa mesa solo, e por um motivo estrutural: projetos correm entre sessões.** Hoje a mesa
+só tem a noite atual — não há nada que faça o tempo passar. E o apêndice traz de brinde o preço
+mecânico que faltou à §67: *"um ponto altera uma Ressonância e a aumenta para Intensa, enquanto
+dois pontos altera uma Ressonância e adiciona uma Discrasia"*.
 
-Cena com material resolve local em 100% das tentativas; cena **vazia** ainda é aceita em 96%. A
-recusa vem do sorteio dos fragmentos, não da falta de material — dois turnos idênticos podem cair
-em degraus diferentes, e o custo em LLM varia sem ninguém ter escolhido isso. Detalhe e números na
-§51.3.
+**G9. O Apêndice III — Jogo Ponderado — não tem contraparte** — *médio* · nasceu na §70
 
-Não é urgente: o efeito é ~5% de turnos indo ao Narrador sem motivo. É registrado porque foi
-medido, e porque a meta de "70% local" merece um número estável.
+Básico, págs. 419–423. Quase tudo é de mesa física — sinal de mão, carta no centro — e não
+traduz. Duas coisas traduzem direto, e uma delas corrige documento:
 
-**6. Uma coisa que é contrato, não defeito** — *nada a fazer, e vale saber*
+- **A Carta X.** Num aplicativo é literalmente um botão: interromper a cena sem precisar explicar.
+  É o item mais barato do apêndice e provavelmente o mais valioso.
+- **Linhas e Véus declaradas pelo jogador**, por crônica, editáveis a qualquer momento, injetadas
+  no prefixo do Narrador. O `cenario.md` §9.1 hoje trata a trava de assunto sensível como
+  obrigação do autor; o livro manda a lista ser **do jogador**. Está errado do jeito que está.
 
-`Combate.resolver()` aplica o dano na ficha do defensor. Contraria a divisão "o Árbitro julga, o
-Estado muda" que a §43.3 verifica em outros pontos, mas é coerente e a mesa conta com isso. A
-§46.4 tranca o comportamento atual num teste, para que a mudança, se vier, seja deliberada.
+**H2. Uma especialização por perícia, e o livro permite mais** — *baixo* · nasceu na §73
+
+`f.especializacoes` é `{ periciaId: 'nome' }`: **um nome só**. O básico (pág. 159) dá *"tantas
+quanto o seu valor na Habilidade"*, e **mais que isso em Ofícios** (pág. 164). Quem tem Briga 3
+poderia ter três, e aqui tem uma.
+
+**Não muda dado numa rolagem** — a regra de *uma por rolagem* vale de qualquer jeito. O que faz é
+empobrecer o personagem e obrigar a escolher no lugar errado. É mudança de modelo de dado que
+atravessa criador, ficha impressa e fichas salvas, e por isso está **declarada** em vez de meio
+feita — `regras.md` §17.6.
+
+**G10. Os seis Tipos de Predador do Guia do Jogador não foram conferidos** — *médio* · nasceu na §77
+
+Extorsionista, Ladrão de Túmulos, Montero, Perseguidor, Assassino de Estrada e Alçapão vêm do
+**Guia do Jogador**, págs. 107–111, e estão em `data-predadores.js` abaixo de um separador que diz
+que não foram lidos contra a página.
+
+O Guia **dá parada de dados** para todos eles — coisa que o básico não faz para os dez dele —, e a
+tradução exige cuidado: chama Oblívio de *"Esquecimento"*, Sagacidade de *"Insight"* e Ladroagem
+de *"Furto"*. Há ainda um sétimo tipo no Guia, o **Ceifador**, que o projeto não tem.
+
+**Arquitetura modular** — *nasceu na §78*
+
+O usuário desenhou o sistema em cinco módulos com processo e porta próprios (§78). **Os cinco
+existem**: MesaServer na §78, as pastas na §79, ligar e desligar na §80, a rolagem passando à
+Mesa na §82, e FichaServer, Árbitro e Cronista virando processos na §83 e na §84.
+
+O que falta é **o Cliente usar**. As rotas respondem, têm teste, e o navegador não chama nenhuma
+delas.
+
+**M8. O ArbitroServer está de pé e o navegador não o consulta** — *médio* · nasceu na §85
+
+O Árbitro que decide o turno continua sendo o do navegador. É o **mesmo código** — a §84 carrega
+os mesmos arquivos num contexto de vm —, então não há divergência de regra; o que há é um
+processo que existe e ninguém usa.
+
+**M9. A sessão é espelhada, não autoritativa** — *médio* · nasceu na §85
+
+O `localStorage` continua sendo a fonte imediata; o Módulo 3 tem a cópia durável, a pasta, o
+autosave e o checkin. Inverter — o servidor mandando e o navegador só desenhando — é o desenho
+do usuário levado ao fim, e é trabalho grande: `salvarMesa()` é síncrona e roda em 45 lugares.
+
+**M10. Só a rolagem de AÇÃO passa pela Mesa** — *baixo* · nasceu na §85
+
+Frenesi, Remorso e o combate rolam por dentro do motor, em caminho síncrono, e continuam usando
+a fonte local da §82. Separá-los exigiria tornar assíncrono o miolo do Árbitro.
+
+**M4. O Árbitro não manda salvar na memória da mesa** — *médio*
+
+Do desenho do Módulo 4: *pegar uma carta, conhecer alguém* — o veredito tem de trazer **o que a
+mesa deve gravar**, e não só o resultado mecânico. Hoje `mundo.objetos` e `mundo.pessoas` ficam
+vazios a menos que alguém os preencha à mão.
+
+---
 
 **Segurança**
 
@@ -1392,11 +1598,78 @@ roda na máquina do usuário e não há conta para estourar — §23.6 e §26.
 Simetria de parágrafo (precisa de limiar calibrado, reprovaria texto bom) e fecho moralizante
 (coberto de lado pela lista negra). Ambas em `narracao-ia.md` §6, com o motivo.
 
+---
 
-### 14.1.1 O que já saiu da lista
+### 14.1.2 A mesma lista, por peso
 
-Registro acumulado, porque a lista velha ainda circula em anotação antiga. Item fechado
-some da §14.1 e aparece aqui.
+Para responder "o que fazer em seguida":
+
+| | Item | Área | Peso |
+|---|---|---|---|
+| 1 | As cinco campanhas não são jogáveis (G1) | Geral | **alto para o jogo** |
+| 2 | Reler os livros de regras e atualizar os arquivos (G2) | Geral | médio — **e é o que mais rende** |
+| 3 | Terminar de ler as campanhas — Fase 5 (G3) | Geral | médio, offline |
+| 4 | O Apêndice II: Projetos (G8) | Geral | médio |
+| 5 | O gasto de experiência não exige a Ressonância (G7) | Geral | médio |
+| 6 | A Carta X e as Linhas e Véus do Apêndice III (G9) | Geral | médio |
+| 7 | Os seis Predadores do Guia do Jogador (G10) | Geral | médio |
+| 8 | O Árbitro não manda salvar na memória da mesa (M4) | Geral | médio |
+| 9 | O ArbitroServer de pé e não consultado (M8) | Geral | médio |
+| 10 | A sessão é espelhada, não autoritativa (M9) | Geral | médio |
+| 11 | O extrator erra o arremesso (G4) | Geral | baixo |
+| 12 | O degrau 3 aceita ou recusa por sorteio (C1) | Cronista | baixo |
+| 13 | A leitura de fala pelo modelo não foi medida (G6) | Geral | baixo |
+| 14 | Uma especialização por perícia (H2) | Geral | baixo |
+| 15 | Só a rolagem de ação passa pela Mesa (M10) | Geral | baixo |
+| 16 | Qualidade do Narrador local (G5) | Geral | decisão sua |
+
+**As quatro áreas de código estão fechadas.** O Árbitro reabriu duas vezes lendo o livro — cinco
+divergências na §63, três na §69 — e fechou as oito.
+
+**A arquitetura saiu do topo da lista.** M1, M2, M3, M5, M6 e M7 fecharam entre a §80 e a §86: os
+cinco módulos existem, o Cliente os usa, e com eles fora o jogo continua local. O que sobrou —
+M4, M8, M9 e M10 — é o passo final do desenho, e nada disso bloqueia jogar.
+
+**G2 continua no alto, e o número explica.** Do §58 ao §69, cerca de 90 páginas do básico
+renderam **oito divergências de motor**, **doze correções de documento**, **três de dado** e dois
+capítulos inteiros que não existiam no projeto (Itens e Ressonância). Faltam ~300 páginas e doze
+livros. Nada mais neste projeto tem essa taxa de retorno.
+
+> **E o retorno mudou de natureza no caminho.** As primeiras rodadas achavam defeito no motor. As
+> últimas acham defeito **no que eu escrevi sobre o motor** — G7, G8 e G9 nasceram todos de eu
+> estar documentando, não corrigindo. Ler continua rendendo; o que mudou é onde o erro mora.
+
+### 14.1.3 O que saiu da lista, e por quê
+
+Cinco itens fecharam **por decisão sua**, e não por trabalho. Ficam registrados porque a lista
+velha ainda circula:
+
+| Item | Decisão |
+|---|---|
+| Framework no navegador — destravaria N5/N6 | **Não entra.** §16.2 |
+| N5 e N6 — tamanho de `criador-paineis.js`, `mesa-render.js` e `app.js` | Fecham junto com o framework: o que há neles é HTML, não acoplamento |
+| `Combate.resolver()` aplica dano na ficha | **É contrato, não defeito.** O dano tem de afetar a ficha durante o jogo, para contar Superficial e Agravado e para a cura ter o que curar. Trancado em teste |
+| Teto de tamanho no Cronista e no Narrador | **Removidos.** §55 e §56 — ritmo é escolha de quem joga |
+| Provedor pago | Não existe, e não volta. §16.2, §23.6 |
+
+E dois fecharam por trabalho desde a última revisão:
+
+| Item | Onde foi parar |
+|---|---|
+| Testes apresentarem o resultado, e não só passou/reprovou (item 4 da sua lista) | 101 testes com evidência no registro: valores dos dados, piscinas montadas, trilhas de dano. §54.1 |
+| Nove funções sem teste direto (N8) | Todas com teste. As portas de entrada de dado de fora vieram primeiro. §54.3 |
+| **M6 — a regra de origem escrita cinco vezes** | Pago na §86. Uma implementação em `comum/origem.mjs`, e um teste varrendo os `.mjs` atrás de uma sexta cópia |
+| **M7 — o desligar-tudo não avisava que havia sessão viva** | Pago na §86. O número já existia em `/mesa/saude`; o que faltava era ele chegar ao clique armado |
+| **M2 — o Cliente não usava os módulos** | Pago na §85. A Ponte: checkout, espelho com represa, checkin em dois cliques, biblioteca de fichas e a rolagem pela Mesa — com queda suave em todos os pontos |
+| **M1 — o FichaServer, o Módulo 2, não existia** | Pago na §83. Porta 5174, MongoDB quando houver e pasta quando não, e o ciclo Checkout/Checkin da §78 fechando com as duas pontas |
+| **M3 — Árbitro e Cronista não tinham processo próprio** | Pago na §84. O Módulo 4 roda os MESMOS arquivos do navegador num contexto de vm; o Módulo 5 tirou as três camadas de modelo de dentro do Gateway |
+| **M5 — ligar/desligar não conhecia os módulos novos** | Pago na §80. O painel da capa separa **processos** de **recursos**, o Gateway sobe e derruba os módulos irmãos na ordem certa, e `ferramentas/desligar.cmd` é o par do `iniciar.cmd` |
+
+### 14.1.4 O registro acumulado
+
+Tudo o que já esteve em aberto neste projeto, desde o começo — a §14.1.3 traz só o que fechou na
+última revisão. Item fechado some da §14.1 e aparece aqui, porque a lista velha ainda circula em
+anotação antiga.
 
 | Item que já esteve em aberto | Onde foi parar |
 |---|---|
@@ -1429,6 +1702,33 @@ some da §14.1 e aparece aqui.
 | O comparador imprimia 6/10 como se fosse medida | Intervalo de Wilson e veredito de "não dá para distinguir". §51.5 |
 | Os três últimos `catch (e) {}` | Legado devolve false; o validador avisa. §51.4, §51.6 |
 | `DISCIPLINAS[id].nome` derrubava a lista de pendências | Nomeia o id cru e acrescenta a pendência. §51.6 |
+| Teste que só dizia passou/reprovou | 101 testes com evidência: valores dos dados, piscinas, trilhas de dano. §54.1 |
+| Nove funções sem teste direto (N8) | Todas com teste, começando pelas portas de entrada de dado de fora. §54.3 |
+| Teto de 260 palavras no Cronista e no Narrador | Removidos: ritmo é escolha de quem joga. Ficou só o mínimo. §55, §56 |
+| Os dois juízes de texto sem asserção nenhuma | 13 testes cada, incluindo os de falso positivo. §56.1 |
+| Quatro botões de modo antes de escrever | Uma caixa só; a pontuação separa fala de ação. §57 |
+| O léxico casava por pedaço de palavra: "Grito:" virava "Celebrar um Ritae" | Palavra inteira, com a regra que o marcador de termos já usava. §57.5 |
+| Bloqueio duro perdia para o `escalar`: amordaçado subia para o Narrador falar | Bloqueio vence escalar. §57.5 |
+| Dano Superficial em vampiro dividido para BAIXO, escrito como regra em três lugares | `Math.ceil`. Era crença documentada, e só a página pegou. §63.5 |
+| Oblívio nível 5 com dois poderes que não existem em livro nenhum | Corrigidos pela contagem no PDF. Aqui **o documento tinha razão contra o código**. §65.2 |
+| As armas incendiárias do livro davam dano 0 Superficial: o capítulo "Itens" não existia | 17 itens com página, em `data-itens.js`, e a queima por turno que `em_chamas` só prometia. §66 |
+| A Ressonância não somava nada: com ela ou sem ela, a parada dava o mesmo número | O dado da pág. 228, com as duas travas do livro. E o campo `temperamento`, sem o qual a regra não existia. §67 |
+| O manifesto de contexto apontava para seções de `.md` por título, sem nada verificando a ligação | Uma seção renomeada devolvia zero caractere em silêncio. Agora há teste, confirmado por mutação. §68.3 |
+| Três regras do capítulo Crenças escritas no `regras.md` e sem código atrás (A7, A8, A9) | O Desejo paga na hora, o Pilar perdido derruba a Convicção, e a Mácula a serviço dela é reduzida. §69 |
+| O arquivo de pendências tinha virado um segundo README — 756 linhas, das quais ~40 eram pendência | Reescrito em 149 linhas, só a lista, por área. O relato mora aqui. §70.1 |
+| "A Caça" vinha depois de "O Ofício" e "Os Dons", e o painel mandava o jogador VOLTAR | A Caça é o passo IV, e os dois seguintes já abrem com a cota corrigida. §71.1 |
+| As 27 Habilidades eram nomes sem explicação nenhuma | Uma linha do livro por Habilidade, com a página, no `title` de cada linha. §71.2 |
+| Toda ação do criador reconstruía a página e subia ao topo | Mesmo passo troca só o miolo e preserva a rolagem. §71.3 |
+| O compilador não traduzia NOME de traço para id: "Subterfúgio" virava `subterfugio` e a rota valia zero dados em silêncio | `Compilador.traco()`, achado ao escrever a primeira campanha de verdade. §72.2 |
+| Campanha que não compila entrava assim mesmo, com zero opções e o motivo só no console | A mesa recusa e diz o quê. §72.4 |
+| A especialização dava +1 dado em TODA rolagem da perícia, e o livro condiciona à tarefa | Quem enquadra é o texto da ação — e a arma, no combate. §73.1 |
+| Campanha que não carregava dizia só "Failed to fetch", que não diz o que fazer | Três causas separadas, com o comando na tela — e o saguão avisa antes do clique. §74.2 |
+| A faixa da mesa dizia "Narrador simulado" mesmo com o modelo ligado: era HTML fixo | Lê o adaptador em uso, e traz o botão de procurar o modelo. §75.2 |
+| Não havia como ligar os sistemas nem ver o que estava de pé | Painel na capa, `/api/sistemas` e `/api/ligar`, mais `iniciar.cmd`. §75.3 |
+| Ids de sessão colidiam sozinhos: campos de largura variável colados sem separador | 33 732 colisões num milissegundo viraram zero. §75.5 |
+| Seis dos dez Tipos de Predador tinham nome inventado, e cinco a Disciplina errada | Reescritos pela página; Ventrue não pode mais ser Fazendeiro. §77 |
+| Não havia como desligar o modelo nem o servidor pelo app | Dois botões na capa, com dois cliques no que derruba a página. §76.1 |
+| A §69 usou `confirm()` do navegador, contra a regra da §37.4 | Trocado pelo padrão de dois cliques da casa. §76.3 |
 
 ### 14.2 O que a Fase 1 devia e já pagou
 
@@ -1460,12 +1760,12 @@ O projeto se divide em quatro camadas, e a fronteira entre elas é o que importa
 
 | Camada | Onde | Regra que a define |
 |---|---|---|
-| **Ficha** | `app/js/ficha/` | Tudo da ficha: regra, render e persistência juntos |
-| **Árbitro** | `app/js/arbitro/` | Tudo da mecânica. **Nunca devolve HTML** |
-| **Cronista** | `app/js/cronista/` | Tudo da narrativa: campanha, recombinação, Narrador, crônica, legado |
-| **Front** | `app/js/front/` | Render lê estado e devolve string; despachante muda estado |
-| **Dados** | `app/js/data/` | Vocabulário do jogo, compartilhado. Não é área — ver §43.2 |
-| **Servidor** | `servidor/` | ESM, zero dependências. A única camada que fala com o modelo |
+| **Ficha** | `modulos/ficha/` | Tudo da ficha: regra, render e persistência juntos |
+| **Árbitro** | `modulos/arbitro/` | Tudo da mecânica. **Nunca devolve HTML** |
+| **Cronista** | `modulos/cronista/` | Tudo da narrativa: campanha, recombinação, Narrador, crônica, legado |
+| **Front** | `modulos/cliente/js/` | Render lê estado e devolve string; despachante muda estado |
+| **Dados** | `comum/dados/` | Vocabulário do jogo, compartilhado. Não é área — ver §43.2 |
+| **Servidor** | os `.mjs` de `modulos/` e `comum/` | ESM, zero dependências. A única camada que fala com o modelo |
 
 A separação entre as duas do meio é a que mais custou a existir e a que mais paga: está na
 §22 (por que classe só onde há polimorfismo) e na §27 (a quebra de `app.js` e `mesa.js` em
@@ -1482,7 +1782,7 @@ página muda, sem erro nenhum na tela. Aconteceu na §36, com 26 arquivos de uma
 
 ### 16.1 As que ainda estão na sua mesa
 
-Sobraram duas. As outras cinco foram decididas e estão na §16.2.
+**Sobrou uma.** As outras foram decididas e estão na §16.2.
 
 **A. Qualidade do Narrador local** — a única que muda a experiência de jogo.
 Medida na §30: passa em 1 a 2 de 5, e o que sobra é o modelo violando o seu próprio guia de
@@ -1490,9 +1790,10 @@ estilo. Três caminhos na §30.4 — o quarto, trocar por provedor pago, deixou 
 O mais barato de decidir: baixar um modelo maior e rodar
 `npm run comparar -- --camada narrador` nos três.
 
-**B. Framework no navegador** — `criador-paineis.js` tem 1.039 linhas de template string.
-Alpine.js ou petite-vue resolveriam sem build e sem reescrita. Continua sendo sua, e o
-padrão é não mexer.
+~~**B. Framework no navegador**~~ — **decidida na §55: não entra.** Alpine.js e petite-vue
+resolveriam sem build, mas custariam as **zero dependências**, que é a decisão da §16.2 e vale
+mais. Os três arquivos grandes do front ficam do tamanho que estão — o que há neles é HTML, não
+acoplamento, e movê-lo de arquivo não encolheria nada.
 
 ### 16.2 As que já foram decididas
 
@@ -1505,7 +1806,9 @@ padrão é não mexer.
 | **Idioma das campanhas** | português do Brasil, na origem | §6 |
 | **Formato do `.md` da campanha** | esquema da §6, escrito à mão. O compilador não muda | §6 |
 | **Índice de Força** | **interno.** O número nunca aparece na interface | §4.5 |
-| **Caminhos da Iluminação além dos cinco** | não entram | §14.1.1 |
+| **Caminhos da Iluminação além dos cinco** | não entram | §14.1.4 |
+| **Framework no navegador** | **não entra.** As zero dependências valem mais que o tamanho dos três arquivos de HTML | §55 |
+| **`Combate.resolver()` aplicar dano na ficha** | **é projeto**, não defeito: sem isso a trilha não conta Superficial e Agravado, e a cura não tem o que curar | §55 |
 
 Quatro dessas mudaram desde a revisão anterior, e três merecem nota:
 
@@ -1700,29 +2003,41 @@ entre sessões**, e os irmãos de matilha existirem como membros que somam dado 
 
 ---
 
-## 21. `app/diagnostico.html`
+## 21. `modulos/cliente/diagnostico.html`
 
 Os dois validadores da auditoria viviam em scripts de sessão e se perdiam. Agora são uma
 página do próprio app, que roda com os mesmos dados e os mesmos motores da produção.
 
-**165 checagens, todas passando**, em dez grupos. Nasceram como dois, e esses dois
+**175 checagens, todas passando**, em **dezessete grupos**. Nasceram como dois, e esses dois
 continuam sendo os que importam:
 
 | Grupo | N | O que pergunta |
 |---|---|---|
 | **Referências** | 33 | Todo id citado existe? Disciplinas de clã, predadores das cidades, rotas das ações, capacidades, alcances, `PODER_EXIGE`, Amálgamas, modificadores, domínios, atrito de clã, Ritae, linhagens, sementes, campanhas |
 | **Comportamento** | 21 | A regra chega ao dado? Modificador somando na piscina, interface e rolagem batendo, estado derivado alcançando o Árbitro, Debilitado só no físico, mortal sem meia-lesão, Predador barrado fora da seita, Vinculum coletivo, ficha antiga carregando |
-| **Combate** | 9 | Iniciativa, ordem, exclusividade da vez, quem sai da briga, oponente agindo sozinho (§31) |
+| **Combate** | 17 | Iniciativa, ordem, exclusividade da vez, quem sai da briga, oponente agindo sozinho (§31), armas e incendiários (§66) |
+| **Livro básico** | 15 | O motor contra a página: Ressonância, Máculas, Desejo, Pilares, especialização que se enquadra (§63, §67, §69, §73) |
 | **Legado** | 12 | Dossiê grava e atravessa; conversão em vantagem só com clique (§32); dossiê não promove desconhecido (§33) |
+| **Grafo** | 11 | Continência, tranca, adjacência, rota impossível (§48) |
+| **Crônica** | 10 | Peso, orçamento, fechamento de capítulo, dossiê |
+| **Cadeia** | 9 | Os quatro elos ligados, e o turno passando por eles (§38, §48) |
+| **Intenção** | 9 | Esquema, normalização, caminho determinístico (§42) |
 | **Mesa** | 7 | Aba de Combate não voltou; Bolsa chega ao dossiê; gatilho de combate compila e recusa modelo inválido (§37) |
 | **Recombinação** | 6 | Banco cheio, sem vocabulário proibido, sem travessão, sem pergunta ao jogador (§18) |
 | **Segurança** | 5 | Travessia de caminho, XSS por id, CSRF (§23) |
+| **Especialista** | 5 | Regras declarativas do V5, com rastro (§49) |
+| **Áreas** | 5 | As fronteiras vistas de dentro do navegador (§50.1) |
 | **Fichas** | 4 | Biblioteca guarda/lê/apaga; folha oficial não vaza `S`; apagar não depende de `confirm()` (§37) |
 | **Arquitetura** | 4 | Escada polimórfica, regra não devolve HTML (§22) |
 | **Provedor** | 2 | Nenhum resquício de provedor pago na interface (§16.2) |
 
-A distribuição conta uma história: **metade das checagens não é de referência.** Elas
+A distribuição conta uma história: **quatro quintos das checagens não são de referência.** Elas
 foram entrando quando um defeito escapou, e cada grupo novo é a cicatriz de um bug real.
+
+> **Os números desta tabela são lidos da página, não decorados.** Foram conferidos rodando o
+> `diagnostico.html` e contando os `✓` por grupo — o documento dizia "165 em dez grupos" quando
+> a página já mostrava 175 em dezessete, que é o defeito que a §50.3 existe para pegar em
+> arquivo de código e ainda não pega em prosa.
 
 ### 21.1 O que a página encontrou ao rodar pela primeira vez
 
@@ -2195,7 +2510,7 @@ raciocínio de cada um mudou de conclusão:
 A §25.2 registrou que o Narrador local reprova em toda tentativa e deixou a decisão em
 aberto: modelo maior, provedor diferente, ou baixar a régua. Antes de escolher, fui medir **por
 que** ele reprova. O comparador só media o Cronista; passou a medir as duas camadas
-(`--camada narrador`), com amostra própria em `servidor/amostras/turno-camarim.json`.
+(`--camada narrador`), com amostra própria em `modulos/cronista/amostras/turno-camarim.json`.
 
 ### 30.1 A distribuição, e o que ela mostrou
 
@@ -2756,7 +3071,7 @@ treino igual a antes. Ele faz uma coisa só, e faz bem: ensina a voz.
 
 ## 36. A reorganização, e o que ela quebrou em silêncio
 
-Os arquivos foram reorganizados fora desta sessão: `app/js/data/` e `app/js/motor/` viraram
+Os arquivos foram reorganizados fora desta sessão: `comum/dados/` e `app/js/motor/` viraram
 pastas, `app/campanhas/` sumiu e `campanhas/` na raiz ganhou cinco documentos novos. Três
 coisas quebraram, e **nenhuma delas dava erro visível na tela** — o app abria, só não
 funcionava.
@@ -3105,7 +3420,7 @@ do jogador e nomear a intenção mecânica. Não decide se é possível, não pr
 ### 39.1 A decisão que foi tomada aqui, e desfeita na §42
 
 > **Esta subseção é histórico.** Ela registrou a entrada do Python no projeto, e a §42
-> desfez isso: o extrator voltou para `servidor/intencao.mjs` e o projeto tem **zero
+> desfez isso: o extrator voltou para `modulos/cronista/intencao.mjs` e o projeto tem **zero
 > dependências** outra vez. Fica pelo raciocínio, que continua valendo se o LoRA da §35
 > entrar em pauta.
 
@@ -3119,7 +3434,7 @@ caminho de treino, e a §35.6 diz para não treinar ainda.
 
 ### 39.2 O contrato de saída
 
-`servidor/intencao.mjs`, em JSON Schema. Enum fechado, nenhum campo numérico — a §3.2
+`modulos/cronista/intencao.mjs`, em JSON Schema. Enum fechado, nenhum campo numérico — a §3.2
 continua inteira. (Era Pydantic em `ia/esquema.py` até a §42.)
 
 | Campo | Para quê |
@@ -3175,7 +3490,7 @@ tem.
 
 ### 39.5 Medição
 
-`servidor/amostras/intencoes.json`, rodada por `--camada intencao`. Vinte e três frases variadas, não repetições da mesma — a lição da §34.4.
+`modulos/cronista/amostras/intencoes.json`, rodada por `--camada intencao`. Vinte e três frases variadas, não repetições da mesma — a lição da §34.4.
 Mede três coisas: acertou o tipo, obedeceu o formato, e admitiu quando não sabia. Nenhum
 caso testa "é possível", porque isso é do elo 2.
 
@@ -3203,7 +3518,7 @@ decorar.
 
 ### 39.6 A tradução para o V5
 
-`app/js/arbitro/motor-intencao.js`. O esquema pedido é genérico — `cast_spell`, `spell_name` —
+`modulos/arbitro/motor-intencao.js`. O esquema pedido é genérico — `cast_spell`, `spell_name` —
 e Vampiro não tem "spell": tem Disciplina e poder. Este módulo é a fronteira onde o genérico
 vira id de `Arbitro.ACOES`.
 
@@ -3244,7 +3559,7 @@ outro da **regra**, e cada elo respondeu só a sua pergunta.
 
 ```bash
 ia\.venv\Scripts\python.exe -m ia.servico      # sobe o extrator na 5177
-node servidor/proxy.mjs                        # a mesa, que fala com ele
+node modulos/gateway/proxy.mjs                        # a mesa, que fala com ele
 ia\.venv\Scripts\python.exe -m ia.bateria      # a medição
 ```
 
@@ -3487,8 +3802,8 @@ Mas criou uma fronteira partida que era dívida minha, não escolha de projeto:
 | Camada de LLM | Onde estava | Linguagem |
 |---|---|---|
 | Extração de intenção | `ia/` | Python + LangChain |
-| Narrador | `servidor/narrador.mjs` | Node |
-| Cronista | `servidor/cronista.mjs` | Node |
+| Narrador | `modulos/cronista/narrador.mjs` | Node |
+| Cronista | `modulos/cronista/cronista.mjs` | Node |
 
 E, pior que a linguagem partida, **dois arreios de medição para a mesma pergunta**:
 `comparador.mjs` media Narrador e Cronista, `bateria.py` media o extrator. Mediam a mesma
@@ -3510,7 +3825,7 @@ dependência não paga o próprio custo.
 
 ### 42.2 O que entrou
 
-`servidor/intencao.mjs` — mesmo esquema, mesmo prompt, mesmos oito exemplos de few-shot,
+`modulos/cronista/intencao.mjs` — mesmo esquema, mesmo prompt, mesmos oito exemplos de few-shot,
 mesmo cabeçalho de contexto de cena, mesma normalização de coerência, mesma queda para
 `unknown` em vez de exceção. O `provedor-ollama.mjs` ganhou dois parâmetros — `exemplos`
 (pares humano/assistente) e `opcoes` — e continua sendo o único transporte.
@@ -3519,7 +3834,7 @@ O `proxy.mjs` perdeu o salto para `127.0.0.1:5177`: a rota `/api/intencao` chama
 direto. São dois processos em vez de três.
 
 O comparador ganhou a camada `intencao`, com a bateria em
-`servidor/amostras/intencoes.json`. **Um arreio de medição para as três camadas de LLM**,
+`modulos/cronista/amostras/intencoes.json`. **Um arreio de medição para as três camadas de LLM**,
 que era o motivo real da migração.
 
 ### 42.3 Um erro de esquema que só a medição pegaria
@@ -3576,10 +3891,10 @@ Agora está organizado por **assunto**, em quatro áreas, e a divisão é físic
 
 | Área | Pasta | Critério |
 |---|---|---|
-| **Ficha** | `app/js/ficha/` | Tudo relacionado à ficha do personagem |
-| **Árbitro** | `app/js/arbitro/` | Tudo relacionado à mecânica do RPG |
-| **Cronista** | `app/js/cronista/` | Tudo relacionado à narrativa |
-| **Front** | `app/js/front/` | O front |
+| **Ficha** | `modulos/ficha/` | Tudo relacionado à ficha do personagem |
+| **Árbitro** | `modulos/arbitro/` | Tudo relacionado à mecânica do RPG |
+| **Cronista** | `modulos/cronista/` | Tudo relacionado à narrativa |
+| **Front** | `modulos/cliente/js/` | O front |
 
 O critério é de assunto, não de camada: o que é da ficha fica com a ficha **mesmo sendo
 render, persistência ou regra**. Por isso `ficha-oficial.js` (que gera HTML) e `fichas.js`
@@ -3598,7 +3913,7 @@ produzir ou preservar texto.
 
 ### 43.2 O que NÃO virou área
 
-`app/js/data/` continua sendo pasta única, compartilhada. Foi medido antes de decidir:
+`comum/dados/` continua sendo pasta única, compartilhada. Foi medido antes de decidir:
 
 | Arquivo de dados | Lido por |
 |---|---|
@@ -3685,8 +4000,8 @@ e para PDFs de imagem (o Escudo do Mestre é um), renderize as páginas com o pa
 npm mupdf e leia como imagem.
 
 COMO RODAR E VERIFICAR
-  node servidor/dev.mjs        serve app/ na 5173 SEM CACHE, zero dependência
-  node servidor/proxy.mjs      o mesmo + rotas /api. SO EXISTE LOCAL:
+  node ferramentas/dev.mjs        serve app/ na 5173 SEM CACHE, zero dependência
+  node modulos/gateway/proxy.mjs      o mesmo + rotas /api. SO EXISTE LOCAL:
                                ollama, mistral-nemo:12b, sem chave e sem custo.
                                NAO HA PROVEDOR PAGO NESTE PROJETO. Nao proponha
                                um, nao pergunte sobre um, nao escreva codigo
@@ -3707,7 +4022,7 @@ COMO RODAR E VERIFICAR
                                metade ser bug meu (lista de acoes fora do prompt).
   npm run diagnostico          manifesto de contexto e tamanho do prefixo
 
-  npm test                     435 TESTES, 10 arquivos, 2,8 s, zero dependencia.
+  npm test                     799 TESTES, 12 arquivos, 5,9 s, zero dependencia.
                                RODE ANTES E DEPOIS DE MEXER EM QUALQUER COISA.
                                ELA COBRE AS JORNADAS DO JOGO: criar ficha,
                                resolver turno, brigar, fechar cronica, as
@@ -3721,10 +4036,18 @@ COMO RODAR E VERIFICAR
   npm run test:ficha           uma area so (ha :arbitro :cadeia :sessoes
                                :front :fronteiras tambem)
 
-  http://localhost:5173/diagnostico.html
-                               167 checagens em 10 grupos: referencias,
+  npm run mesa                 sobe o MODULO 3 (MesaServer, porta 5175). O
+                               Gateway tambem sobe sozinho, pelo botao Ligar
+                               tudo da capa. ferramentas/desligar.cmd e o par
+                               do iniciar.cmd: pede o desligamento na ordem
+                               certa (modulos, ollama, gateway) e confere.
+
+  http://localhost:5173/modulos/cliente/diagnostico.html
+                               175 checagens em 17 grupos: referencias,
                                comportamento, areas, seguranca, combate,
-                               mesa, fichas, legado, recombinacao e provedor.
+                               grafo, especialista, cadeia, intencao, mesa,
+                               fichas, legado, recombinacao, cronica,
+                               livro basico e provedor.
                                RODE ISSO TAMBEM. Ela cobre a COSTURA (render,
                                telas, fluxo) que o npm test nao cobre — e o
                                npm test cobre a REGRA que ela nao cobre.
@@ -3742,6 +4065,10 @@ TESTES — o que existe, e como acrescentar
                      global. So var e function. O arreio exporta a mao.
                    - "let M = ..." nao se escreve de fora: use executar(g, ...)
                      para rodar codigo DENTRO do contexto.
+                   - executar() devolve REFERENCIA VIVA, nao copia: o vm cria
+                     contexto novo, nao heap novo. Comparar antes/depois de um
+                     OBJETO compara ele consigo mesmo. Use instantaneo(g, ...),
+                     que congela. Primitivo esta a salvo (secao 54.4).
                    comDadosViciados(g, [10,10,...]) troca Dados.d10 e torna o
                    combate reproduzivel. Melhor ainda: Dados._apurar() e pura e
                    recebe os dados prontos — ROLAR DADO EM TESTE E QUASE SEMPRE
@@ -3751,7 +4078,13 @@ TESTES — o que existe, e como acrescentar
                    entao ele diz 326 onde o registro diz 271. O registro conta
                    as folhas, que e o numero de coisas afirmadas.
   As dez suites: arreio, ficha, arbitro, cadeia, cronista, sessoes, front,
-  fronteiras, JORNADA e servidor. As quatro areas tem cobertura, e a jornada cobre o
+  fronteiras, JORNADA e servidor.
+
+  MOSTRE O QUE O TESTE VIU. Quando o valor importa — dados, dano, piscina,
+  orcamento, distancia —, chame t.diagnostic() com os numeros. O relator
+  recolhe e poe no registro embaixo do teste, e numa falha ele diz com que
+  entrada o defeito apareceu. "passou" nao e resultado; e so ausencia de
+  reprovacao (secao 54.1). As quatro areas tem cobertura, e a jornada cobre o
   caminho do jogador de ponta a ponta.
 
   A jornada e a que substitui o roteiro descartavel: enviarTurno,
@@ -3810,29 +4143,39 @@ Depois do turno vem o Cronista: cena determinística, capítulo e dossiê por mo
 Meta: 70% dos turnos sem LLM. Hoje o léxico resolve 86% localmente.
 O LLM NUNCA produz número. Quem rola é o motor; quem aplica efeito é o Árbitro.
 
-ESTRUTURA: as cinco pastas de app/js/ sao de verdade. Se mover ou criar arquivo,
-conserte TRES lugares: os <script src> de index.html, os de diagnostico.html, e
-a lista AREAS de testes/carregar.mjs. Ha teste comparando as tres — se elas
-divergirem, arreio.test.mjs reprova. Ja quebrou uma vez sem esse teste, e o app
-abriu mudo, com 26 erros 404 e nenhuma mensagem na tela.
+ESTRUTURA: uma pasta por MODULO, em modulos/. A pasta e o modulo, e nao onde o
+codigo roda: .js e script classico de navegador, .mjs e ESM de servidor, e os
+dois moram juntos quando sao do mesmo modulo (secao 79).
+A URL E O CAMINHO NO REPOSITORIO: /modulos/arbitro/motor-dados.js e o arquivo
+modulos/arbitro/motor-dados.js. Nao ha tabela de traducao no meio, de proposito
+— tabela de traducao e um segundo lugar onde a estrutura esta escrita.
+Se mover ou criar arquivo, conserte TRES lugares: os <script src> de
+index.html, os de diagnostico.html, e as listas AREAS e PASTA_DA_AREA de
+testes/carregar.mjs. Ha teste comparando as tres — se elas divergirem,
+arreio.test.mjs reprova. Ja quebrou uma vez sem esse teste, e o app abriu mudo,
+com 26 erros 404 e nenhuma mensagem na tela.
 As campanhas vivem em campanhas/ na RAIZ, servidas por uma rota propria nos
-dois servidores. Nao estao dentro de app/.
+dois servidores.
 
 MÓDULOS — a arvore completa esta na Parte A > Estrutura. Aqui so o que muda
 como voce trabalha:
   REGRA NAO DEVOLVE HTML. RENDER NAO MUDA ESTADO. Se precisar quebrar essa
   regra, o codigo esta no arquivo errado.
 QUATRO AREAS, por ASSUNTO e nao por camada — secao 43. Sao pastas de verdade:
-  app/js/ficha/    tudo da ficha: regra, render e persistencia JUNTOS.
+  modulos/ficha/    tudo da ficha: regra, render e persistencia JUNTOS.
                    Nao sabe de mesa nem de cronica. Ha checagem para isso.
-  app/js/arbitro/  tudo da mecanica. NUNCA devolve HTML, e nao sabe de
+  modulos/arbitro/  tudo da mecanica. NUNCA devolve HTML, e nao sabe de
                    cronica nem de legado.
-  app/js/cronista/ tudo da narrativa: campanha, recombinacao, Narrador,
+  modulos/cronista/ tudo da narrativa: campanha, recombinacao, Narrador,
                    cronica e legado. Unica area com licenca para atravessar.
-  app/js/front/    render le estado, despachante muda. Pode CHAMAR o Arbitro,
+  modulos/cliente/js/    render le estado, despachante muda. Pode CHAMAR o Arbitro,
                    nao pode recalcular regra.
-  app/js/data/     NAO e area: vocabulario do jogo, compartilhado pelas quatro.
-  servidor/        ESM, zero dependencias, as TRES camadas de LLM.
+  comum/dados/     NAO e area: vocabulario do jogo, compartilhado pelas quatro.
+  modulos/gateway/ MODULO 1, servidor. Porta 5173, a unica que o navegador ve.
+  modulos/mesa/    MODULO 3. Porta 5175, o estado da partida ativa (secao 78).
+  comum/           portas, websocket, servir-estatico, sistemas. De todos.
+  ferramentas/     o que NAO e o produto: iniciar.cmd, desligar.cmd, dev,
+                   comparador, render.
 
   A ORDEM DE CARGA NAO E DECORATIVA: data -> ficha -> arbitro -> cronista ->
   front. Script classico, sem modulo: const lido antes do arquivo rodar e TDZ.
@@ -3851,6 +4194,13 @@ QUATRO AREAS, por ASSUNTO e nao por camada — secao 43. Sao pastas de verdade:
                    se a cadeia estourar. O elo 1 escolhe sozinho entre o
                    interpretador de modelo e o lexico, conforme o servico de
                    intencao esteja de pe ou nao.
+  motor-entrada.js A CAIXA UNICA, secao 57. A mesa tem UM campo de texto, e
+                   este arquivo separa o que era acao, fala e pergunta. O
+                   acordo com o jogador e a PONTUACAO: aspas viram fala,
+                   parenteses viram pergunta fora da ficcao, o resto e acao.
+                   E DETERMINISTICO: o modelo e o segundo leitor, e so entra
+                   onde a pontuacao nao alcanca (fala indireta, sem aspas).
+                   Volume e alvo saem do texto: "sussurro para a Bia".
   motor-navegacao.js elo 3, secao 48.3. NAO e malha de metros: usa o espaco que
                    o grafo declara. Mesmo local / adjacente (-2 dados, e NAO
                    bloqueio) / distante (bloqueio) / desconhecido (bloqueio).
@@ -3900,7 +4250,7 @@ DECIDIDO E FECHADO (não reabra):
   idioma das campanhas     português do Brasil, na origem      secao 16.2
   formato do .md           esquema da secao 6, escrito à mão   secao 16.2
   Índice de Força          INTERNO. O número nunca aparece     secao 4.5
-  Caminhos além dos cinco  não entram                          secao 14.1.1
+  Caminhos além dos cinco  não entram                          secao 14.1.4
 
 PROVEDOR: só existe LOCAL — ollama, mistral-nemo:12b, sem chave e sem custo.
   VITAE_MODELO / VITAE_MODELO_NARRADOR  um modelo local por camada
@@ -3933,7 +4283,7 @@ AO FALAR DE PENDENCIA, SEPARE POR AREA — sempre.
   ANTES de montar a lista, releia a Parte A > Estrutura: e a tabela de la
   que diz quem e dono de que. Geral leva o que atravessa areas, mais
   servidor/, testes/, campanhas/, docs/ e as decisoes do usuario.
-  app/js/data/ NAO e area: o que for dele vai em Geral.
+  comum/dados/ NAO e area: o que for dele vai em Geral.
   A secao 14.1 e por PESO (o que fazer em seguida); a secao 45 e por AREA
   (onde mexer). Pedido de lista se responde por area.
 
@@ -3995,14 +4345,14 @@ Ficaram no scratchpad da sessão e se perdem. Vale recriar quando precisar:
   conversão em vantagem, e a campanha compilando sem erro.
   A página de diagnóstico cobre a maior parte disso: rode-a antes e depois.
 
-**Isso foi feito:** os dois primeiros viraram `app/diagnostico.html`, hoje com 92 checagens
+**Isso foi feito:** os dois primeiros viraram `modulos/cliente/diagnostico.html`, hoje com 92 checagens
 em 8 grupos, rodando dentro da própria página, com os mesmos dados e motores da produção.
 
 ## Armadilhas já encontradas
 
 | Armadilha | Como evitar |
 |---|---|
-| **Cache do navegador** | Resolvido na raiz: `servidor/dev.mjs` manda `no-store`. Nunca mais diagnostique por aparência sem cache limpo. |
+| **Cache do navegador** | Resolvido na raiz: `ferramentas/dev.mjs` manda `no-store`. Nunca mais diagnostique por aparência sem cache limpo. |
 | Testar módulo isolado | O Árbitro passava em todos os testes e mesmo assim seus modificadores não chegavam ao dado. Teste a costura, não só a peça. |
 | `V5-Guia-Do-Jogador.pdf` | Tradução automática ruim. A ficha oficial (`modelo.pdf`), `Oblivio.pdf` e o Escudo do Mestre são traduções profissionais e mandam. |
 | Livros de comunidade | `Black Hand: Playing the Sabbat` é Storytellers Vault, não cânone Paradox. Está marcado no documento de Sabá. |
@@ -4173,8 +4523,8 @@ do `diagnostico.html`.
 
 ## 45. O que está aberto, área por área
 
-A §14.1 lista o que falta **no projeto**, em ordem de peso, e continua sendo a lista que manda
-quando a pergunta é "o que fazer em seguida". Esta seção é outro corte do mesmo material: o que
+A §14.1 lista o que falta **no projeto**, separada por área, e continua sendo a lista que manda —
+com a ordem por peso na §14.1.2, para quando a pergunta é "o que fazer em seguida". Esta seção é outro corte do mesmo material: o que
 está aberto **dentro de cada área**, agora que a divisão da §43 tornou isso uma pergunta que faz
 sentido. Item que aparece nas duas é o mesmo item.
 
@@ -4204,7 +4554,7 @@ const AREAS_DA_FICHA = ['data', 'ficha'];      // eram quatro
 
 Os 55 testes da Ficha passam com duas áreas. Encompridar essa lista agora é regressão.
 
-### 45.2 Árbitro — **fechada**
+### 45.2 Árbitro — **fechada**, e reaberta e fechada de novo na §57
 
 Os quatro itens foram pagos na §48, juntos, porque um puxava o outro: não valia ligar a cadeia com
 um elo de navegação que respondia "terreno livre" para tudo, nem dividir o arquivo antes de o
@@ -4226,6 +4576,12 @@ código parar de mudar.
 | A7 | O oponente de combate não era nó do grafo, e o elo 3 ficava cego na briga | `Grafo.de(mesa)` põe cada oponente no local da cena. §49.4 |
 | A8 | O código continuava dizendo que os elos 1 e 3 eram provisórios, e o navegador `livre` seguia registrado — **um leitor listou "ligar a cadeia" como pendência por causa disso** | Cabeçalho corrigido, `livre` apagado, e cinco testes derivados impedem a volta. §53.1 |
 
+**Dois itens novos, achados e pagos na §57** — nenhum deles causado por ela, os dois expostos
+por ela: o léxico casava por **substring** (`"Grito:"` → "Celebrar um Ritae"), e **bloqueio duro
+perdia para o `escalar`** (amordaçado subia para o Narrador, que narrava o personagem falando).
+Os dois se escondiam um atrás do outro: o teste que devia pegar o segundo passava por acidente,
+graças ao primeiro. §57.5, com quatro testes que impedem a volta.
+
 **A9 continua aberto, e é medido:** o degrau 3 aceita ou recusa por sorteio — cena vazia ainda é
 aceita em 96% das vezes, então ~5% dos turnos vão ao Narrador sem motivo. Baixo, e registrado
 porque foi medido.
@@ -4236,10 +4592,14 @@ caem no `S` global. Era o defeito F1 sobrevivendo do outro lado da fronteira, de
 fechado na Ficha. A checagem que o pegou **deriva a lista do código** em vez de trazê-la escrita
 (§49.3).
 
-Sobra um caso, e ele é **contrato, não descuido**: **`Combate.resolver()` aplica o dano na ficha
-do defensor.** Contraria a divisão "o Árbitro julga, o Estado muda" que a §43.3 verifica em outros
-pontos, mas é coerente e a mesa conta com isso. A §46.4 tranca o comportamento atual num teste,
-para que a mudança, se vier, seja deliberada.
+**`Combate.resolver()` aplica o dano na ficha do defensor, e isso é PROJETO** — confirmado pelo
+usuário na §55. O dano tem que entrar na ficha **durante o jogo** para que a trilha conte
+Superficial e Agravado separados, e para que a cura tenha o que curar. Um golpe sem dano aplicado
+não é um golpe resolvido.
+
+Contraria a divisão "o Árbitro julga, o Estado muda" que a §43.3 verifica em outros pontos, e a
+exceção é deliberada. Dois testes trancam os dois lados: `resolver` **aplica** no defensor, e
+**nunca** toca na ficha do atacante. **Saiu da lista de pendências.**
 
 ### 45.3 Cronista
 
@@ -4265,9 +4625,9 @@ exatamente aqui.
 (barato, mede menos)? *Recomendação: ampliar o determinístico primeiro — "O que você faz agora?"
 é detectável por regra, sem modelo nenhum.*
 
-### 45.4 Front — o que sobrou depende de você
+### 45.4 Front — **fechada**
 
-Cinco dos sete itens foram pagos. Os dois que ficam dependem de uma decisão que é sua.
+Cinco itens foram pagos; os dois últimos fecharam por decisão sua, na §16.2.
 
 | # | O que era | Onde foi parar |
 |---|---|---|
@@ -4276,17 +4636,23 @@ Cinco dos sete itens foram pagos. Os dois que ficam dependem de uma decisão que
 | N3 | O `catch (e) {}` do `salvar()` do criador | Idem — e este guardava a ficha **em edição**, nove passos de criação. §50.6 |
 | N4 | `mesa.js` com `switch` de 48 casos, e crescendo | Virou o mapa `ACOES_MESA`, em `mesa-acoes.js`. 1.503 → 1.203 linhas. §50.4 |
 | N7 | Dois ids de sessão iguais no mesmo milissegundo | Sufixo aleatório e conferência contra o gravado. §50.6 |
+| N5 | `criador-paineis.js` em template string, e `app.js` junto | Fechado por decisão: sem framework, não há o que dividir. §16.2 |
+| N6 | `mesa-render.js`, todo o HTML da mesa | Idem — e a §57 o deixou menor, tirando os modos do compositor |
 
-**Os dois abertos:**
+**N8 fechado na §54.3:** as nove funções sem teste direto ganharam um. As portas de entrada de
+dado de fora vieram primeiro — `importarFichaParaMesa` recusando o `.json` extraído e a ficha
+incompleta, e a campanha compilando com o Diretor abrindo a cena. O turno por dentro
+(`escadaDaMesa`, `turnoDaMesa`, `aplicarPasso`, `anunciar`) e a sessão que volta de disco
+(`normalizarMesa`, `alvoDeFala`) também.
 
-| # | O quê | Peso |
-|---|---|---|
-| N5 | `criador-paineis.js` em template string, e `app.js` junto | baixo |
-| N6 | `mesa-render.js`, todo o HTML da mesa | baixo |
+**N5 e N6 fecharam por decisão, e não por trabalho.** Eles travavam na mesma pergunta — framework
+no navegador —, e a resposta foi **não entra** (§16.2). Sem framework, dividi-los seria mover
+template string de um arquivo para outro: o que há neles é HTML, não acoplamento. Ficam do
+tamanho que estão.
 
-Os dois travam na mesma pergunta, que está na sua mesa desde a §16.1: **framework no navegador**.
-Sem essa decisão, dividi-los seria mover template string de um arquivo para outro — e o padrão,
-que continua valendo, é não mexer.
+A §57 mexeu no maior deles e o deixou **menor**: o compositor perdeu a fileira de modos, a linha
+de volume e a de alvo, e ganhou uma caixa só. O que substituiu não veio para o front — foi para
+`arbitro/motor-entrada.js`, onde dá para testar sem desenhar nada.
 
 O tamanho deles não é mais registrado aqui: passou a ser conferido a cada `npm test` (§50.3).
 
@@ -4297,8 +4663,8 @@ O tamanho deles não é mais registrado aqui: passou a ser conferido a cada `npm
 | ~~X1~~ | ~~Sem teste automatizado no Cronista~~ | **Fechado na §51.1**: 93 testes. As quatro áreas têm suíte, e a rede está fechada |
 | ~~X2~~ | ~~As checagens de fronteira são uma lista escrita à mão~~ | **Fechado na §50.1**: `fronteiras.test.mjs` deriva tudo do código e aplica uma regra só — área nenhuma usa nome de área posterior. Achou quatro violações de pé, inclusive `data-seitas.js` alcançando a área Ficha |
 | ~~X3~~ | ~~Contagem de linha escrita à mão no documento~~ | **Fechado na §50.3**: a tabela saiu do README e virou quatro testes, inclusive um que confere se o próprio README ainda afirma número que não bate |
-| ~~G2~~ | ~~`servidor/proxy.mjs` e `provedor-ollama.mjs` sem teste~~ | **Fechado na §53.3**: 25 testes por HTTP de verdade — travessia de caminho, origem, método, limite de taxa, e o provedor devolvendo false sem estourar |
-| X4 | **Comentário que descreve estado envelhece igual a número.** O `motor-cadeia.js` dizia "elos 1 e 3 provisórios" por cinco seções depois de deixarem de ser, e **um leitor listou "ligar a cadeia" como pendência por causa disso**. Fechado no Árbitro (§53.1), e o teste que impede a volta é derivado — mas ele só varre `app/js/arbitro/`. As outras áreas não têm essa varredura |
+| ~~G2~~ | ~~`modulos/gateway/proxy.mjs` e `provedor-ollama.mjs` sem teste~~ | **Fechado na §53.3**: 25 testes por HTTP de verdade — travessia de caminho, origem, método, limite de taxa, e o provedor devolvendo false sem estourar |
+| X4 | **Comentário que descreve estado envelhece igual a número.** O `motor-cadeia.js` dizia "elos 1 e 3 provisórios" por cinco seções depois de deixarem de ser, e **um leitor listou "ligar a cadeia" como pendência por causa disso**. Fechado no Árbitro (§53.1), e o teste que impede a volta é derivado — mas ele só varre `modulos/arbitro/`. As outras áreas não têm essa varredura |
 
 ### 45.6 A ordem que eu seguiria
 
@@ -4314,14 +4680,54 @@ Não é a ordem de peso: é a ordem de retorno por hora, que é diferente.
 
 ---
 
+### 45.7 Os módulos — onde mexer, e o que cada arquivo é dono
+
+A §79 fez a pasta ser o módulo. Esta é a tabela de "onde mexer" para os cinco módulos — §78 a §84.
+
+| Se você vai mexer em… | O arquivo | O que ele é dono |
+|---|---|---|
+| Rota `/mesa/…`, WebSocket, encerrar | `modulos/mesa/mesa-servidor.mjs` | HTTP e o canal. **Não decide nada de jogo** |
+| Checkout, checkin, autosave, o que muda em memória | `modulos/mesa/mesa-estado.mjs` | O *State Cache*. É aqui que a partida vive |
+| A rolagem: os valores e o registro dela | `modulos/mesa/mesa-estado.mjs` → `rolar()` | O acaso da sessão. **Não apura** — ver §82 |
+| O que a sessão grava em disco | `modulos/mesa/mesa-pasta.mjs` | `meta.json`, `ficha.json`, `mesa.json`, `historico.jsonl` |
+| Falar com o FichaServer | `modulos/mesa/cliente-ficha.mjs` | O contrato do Módulo 2, e o que fazer quando ele não existe |
+| Que porta é de quem | `comum/portas.mjs` | **Um lugar só.** Mudar porta aqui muda em todos |
+| O aperto de mão e os quadros | `comum/websocket.mjs` | RFC 6455, lado servidor, sem dependência |
+| O que é servível pela URL | `comum/servir-estatico.mjs` | As três raízes, e a regra de que a URL é o caminho |
+| Quem pode escrever num módulo | `comum/origem.mjs` | **Uma implementação, cinco usuários** (§86) |
+| O Cliente falar com os módulos | `modulos/cliente/js/ponte.js` | **A única parte do front que sabe que há servidor** |
+| Onde a ficha mora | `modulos/ficha/ficha-guardador.mjs` | Mongo ou pasta, com a MESMA interface |
+| Rota `/ficha/…` | `modulos/ficha/ficha-servidor.mjs` | Porta de entrada: valida forma, não regra |
+| Uma regra do Árbitro | `modulos/arbitro/<motor>.js` | **Um arquivo só.** O servidor roda o mesmo que o navegador |
+| Como o Árbitro carrega no Node | `modulos/arbitro/arbitro-contexto.mjs` | O contexto de `vm`, e a fonte de acaso que estoura |
+| Narrar, cronicar, extrair intenção | `modulos/cronista/cronista-servidor.mjs` | As três camadas. O limite de taxa NÃO é dele |
+| A ordem de carga dos scripts | `comum/ordem-de-carga.mjs` | Área ≠ pasta. A única tradução do projeto |
+| Ligar, desligar, diagnosticar | `comum/sistemas.mjs` | A tabela `MODULOS`, e subir/parar cada um |
+| O painel da capa | `modulos/cliente/js/app.js` | Só desenha e chama `/api`. A decisão está em `sistemas.mjs` |
+
+**Quatro regras que valem para módulo novo:**
+
+1. **Um módulo não importa outro.** Ele fala por HTTP, pela porta que `comum/portas.mjs` diz.
+   Há teste afirmando que o MesaServer não importa Cronista, Narrador nem Árbitro.
+2. **Quem sobe é o Gateway; quem sai é o próprio módulo.** A rota `/<id>/encerrar` grava o que
+   tem em memória e só então chama `process.exit`. Nada de `taskkill` — ver §80.2.
+3. **A saúde é uma rota, não um `ping` de porta.** `GET /<id>/saude` devolve o que o módulo sabe
+   de si, inclusive o que ele **não** está conseguindo fazer. O do MesaServer admite quando o
+   FichaServer não responde.
+4. **Registre-o em `comum/sistemas.mjs`.** Sem isso ele não aparece no painel, não sobe pelo
+   botão e não desce no desligar — e não existe teste que pegue essa ausência, porque a lista é
+   a própria definição do que existe.
+
+---
+
 ## 46. Testes do Árbitro
 
 O Árbitro é a área onde teste automatizado rende mais, e o motivo é estrutural: **entra ficha e
 situação, sai veredito**. Não há render, não há sessão, não há modelo. Quase tudo dá para afirmar
 sem desenhar nada — e, com um pouco de cuidado, sem rolar nada.
 
-**124 testes, 200 ms.** Com os 46 da Ficha e do arreio, `npm test` roda **170 testes em menos de
-meio segundo**, sem dependência nenhuma.
+**284 testes.** Com os do resto da suíte, `npm test` roda **799 testes em 5,9 s**, em doze
+arquivos, sem dependência nenhuma.
 
 ```bash
 npm test
@@ -4400,8 +4806,9 @@ divisão da §43 terá deixado de ser só de pastas.
 a piscina com especialização valendo exatamente +1, o reteste com teto de três dados, e a
 Provocação subindo a Fome com 5 ou menos.
 
-**Estado** — Superficial dividido pela metade em vampiro (e **1 virando 0**, que é regra, não
-defeito), inteiro em mortal, o transbordo de Superficial para Agravado com a trilha cheia,
+**Estado** — Superficial dividido pela metade em vampiro, **arredondando para cima** (a §63
+corrigiu: dizia-se aqui que "1 virando 0 é regra, não defeito", e não é — 1 vira 1),
+inteiro em mortal, o transbordo de Superficial para Agravado com a trilha cheia,
 torpor no caso exato, Morte Final por fogo ou sol, e os estados derivados — `debilitado`,
 `fome_maxima` e `exangue` a partir de Fome 5, não 4.
 
@@ -4760,8 +5167,8 @@ pensado nele — que é a definição do defeito que os testes não pegam.
 
 | Arquivo | Linhas | Responsabilidade |
 |---|---|---|
-| `motor-arbitro.js` | 530 | capacidades, estados, alcance, modificadores, rotas, veredito |
-| `arbitro-lexico.js` | 407 | texto do jogador → intenção mecânica |
+| `motor-arbitro.js` | 617 | capacidades, estados, alcance, modificadores, rotas, veredito |
+| `arbitro-lexico.js` | 556 | texto do jogador → intenção mecânica · cresceu na §63 com as cinco ações do Apêndice I |
 | `arbitro-tabelas.js` | 116 | consultas às tabelas do Escudo |
 
 `Lexico` e `TabelasV5` são objetos próprios, não pedaços do mesmo. O Árbitro delega, e por isso os
@@ -5199,7 +5606,7 @@ ignorar vermelho (§46.5). A variação virou o **item 8** da §14.1.
 
 ### 51.4 O juiz que emagrecia calado (itens 3 e 7)
 
-Dois dos três `catch (e) {}` que faltavam estavam em `servidor/narrador.mjs`, e não eram miudeza:
+Dois dos três `catch (e) {}` que faltavam estavam em `modulos/cronista/narrador.mjs`, e não eram miudeza:
 eles carregam **as checagens do validador** a partir de `docs/narracao-ia.md` — a lista negra de
 vocabulário, as assinaturas do few-shot e o léxico dele. Se o arquivo não abrisse ou uma seção
 fosse renomeada, os três devolviam **conjunto vazio**, em silêncio.
@@ -5264,7 +5671,7 @@ qualquer arquivo do app ou do servidor — e que reprova também o `catch` que n
 devolve e não relança, porque esse é tão mudo quanto o vazio.
 
 Ela achou o que eu não tinha visto: **o mesmo defeito do juiz cego existia também no
-`servidor/cronista.mjs`.** Eu tinha consertado o do Narrador e declarado o assunto encerrado. Mais
+`modulos/cronista/cronista.mjs`.** Eu tinha consertado o do Narrador e declarado o assunto encerrado. Mais
 dois: `contexto.mjs` pulava em silêncio uma seção do manifesto que não abrisse — o que faz o
 prefixo medido (3.573 tokens) deixar de bater com o real —, e `data-seitas.js` engolia a falha ao
 gravar o interruptor de material oficial, que voltava sozinho no recarregamento.
@@ -5465,7 +5872,7 @@ honesto, porque o que se quer saber é **como ele responde**.
 25 testes, e nenhum precisa de modelo — `OLLAMA_HOST` aponta para uma porta morta de propósito, e
 o que se afirma é o comportamento **sem provedor**, que é o caso de quem só quer jogar.
 
-**A travessia de caminho** é o que mais valia trancar. Seis tentativas de sair de `app/` —
+**A travessia de caminho** é o que mais valia trancar. Seis tentativas de sair das raízes servíveis —
 `/../package.json`, `/..%2f`, `/%2e%2e/`, `/....//`, e as duas variantes pela rota das campanhas —
 e nenhuma entrega o `package.json`.
 
@@ -5480,7 +5887,7 @@ Se passasse, o app pararia de carregar depois de alguns recarregamentos.
 
 Do lado do provedor: sem ollama, `configurado()` devolve `false` **sem estourar** — é o que
 sustenta o jogo inteiro rodar sem modelo —, listar modelos devolve lista, e `gerar` falha com
-mensagem legível. Mais uma trava: **não existe arquivo de provedor pago em `servidor/`**, que é
+mensagem legível. Mais uma trava: **não existe arquivo de provedor pago no projeto**, que é
 decisão do usuário (§16.2) e já foi revertida por engano uma vez.
 
 ### 53.4 Oito segundos por um relógio esquecido
@@ -5504,3 +5911,3123 @@ Um `clearTimeout` num `finally`, e voltou a 2,84 s — o servidor inteiro passou
 - **`npm test`: 435 testes, dez arquivos, 2,84 s.** Cinco corridas seguidas sem oscilação.
 - **`diagnostico.html`: 167 de 167**, console limpo.
 - **`Cadeia.NAVEGADORES` tem um só nome**, `navmesh` — conferido no terminal e no navegador.
+
+---
+
+## 54. O teste passa a dizer o que viu
+
+Dois pedidos: o item 4 da lista do usuário — *"testes apresentarem o resultado; nos testes de
+dados, mostrar quais valores saíram, não só se passou"* — e o N8, as nove funções do front sem
+teste direto.
+
+**455 testes, dez arquivos, 2,9 s.** 48 deles agora carregam evidência.
+
+### 54.1 A evidência
+
+`✓ dois dez valem 4 sucessos` diz que passou. Não diz quais dados saíram, nem quantos sucessos
+foram contados. Quem audita a suíte precisa do segundo, e um registro que só tem o primeiro
+obriga a abrir o código para saber o que foi conferido.
+
+O registro passou a mostrar:
+
+```
+- ✓ dois dez valem 4 sucessos, não 2 — 0.29 ms
+  · normais [10, 10] · sem Fome → 4 sucessos (1 par de dez) · critico
+- ✓ o par pode se formar entre dado normal e dado de Fome — 0.31 ms
+  · normais [10] · fome [10] → 4 sucessos (1 par de dez) · perigo
+- ✓ falha bestial: falhou com 1 na Fome — 0.23 ms
+  · normais [2, 3] · fome [1] → 0 sucessos · dificuldade 3 · bestial
+```
+
+O mecanismo é o `t.diagnostic()` nativo do runner, recolhido pelo relator — **zero dependência**,
+como o resto. E não é só para dado: a evidência entrou onde o número é o que importa.
+
+| Onde | O que o registro passou a dizer |
+|---|---|
+| Dados | quais dados, quantos sucessos, quantos pares, o desfecho |
+| Dano | quanto entrou, quanto foi marcado, o tamanho da trilha |
+| Combate | sucessos do ataque, margem, dano, natureza |
+| Piscina | base, penalidade de estado, total |
+| Navegação | `você no Bar, alvo no Beco → ambiente ao lado · 100 m · −2 dados` |
+| Orçamento | `600 turnos → 1.203 brutos, 247 mantidos, 956 cortados · 3.518 de 3.519 tokens` |
+| Recombinação | `cena VAZIA: recusou 17 de 400 (95,8% ainda resolve local — item A9)` |
+| Sessões | bytes tocados por `salvarMesa` com 1 e com 13 sessões |
+| Servidor | cada tentativa de travessia e o código que ela recebeu |
+
+**Numa falha ela vale mais ainda**, e por isso aparece também no bloco de reprovação: diz com que
+entrada o defeito apareceu, antes da mensagem do `assert`.
+
+### 54.2 O relator estava certo e errado ao mesmo tempo
+
+A primeira versão pendurou cada evidência no teste **seguinte**. Eu supus que as diagnósticas
+chegam antes do resultado do teste; elas chegam **depois** — o runner emite `test:pass` e só então
+as mensagens daquele teste.
+
+O registro ficou coerente, legível e errado, afirmando que *"o 6 conta e o 5 não"* tinha visto
+`[6, 7, 8, 9]`. É o pior tipo de defeito de relatório: **plausível**. Se eu não tivesse lido linha
+por linha, teria passado.
+
+### 54.3 As nove funções (N8)
+
+As jornadas já exercitavam todas de passagem — se quebrassem, algum teste caía. Mas passar de
+passagem não diz o que a função **promete**; diz só que ela não estourou.
+
+**As portas de entrada de dado de fora** vieram primeiro, porque são as que mais incomodavam:
+
+- **importar recusa o `.json` extraído.** O app exporta dois json — a ficha, que reabre, e o
+  extraído, que alimenta o modelo. Trocar um pelo outro é o engano fácil, e reabrir o extraído
+  daria personagem vazio;
+- **recusa ficha incompleta**, e o teste varre os quatro casos: sem nada, só nome, sem Predador,
+  completa;
+- **exportar e reimportar não perde campo** — é o único caminho de backup que o jogador tem;
+- **o `.txt` sai legível**, sem `[object Object]` e sem `undefined`;
+- **a campanha compila e o Diretor abre a primeira cena**, com a narração pronta chegando à tela
+  pelo degrau 1.
+
+**O turno por dentro:** a escada tem quatro degraus na ordem `0 → 1 → 3 → 4`, e é **a mesma entre
+turnos** (ela guarda estado; reconstruí-la perderia os eventos residuais do Diretor). `turnoDaMesa`
+leva os doze campos que a escada precisa, e **`paraNarrador` não vaza rota nem dificuldade** — o
+contrato da §3.2, agora afirmado. `aplicarPasso` conta o degrau do lado certo, e `anunciar` escreve
+na tela **e** no registro.
+
+**A sessão que volta de disco:** `normalizarMesa` completa o que uma versão antiga não tinha, e
+**não sobrescreve o que já vinha**; oponente sem `ref` ganha um, sem colidir. `alvoDeFala`
+distingue quem está na cena (2 m, audível) de quem não está (500 m, inaudível).
+
+### 54.4 A armadilha que o N8 desenterrou
+
+Dois testes novos reprovaram, e o motivo não era o código:
+
+> **`executar` devolve a referência VIVA, não uma cópia.**
+
+O `vm` do Node cria um contexto novo, e não um heap novo. Então isto nunca funciona:
+
+```js
+const antes  = executar(g, 'M.contador');   // referência viva
+executar(g, 'aplicarPasso(...)');           // mexe no contador
+const depois = executar(g, 'M.contador');   // o MESMO objeto
+assert.equal(depois.local, antes.local + 1);
+```
+
+`antes.local` andou junto. O teste compara o objeto **consigo mesmo** — e o que ele afirma é
+sempre falso, ou, pior, sempre verdadeiro, se a asserção for de igualdade.
+
+Valor primitivo está a salvo, porque é copiado. O risco é só com objeto e lista — e a suíte tinha
+onze comparações antes-e-depois, das quais nove eram `.length`. Só as duas novas caíram.
+
+O arreio ganhou `instantaneo(g, expr)`, que congela no tempo, e a explicação inteira ficou junto
+dela. **É a terceira armadilha do `vm` que este projeto registra**, depois do `const` que não vira
+propriedade global (§43.5) e do `deepEqual` que compara protótipo entre realms (§46.6).
+
+### 54.5 A verificação
+
+- **`npm test`: 455 testes**, dez arquivos, 2,9 s. Cinco corridas seguidas sem oscilação.
+- **48 testes com evidência** no registro, contados no cabeçalho dele.
+- **`diagnostico.html`: 167 de 167**, console limpo, e a latência do Narrador simulado intacta no
+  navegador (`[500, 1200]`) — o arreio zera só para ele.
+
+## 55. O teto de tamanho sai da crônica
+
+O validador da crônica reprovava fora da faixa de 60 a 260 palavras. **O teto saiu**, por decisão
+do usuário. O do Narrador saiu logo depois, na §56, e pela mesma razão. Ficou só o mínimo.
+
+A razão é a mesma nos dois: **o teto era sobre ritmo, e ritmo é escolha de quem joga**. Uma noite
+que rendeu 400 palavras de fecho não é defeito do modelo, e reprovar por isso jogava fora texto
+bom e pagava uma segunda chamada só para encurtar.
+
+O papel continua pedindo o alvo — 120 a 200 na crônica, 80 a 180 na narração — e o esquema repete
+no campo. **Isso orienta sem rejeitar, que é a diferença entre alvo e portão.**
+
+O mínimo ficou porque pega outra coisa: crônica de 30 palavras, ou narração de 20, é o modelo
+desistindo — não uma escolha de ritmo.
+
+## 56. E sai do Narrador também
+
+O Narrador reprovava `n < 40 || n > 260`. Agora só `n < 40`.
+
+Eu tinha argumentado para MANTER este, com o argumento de que a narração de um turno inunda a tela
+quando cresce. O argumento é sobre ritmo, e ritmo é escolha de quem joga — o usuário decidiu, e a
+decisão está certa: uma cena que pede 300 palavras não é defeito do modelo.
+
+### 56.1 E os dois juízes ganharam teste
+
+Nenhum dos dois tinha uma asserção sequer, o que é a mesma cegueira que a §51.4 registrou: **juiz
+sem teste emagrece sem ninguém notar.** Agora são 13 no Cronista e 13 no Narrador, e as que mais
+importam são as de **falso positivo**:
+
+```
+"Eram 3 homens no balcão."   → passa    (número comum, é cena)
+"Você rola 4 dados."         → reprova  (número de regra, §3.2)
+```
+
+Um regex apertado demais aqui não protege regra nenhuma: censura narrativa.
+
+Uma delas eu escrevi fraca na primeira versão — terminava em `assert.ok(Array.isArray(p))`, que
+passa sempre, porque `filter` devolve array mesmo vazio. Verde que não prova nada, na mesma
+corrida em que eu escrevia sobre isso. Agora o termo vem da **própria lista negra do guia**, lida
+da §6.1 pelos dois blocos: se ela mudar, o teste acompanha; se esvaziar, ele cai.
+
+---
+
+## 57. Uma caixa só
+
+**Antes:** quatro botões — Agir, Falar, Examinar, Ao Narrador — e o jogador escolhia um **antes**
+de escrever. A escolha virava `M.modo` e viajava até o Narrador e o Cronista.
+
+O problema não era a interface: era o que ela obrigava. **Um turno de mesa quase nunca é uma coisa
+só.** "Encosto o cinzeiro na mesa e sussurro para a Bia: *você não devia ter vindo*" é ação **e**
+fala, com volume e destinatário — e a caixa antiga forçava a partir em duas mensagens ou a mentir
+sobre uma das metades.
+
+**Agora:** um campo de texto. Quem separa é `modulos/arbitro/motor-entrada.js`.
+
+### 57.1 O acordo é a pontuação
+
+```
+"entre aspas"        → o que você DIZ em voz alta
+— no começo da linha → também é fala, para quem prefere travessão
+(entre parênteses)   → pergunta ao Narrador, fora da ficção
+o resto              → o que você FAZ
+```
+
+Volume e alvo saem do próprio texto: *"sussurro para a Bia"*, *"grito"*, *"mando mensagem"*. O
+verbo que **antecede** a fala decide o volume, numa janela de uma oração — sem essa janela, o
+"gritou" de três frases atrás transformava em grito uma fala sussurrada no fim do parágrafo.
+
+O nome é procurado por **qualquer pedaço**, porque é assim que se chama gente na mesa: a semente
+do Rio traz `Beatriz "Bia" Coutinho`, e ninguém escreve isso — escreve "para a Bia". Ganha quem
+casar mais pedaços, e pedaço de menos de três letras não conta ("de", "da", "do" casariam com
+qualquer coisa).
+
+### 57.2 Um botão com o exemplo, e por que ele existe
+
+Um acordo de pontuação **só funciona se estiver à vista**. O botão *Como escrever*, no canto da
+caixa, abre no hover e no foco de teclado — sem JS e sem estado, porque um painel que só existe
+enquanto o ponteiro está em cima não precisa de nada guardado na sessão. Dentro dele, um turno de
+verdade, com as três marcas de uma vez: o que se ensina não é a sintaxe, é que **dá para mandar o
+turno inteiro numa mensagem só**.
+
+Embaixo da caixa, a **linha de leitura** mostra o que foi entendido — `ação › fala` — e, quando há
+fala, deixa corrigir volume e alvo. Ela é o contrário de um formulário: **só aparece o que o texto
+pediu**, e a correção vale por uma mensagem (deixá-la grudada fazia o sussurro de um turno virar o
+volume padrão do seguinte).
+
+### 57.3 O modelo é o segundo leitor, não o primeiro
+
+A pontuação resolve o caso comum, e resolve **exato**: as aspas são do jogador, e ninguém sabe
+melhor que ele o que ele quis dizer. Sobra quem escreve em fala indireta — *"digo pra ela que ela
+não devia ter vindo"* —, que a pontuação não tem como pegar.
+
+Aí entra o extrator (`modulos/cronista/intencao.mjs`), que já lê a frase de qualquer jeito para achar a
+intenção mecânica e ganhou dois campos: `speech` e `speech_volume`. Três travas, e as três são a
+mesma ideia:
+
+1. **O modelo não corrige o jogador.** Se havia aspas, a leitura dele é descartada inteira. Ele só
+   fala onde houve silêncio.
+2. **O modelo não inventa ação.** Só o pedaço de fala é acrescentado.
+3. **A fala dele fica marcada** (`deModelo`) e **não vai entre aspas** na tela. As palavras são uma
+   reescrita, não uma citação — pôr aspas seria pôr na boca do jogador uma frase que ele não
+   escreveu. O jogador vê o que foi entendido, que é a única forma de ele poder discordar.
+
+E o de sempre: **sem provedor no ar, nada disso é necessário.** O caminho determinístico é
+completo, e é o padrão.
+
+### 57.4 O que mudou por baixo
+
+`M.modo` **não sumiu** — Narrador, Cronista e Recombinador leem ele desde a §31. Ele deixou de ser
+**escolha** e virou **leitura**. `examinar` continua saindo do léxico, e não do segmentador: pôr o
+palpite nos dois lugares daria duas fontes para a mesma pergunta.
+
+Duas coisas passaram a viajar separadas, e as duas importam:
+
+- **Ao Árbitro vai só a AÇÃO.** Antes o texto inteiro ia, e a fala envenenava a leitura: *"eu atiro
+  se precisar"*, dito entre aspas, é ameaça — e o Árbitro pedia teste de Armas de Fogo por causa
+  dela.
+- **Ao Narrador vai o texto inteiro, com os pedaços marcados.** Quem está na cena reage ao que foi
+  **dito em voz alta**, e não ao que o personagem só fez. Numa linha só, o Narrador tratava
+  pensamento como fala.
+
+```
+O TURNO DO JOGADOR:
+- Ele faz: Encosto o cinzeiro na mesa
+- Ele diz, sussurrando: "você não devia ter vindo"
+- Fora da ficção, ele pergunta a você: ela sabe o que eu sou?
+```
+
+Sessão gravada antes da §57 não tem `segmentos`, e cai no desenho e no prompt de antes. **Interface
+nova não pode quebrar sessão velha.**
+
+### 57.5 Dois defeitos que a mudança desenterrou
+
+Nenhum dos dois foi causado pela §57. Os dois estavam lá, e a caixa única os pôs na tela.
+
+**1. O léxico casava por substring.** A primeira frase de teste no navegador, *"Grito: e empurro o
+segurança"*, foi lida como **Celebrar um Ritae** — rito do Sabbat. `"rito"` está dentro de
+`"grito"`. Casos iguais estavam por toda parte: "mordaça" dentro de "amordaçado", "ir" dentro de
+"sair".
+
+O mais revelador é que **a checagem certa já existia no mesmo arquivo**: `regexDeTermo`, que marca
+os termos na tela, sempre usou fronteira de palavra. O que havia era uma **discordância** — o
+matcher aceitava o que o marcador depois não pintava —, e ninguém via justamente porque o pedaço
+casado não aparecia grifado.
+
+**2. Bloqueio duro perdia para o `escalar`.** Com o léxico sem reconhecer a intenção, o turno subia
+para o Narrador **descartando os bloqueios já encontrados**. O caso é grave: amordaçado, com o
+Narrador então narrando o personagem falando.
+
+Isso só ficou comum quando a fala pura virou o jeito normal de falar: `"socorro!"` não tem intenção
+mecânica para o léxico achar, mas tem a regra da voz, e ela barra. A regra certa é a de sempre —
+**quem descreve não decide se pode.** Se alguma regra barrou, não há o que escalar.
+
+E o teste que devia ter pego isso **passava por acidente**: ele mandava `'grito por socorro'`, que
+casava "grito" com "rito", que caía em "Celebrar um Ritae", que exige fala — e a fala barrada
+produzia o bloqueio esperado. Verde, pela razão errada, pelo defeito nº 1. Os dois defeitos se
+escondiam **um atrás do outro**.
+
+### 57.6 A verificação
+
+- **`npm test`: 516 testes**, dez arquivos, ~2,9 s. Zero reprovações.
+- **21 testes novos**: 16 do segmentador (incluindo travessão de aparte, aspas sem fechar, verbo de
+  volume distante, texto vazio), 4 dos dois defeitos acima, e 6 do turno segmentado no servidor.
+- **No navegador**, os quatro turnos de exemplo, com o Narrador respondendo e o registro gravado:
+
+| escrito | modo lido | volume | alvo | pedaços |
+|---|---|---|---|---|
+| `Saco a arma e encosto na porta.` | agir | — | — | ação |
+| `Sussurro para a Bia: "não olha agora"` | agir | sussurro | bia | ação › fala |
+| `(quantos dados eu tenho de Destreza?)` | perguntar | — | — | pergunta |
+| `Grito: "SAI DA FRENTE" e empurro o segurança` | agir | grito | todos | ação › fala › ação |
+
+- **`diagnostico.html`: 167 de 167**, console limpo (os dois 503 são o extrator sem provedor no ar,
+  que é o caso de quem só quer jogar).
+
+**O que não foi verificado com modelo de verdade:** os campos `speech`/`speech_volume` do extrator.
+Não há ollama no ar aqui, então o que está afirmado é o `normalizar` deles e o esquema — a leitura
+do modelo em si continua por medir.
+
+## 58. A leitura do básico recomeça: §1, §4 e §5
+
+Item G2 da §14.1 — "reler os livros e atualizar os arquivos" — pago em três seções.
+
+O método é o que a nota de topo de `regras.md` já mandava, e ele importa: **o OCR do manual
+básico é lixo** (40% das linhas corrompidas), então nada aqui foi extraído por `pdftotext`.
+As páginas foram renderizadas em PNG a 2x com `_render.mjs` e lidas como imagem. O
+`pdftotext` serviu só para **achar** a página, nunca para citar o que está nela.
+
+### 58.1 A §1 mudou de arquivo
+
+A tabela de terminologia foi de `regras.md` §1 para **`narracao-ia.md` §4.7**, porque o que
+ela decide é **voz, não mecânica**: o motor não muda de comportamento se a palavra mudar; a
+prosa, sim. Em `regras.md` ela era referência de consulta; no guia de narração ela é régua
+de revisão do texto, que é o uso que ela realmente tem.
+
+Cada linha ganhou a **página do livro**. E a leitura acrescentou o que faltava:
+
+| | |
+|---|---|
+| **Checagem de Sangue** | É o nome oficial do que este projeto chama de "Provocação". O nome cheio é *Checagem de Inflamar o Sangue* (básico, pág. 211) |
+| **Checagem** | Rolagem de **um dado só**, alvo 6+ (pág. 122) — o termo genérico, e o projeto não o usava |
+| **vitória**, **vitória crítica**, **margem**, **vencer a um custo**, **falha total** | Cinco termos de resultado que a tabela não tinha (págs. 120–122) |
+| **trilha** | Vitalidade e Força de Vontade são "trilhas", e a palavra é do livro (pág. 119) |
+
+E registrou uma divergência que ninguém tinha escrito: o livro chama de **parada de dados**
+o que o projeto chama de **piscina** — em `piscinaDaFicha`, `piscinaFinal`, `piscinaDaRota`
+e na interface.
+
+**A decisão é dividida, de propósito.** No código, `piscina` fica: renomear identificador em
+nove arquivos para trocar uma palavra é risco sem retorno, e "parada" em português tem outro
+sentido forte demais para virar nome de variável. Na prosa, usa-se a do livro. E não há
+conflito prático — pela §3.2 o Narrador não escreve número de regra, então ele quase nunca
+precisa nomear a parada.
+
+### 58.2 A §5 estava errada, e o motor não
+
+A tabela de Dificuldade deste documento tinha **seis linhas**:
+
+```
+1 Trivial · 2 Fácil · 3 Padrão · 4 Difícil · 5 Muito difícil · 6+ Quase impossível
+```
+
+O livro tem **sete** (básico, pág. 119), e os rótulos estavam **deslocados em um nível**: o
+que o documento chamava de Fácil (2) o livro chama de Rotineira, e o que ele fechava em 6+
+o livro fecha em 7+. Ela vinha do Guia do Jogador — a fonte de menor confiança da tabela de
+autoridade.
+
+**`data-escudo.js` sempre teve os sete níveis certos**, com os mesmos exemplos do livro,
+incluindo o morador de rua em Los Angeles. Conferi contra o Escudo do Mestre em PT-BR
+(pág. 124) e bate linha a linha.
+
+> Então o erro era só de documento — e isso é o que vale registrar. **Documento
+> desatualizado não é inofensivo só porque o código está certo.** Quem lê `regras.md` para
+> implementar a próxima regra programa pela tabela errada, e aí ela vira código.
+
+Achei também que **os dois livros oficiais discordam** nos nomes dos níveis 1 e 2: o básico
+diz Fácil/Rotineira, o Escudo diz Rotineiro/Direto. Os exemplos são idênticos, então a
+mecânica é a mesma. O código carrega os do Escudo; a prosa usa os do básico, que manda. A
+comparação ficou em `narracao-ia.md` §4.7.
+
+### 58.3 O que a §5 ganhou, e não tinha
+
+Sete regras que estavam no livro e não neste documento:
+
+- **Dificuldade é número de SUCESSOS, não o número no dado.** O livro abre a seção dizendo
+  isso, contra edições anteriores. Estava implícito aqui, e implícito não basta.
+- **As três formas de definir oposição:** a tabela; **metade da parada do PN**, arredondando
+  para baixo; ou **o valor da Habilidade do PN** como Dificuldade — e mesmo com Habilidade
+  0, a Dificuldade é 1.
+- **±2 dados ≈ ∓1 de Dificuldade**, com o teto de ±2 de Dificuldade ou ±3 dados para
+  modificador improvisado do Narrador.
+- **Nenhuma parada desce abaixo de 1 dado.** Parada vazia ainda rola um dado.
+- **Equipamento improvisado: +1 à Dificuldade. Sem equipamento nenhum: impossível** — não é
+  penalidade, é bloqueio.
+- **Vitória automática:** quando a parada é o **dobro** da Dificuldade, e a margem nela é
+  sempre zero.
+- **Trabalho em equipe:** rola a maior parada, **+1 dado por auxiliar com ao menos 1 ponto
+  na Habilidade envolvida** — e se nenhuma Habilidade estiver envolvida, **ninguém pode
+  ajudar**.
+
+### 58.4 A §4 tinha uma proibição a menos, e uma prova frágil
+
+O reteste de Vontade estava certo no essencial — 1 ponto, 3 dados, dano Superficial na
+trilha —, e errava em duas coisas.
+
+**Faltava uma proibição inteira:** não se pode gastar Vontade para rerrolar **rolagens de
+trilha** — Força de Vontade e Humanidade. É a mesma frase do livro que proíbe rerrolar dados
+de Fome (pág. 122), e só metade dela tinha sido copiada. Bate com a pág. 205 (dados de Fome
+não entram em paradas de Checagens, Força de Vontade e Humanidade) e com a pág. 207.
+
+**E a prova da outra proibição era frágil.** Este documento justificava "dados de Fome nunca
+podem ser rerrolados" por **dedução**: o mérito de coterie Salubri "Restrição" existe para
+permitir isso, logo a regra padrão proíbe. A dedução estava certa — mas o livro afirma
+direto, numa caixa em letra destacada na pág. 206:
+
+> **Dados de Fome jamais podem ser rerrolados usando Força de Vontade**
+
+Dedução correta continua sendo dedução. Trocada pela citação.
+
+Duas coisas mais entraram:
+
+- **O reteste também serve para NÃO ganhar do jeito errado:** gastar Vontade para se livrar
+  de 10s comuns e assim **neutralizar um crítico bestial** (pág. 205). É um uso que a
+  interface deveria oferecer e que o documento não mencionava.
+- **"Uma vez por teste" não está escrito em lugar nenhum do livro.** É como o exemplo da
+  pág. 206 se comporta — Mario rerrola uma vez, e a Narradora então lhe oferece *vencer a um
+  custo* em vez de um segundo reteste. O app mantém a regra, e agora está registrado que ela
+  é **leitura do exemplo, não citação**.
+
+### 58.5 E uma divergência de verdade: a parada nunca chega a zero
+
+Esta é a única coisa que a leitura achou **no motor**, e não no documento.
+
+O livro diz, duas vezes, em duas páginas:
+
+> Nenhuma parada de dados pode ser inferior a 1, portanto uma rolagem de uma parada vazia
+> ainda é feita com um dado. *(básico, pág. 119)*
+
+> Penalidades jamais podem diminuir uma parada para menos de um dado. *(básico, pág. 120)*
+
+O motor faz o contrário. Em `piscinaFinal()`:
+
+```js
+const total = Math.max(0, base.total + pen.dados + soma);   // o livro diz 1
+```
+
+E quem consome trata zero como impossível — `viavel: pf.total > 0`, seguido de
+`.filter(r => r.viavel)` em `motor-arbitro.js` e em `motor-especialista.js`. Medido:
+
+```
+Manipulação 0 + Subterfúgio 0  →  piscina 0  →  a rota é DESCARTADA
+```
+
+**O efeito é o oposto do que o livro quer.** Onde o V5 dá ao personagem desesperado um dado
+— com chance real de sucesso, e com chance real de falha bestial —, o app diz que a ação não
+é possível e nem oferece a rota. O jogador perde a jogada ruim, que no horror pessoal é
+justamente a jogada que interessa.
+
+**Não corrigi.** Isto muda comportamento de jogo, e a tarefa desta seção era ler e
+documentar. Está na lista como item aberto do Árbitro, com o lugar exato: três linhas, em
+dois arquivos.
+
+### 58.6 O que isto custou, e o que sobrou
+
+Onze páginas renderizadas e lidas: básico 117–122 (Regras), 205–207 (Fome) e 211 (Sangue),
+mais o Escudo do Mestre inteiro. Três correções de documento e **uma divergência de motor**
+— a parada mínima da §58.5, que é a primeira desde a §49 e está aberta.
+
+Faltam **cinco seções de regra** da Parte I: §6 Tipos de teste, §8 Provocação e Surto de
+Sangue, §9 Potência de Sangue, §11 Força de Vontade, §18 Perigos permanentes. A §8 é a mais
+provável de render, porque é a que este documento escreveu com o nome errado desde o começo.
+
+## 59. A leitura continua: §8, §9 e §11
+
+Mais três seções do item G2. Mesmo método da §58 — nove páginas renderizadas em PNG e lidas
+como imagem, com `pdftotext` só para **achar** a página.
+
+### 59.1 A §8 chamava a regra pelo nome errado
+
+Ela se chamava "Provocação e Surto de Sangue". **"Provocação" é invenção do projeto**: o
+livro chama de **Checagem de Sangue** — cheio, *Checagem de Inflamar o Sangue* (pág. 211).
+Renomeada, com o apelido antigo mantido só para quem procurar por ele.
+
+E tinha um erro de regra que muda jogo: dizia que o Surto de Sangue vale "antes de um teste
+que use um Atributo **físico**". O livro diz **Físicos, Sociais ou Mentais** (pág. 218). O
+app estava deixando de oferecer Surto em metade das situações onde ele cabe.
+
+Entraram três regras que faltavam, todas da pág. 211:
+
+- **A Fome ganha é somada DEPOIS de o efeito ser resolvido** — por isso é aceitável rolar a
+  Checagem junto com, ou até depois de, os outros testes.
+- **Com Fome 5 o vampiro jamais pode Inflamar o Sangue intencionalmente.** Forçado por fator
+  externo, rola frenesi de fome com Dificuldade 4 — e a Checagem ainda ativa o efeito.
+- **Recuperação vampírica é Checagem também:** Superficial sai por Checagem, **uma por
+  turno**; Agravado exige esperar a **noite seguinte** e **três** Checagens, além da regular
+  do despertar.
+
+Uma correção pequena de citação: "falhar numa Checagem não faz o dom falhar" é da pág.
+**217**, não da 218.
+
+### 59.2 A §9 estava certa, mas quase vazia
+
+Ela era um parágrafo apontando para a tabela da Parte II. Ganhou o que governa a Potência
+fora da tabela (pág. 215–217): **sobe +1 a cada 100 anos ativo**, **cai −1 a cada 50 anos em
+Torpor**, **nunca sai da faixa da geração**, e **sangue-ralo nunca sobe** a não ser por
+Diablerie até a 13ª. Mais o que é ser Potência 0 além da tabela — dano como mortal, sem Laço
+de Sangue, sem carniçal, frenesi só por meio sobrenatural, e **1 ponto de Superficial por
+turno** ao sol.
+
+E a observação que o livro faz e ninguém tinha copiado: **Potência 6 e acima não é para
+personagem de jogador**; está na tabela para uso do Narrador.
+
+### 59.3 Duas células erradas, e o engano que as produziu
+
+A tabela da Parte II §5 **já estava marcada como conferida** contra a pág. 216 — e tinha
+dois valores errados:
+
+| PS | Estava | É |
+|---|---|---|
+| 6 | sacia **1** a menos por humano | sacia **2** a menos |
+| 8 | matar para descer abaixo de **2** | abaixo de **3** |
+
+Os dois vêm do mesmo engano, e ele merece registro porque é fácil repetir: **a célula do
+livro é mesclada entre duas linhas** — 6–7 formam um bloco, 8–9 outro —, e o texto foi lido
+na altura da linha de baixo. Só percebi recortando a coluna e renderizando a 5x; a 2x, as
+bordas do bloco não dão para separar.
+
+`data-escudo.js` carregava os mesmos dois erros e foi corrigido junto. É texto exibido, não
+entra em conta nenhuma — mas é regra que o jogador lê e usa.
+
+### 59.4 A §11 errava o momento da recuperação, e faltavam três regras
+
+O que estava certo: `Força de Vontade = Autocontrole + Determinação`. O resto rendeu.
+
+**A recuperação era no momento errado.** O documento dizia "ao fim da sessão"; o livro diz
+**no início** (pág. 158). A diferença tem consequência, e é boa: existe uma **exceção** —
+se a noite terminar em cena de ação onde Vontade baixa aumenta a tensão, os personagens
+**mantêm** a Vontade com que terminaram. Recuperar no fim apagaria o gancho.
+
+**Um gasto faltava inteiro** — o terceiro da lista do livro: gastar 1 ponto para fazer
+**movimentos minuciosos com o coração empalado** por estaca. E outro estava mal descrito: o
+documento dizia "resistir a frenesi ou compulsão", e o livro fala em **assumir o controle do
+personagem por um turno** durante o frenesi. O frenesi continua; o personagem é que age.
+
+**E faltava a regra da caixa da pág. 126**, que é a mais consequente das três:
+
+> Quando um ponto de uma trilha é gasto voluntariamente [...] marque-o como dano
+> Superficial. **Se todos os pontos já tiverem recebido dano Superficial, transforme um em
+> dano Agravado.** [...] **Dano Superficial sofrido graças a gastos não é dividido pela
+> metade.**
+
+Ou seja: **trilha cheia de Superficial não impede gastar** — passa a custar Agravado. E a
+divisão por dois, que vale para dano *sofrido*, **não vale para gasto**.
+
+Uma coisa o app já fazia certo, e agora está escrito: **Força de Vontade não se compra**,
+nem na criação nem com XP (pág. 157). `ficha-regras.js` a deriva, e não há custo de XP para
+ela.
+
+### 59.5 A segunda divergência de motor: o reteste só aceita falha
+
+Como a §58.5, achada lendo, e não corrigida.
+
+O livro manda gastar Força de Vontade **para se livrar de 10s comuns e assim neutralizar um
+crítico bestial** (pág. 205), e o exemplo da pág. 206 mostra Mario rerrolando **um 10 e duas
+falhas** de uma vez.
+
+`motor-dados.js` não deixa:
+
+```js
+dadosRetestaveis(r) { ... .filter(x => x.v < 6) ... }          // sugestão: ok
+retestarVontade(r, indices) { ... .filter(i => r.normais[i] < 6) }   // trava
+```
+
+A **sugestão** filtrar as falhas está certa — é o caso comum. A **trava** não: ela impede o
+jogador de rerrolar um 10 mesmo pedindo. Pior, `podeRetestar()` devolve false quando não há
+falha nenhuma — então **a rolagem que mais precisa do reteste, o crítico bestial sem falhas,
+é exatamente a que não pode ser retestada**.
+
+É item A2 da §14.1. Como o A1, muda comportamento de jogo, e a tarefa desta seção era ler.
+
+### 59.6 O placar
+
+Nove páginas: básico 126, 157–158, 215–218 e o recorte da 216 a 5x. **Cinco correções de
+documento, duas de dado, e uma divergência de motor nova.**
+
+Com §8, §9 e §11 fechadas, a Parte I está em **15 das 17 seções de regra**. Faltam duas:
+**§6 Tipos de teste** e **§18 Perigos permanentes**.
+
+## 60. A Parte I fecha: §6 e §18
+
+As duas últimas seções de regra do manual básico. Onze páginas: básico 122–125 (Regras),
+221–223 (Os Perigos do Sangue) e 290–294 (Sistemas Avançados).
+
+### 60.1 O empate estava invertido
+
+A §6 dizia, sobre disputa: *"Empate mantém o status quo."* O livro diz o contrário, e é
+literal:
+
+> Se o personagem que está agindo rolou mais sucessos **ou a mesma quantidade** que o
+> personagem opositor, o teste é uma vitória. *(básico, pág. 123)*
+
+**O empate é vitória de quem age.** O erro é caro porque empate não é raro, e a regra decide
+a favor de quem tomou a iniciativa: é a diferença entre um sistema que premia agir e um que
+premia esperar. Escrito ao contrário, ele empurrava o jogo para o segundo.
+
+### 60.2 A §6 tinha uma versão de teste estendido, e o livro tem cinco
+
+Ela dizia "Prolongado — acumula sucessos até um total; falha total zera o progresso". Está
+certo, e é um quinto do assunto *(págs. 293–294)*:
+
+| Versão | O que muda |
+|---|---|
+| **Padrão** | Dificuldade muito alta (**10+**), acumulando sucessos |
+| **Série de testes** | Dificuldade **comum** a várias tarefas, exigindo N **vitórias** |
+| **Estendido difícil** | Conta **só a margem** de cada tarefa; feito para uma ou duas rolagens por sessão |
+| **Em cascata** | A margem vira **dados extras na próxima** tarefa — e **uma falha encerra o teste** |
+| **Disputa estendida** | Dois lados correndo; vence quem acumular primeiro |
+
+E a exceção que faltava: no estendido, o Narrador pode permitir **ignorar ou consertar uma
+falha total** em vez de estragar o teste inteiro.
+
+Mais três regras gerais que não estavam em lugar nenhum do documento: **checagem não aceita
+reteste de Vontade, vitória automática nem "pegar a metade"** (pág. 122–123); **"pegar a
+metade"** existe como recurso do Narrador e o livro **encoraja estendê-lo aos jogadores**; e
+a **ordem de quem age primeiro** em conflito, com o desempate por Destreza + Raciocínio.
+
+### 60.3 A §18 era uma tabela sem números
+
+Sete linhas dizendo **o que cada perigo é**, e nenhuma dizendo **o que ele faz**. O livro dá
+ritmo, dificuldade e limiar para quase todos *(págs. 221–223)*:
+
+- **Luz solar** não é uma taxa fixa: é **Agravado por turno em ritmo igual à Gravidade da
+  Perdição**. Perdição 2 leva 2 por turno; Perdição 5, cinco. Luz obscurecida cai para
+  **turno sim, turno não**, e **sangue-ralo** sofre **1 Superficial por turno**.
+- **Fogo** é **por quantidade de corpo exposta** — mão ≈ 1 ponto, engolfado ≈ 3 ou mais por
+  turno. E vampiros **não queimam mais rápido** que mortais.
+- **Frio extremo** tinha zero linhas aqui e é um caminho inteiro para o Torpor: **Vigor +
+  Determinação (Dif. 2)** após uma hora a −30 °C, **+1 de Dificuldade por hora**, e uma hora
+  depois da falha a carne congela. Água gelada testa **a cada meia hora**, e o congelado
+  **afunda**.
+- **Decapitação** e **estaca** têm limiar: ataque localizado a **−2**, e **10+** ou **5+**
+  pontos de dano **antes** da divisão pela metade. A estaca **sempre** tem dano +0.
+- **O estado de estacado** não estava descrito: o vampiro fica **consciente**, gasta **1 de
+  Vontade** para mover um dedo, usa **Disciplinas mentais mas não pode dar ordens**, e
+  continua fazendo **uma Checagem de Sangue por pôr do sol**.
+- **Torpor** ganhou as **três portas de entrada**, a duração por **Humanidade**, a
+  recuperação de **1 Vitalidade por noite**, o **Determinação + Percepção (Dif. 2)** quando
+  passa uma vítima, e o jeito de interromper (sangue de **Potência maior**).
+
+> **E a regra que mais vale ter à mão:** vampiros **despertam do Torpor com Fome 5**. É ela
+> que decide como é a cena seguinte.
+
+**Fé Verdadeira faltava inteira**, com mecânica por ponto de 1 a 5 — a disputa de
+Determinação + Fé contra a parada de Vontade, o Agravado por sucesso ao toque, a imunidade a
+Dominação no 4, e o teste de Remorso forçado no 5.
+
+### 60.4 O que a leitura confirmou, e vale mais que uma correção
+
+A pág. 223 fecha a questão da §49.1 (item A5) com todas as letras:
+
+> Quando toda a trilha de Vitalidade de um vampiro está totalmente preenchida com dano
+> Agravado, ele entra em **Torpor**. Qualquer dano Agravado adicional oriundo de **fogo ou
+> luz solar** sofrido nesse estado causa a **Morte Final**.
+
+É exatamente o que `motor-estado.js` faz desde a §49.1 — trilha cheia é torpor, e quem mata
+é a fonte. **A correção mais delicada que este projeto fez no motor está certa**, e agora
+está conferida contra a página, e não deduzida.
+
+### 60.5 A3: o empate em combate, e a esquiva que o app escolhe pelo jogador
+
+Terceira divergência achada lendo, e a mais delicada das três — porque encosta na §15, que
+está marcada como conferida e não foi relida agora.
+
+O que eu li na pág. 125:
+
+1. **Conflito bilateral** — quando os dois lados podem causar dano — resolve-se em **uma
+   única rolagem de disputa**, e **o empate faz os dois causarem dano, como se cada um
+   tivesse vencido com margem 1**. `motor-combate.js` faz `margem = atq − def` e trata
+   `margem <= 0` como **ataque bloqueado, dano zero**.
+2. **Esquivando** — *"o defensor **sempre pode optar** por usar Destreza + Atletismo em vez
+   de uma habilidade de combate [...] Caso faça isso, **não infligirá nenhum dano** ao
+   oponente"*. É uma escolha do jogador, com preço. `piscinaDefesa()` escolhe sozinho, pela
+   **maior parada**, e não modela o preço nem em um caso nem no outro.
+
+O segundo é o que mais custa: a troca "defender melhor **ou** poder revidar" é uma decisão
+tática de cada turno, e hoje ela não existe — o motor decide, e decide só pelo tamanho.
+
+**Não corrigi**, pelas razões de sempre: muda comportamento de jogo, e a tarefa era ler. E
+esta pede mais que as outras duas — **a §15 precisa ser relida** antes de mexer, porque é
+ela que define como o conflito é montado.
+
+### 60.6 O placar da Parte I
+
+**Fechada.** As 17 seções de regra (§2 a §18) conferidas contra o manual básico. A §1 saiu
+— virou vocabulário, em `narracao-ia.md` §4.7 — e a §19 é inventário do motor.
+
+Três seções de leitura (§58, §59, §60), e o saldo:
+
+| | |
+|---|---|
+| Correções de documento | **oito** |
+| Correções de dado | **duas** |
+| Divergências de motor achadas | **três** (A1, A2, A3), nenhuma corrigida |
+| Regras que confirmaram o motor | A5 (§49.1), a Vontade não-comprável, a tabela de Dificuldade |
+
+**O item G2 não fecha aqui.** Falta a **Parte II** (2 das 14), as Partes III e IV, e os
+**doze outros livros**, nenhum deles relido. O que fechou é a fonte que manda em tudo.
+
+## 61. Quanto do manual básico foi lido, de verdade
+
+A §60 disse "a Parte I fechou", e isso é verdade sobre **este documento**, não sobre o livro.
+A pergunta certa é outra, e a resposta é medida, não estimada: **contei as citações de página
+em `regras.md` e `narracao-ia.md`**.
+
+```
+36 páginas distintas citadas, de ~394 de conteúdo  →  cerca de 9%
+```
+
+As 36: 117–127 · 136 · 151 · 157–158 · 205–207 · 211–213 · 215–218 · 220–223 · 239 · 241 ·
+244 · 293–294 · 301–302.
+
+### 61.1 O mapa, capítulo a capítulo
+
+| Capítulo | Págs. | Conferidas |
+|---|---|---|
+| Conceitos | 33–46 | **0** |
+| A Sociedade dos Membros | 47–62 | **0** |
+| **Clãs** | 63–114 | **0 de 52** |
+| Regras | 115–132 | 11 de 18 |
+| Personagens e Criação | 133–154 | 2 de 22 |
+| Características Principais | 155–171 | 2 de 17 |
+| Crenças | 172–174 | **0** |
+| **Tipos de Predador** | 175–194 | **0 de 20** |
+| Coterie | 195–200 | **0** |
+| Vampiros (Fome) | 201–213 | 6 de 13 |
+| O Sangue | 214–224 | 8 de 11 |
+| **Você é o que você come** (Ressonância) | 225–232 | **0 de 8** |
+| **Estados de Condenação** (Laço, Diablerie) | 233–235 | **0** |
+| Humanidade | 236–240 | 1 de 5 |
+| **Disciplinas** | 241–288 | **2 de 48** |
+| Sistemas Avançados | 289–316 | 4 de 28 |
+| Cidades | 317–336 | **0** |
+| Crônicas | 337–368 | **0** |
+| **Ferramentas** (Antagonistas, Itens) | 369–406 | **0 de 38** |
+| **Apêndices I a III** | 407–423 | **0 de 17** |
+
+### 61.2 O que ainda não foi lido e o motor já usa
+
+Esta é a lista que importa. Não é "falta ler o livro" — é **onde existe dado no código sem
+página conferida atrás dele**.
+
+| # | O que | O que alimenta | Peso |
+|---|---|---|---|
+| ~~1~~ | ~~Apêndice I: Ações Padrão (407–410)~~ | **Lido na §62, pago na §63.** Virou `regras.md` Parte II §15 | ✅ |
+| ~~2~~ | ~~Disciplinas (241–288)~~ | **Lido e reescrito na §64.** 112 poderes, cada disciplina com a página | ✅ |
+| ~~3~~ | ~~Tipos de Predador (175–194)~~ | **Lido na §77.** São **175–178** e **dez** tipos, não doze. Seis com nome errado, cinco com Disciplina errada | ✅ |
+| **4** | **Clãs** (63–114) | `data-clans.js`, 280 linhas — Perdições, Compulsões, disciplinas de clã | alto |
+| ~~5~~ | ~~Ressonância (225–232)~~ | **Lida na §67.** Era decorativa: virou dado. `data-ressonancia.js` e `regras.md` §11 | ✅ |
+| ~~6~~ | ~~Itens e armas (378–381)~~ | **Lido na §66.** O capítulo se chama **Itens**, e não existia: 17 itens novos em `data-itens.js`, e `regras.md` §16 | ✅ |
+| **7** | **Combate avançado** (295–305) | §15, que hoje se apoia em **duas** páginas | médio |
+| **8** | **Laço de Sangue e Diablerie** (233–235) | §18.9 e Parte IV | médio |
+| ~~9~~ | ~~Habilidades (159–171)~~ | **Lido na §71.** Uma descrição por Habilidade, com a página, no hover do criador | ✅ |
+| **10** | **Criação e Experiência** (135–154) | §16 e §17, hoje com **uma** página cada | baixo |
+
+**Os itens 3 e 4 são os mais rentáveis que sobraram**: Tipos de Predador e Clãs alimentam dado que
+o criador usa em toda ficha nova — Perdições, Compulsões, disciplinas de clã, piscinas de caça — e
+nenhuma linha deles foi conferida contra a página.
+
+**Os apêndices II e III entraram na lista na §70**, e não estavam aqui porque a §61 só olhou para
+"dado no código sem página atrás". Eles são o contrário: **páginas sem nada no código** — o
+Apêndice II é um subsistema inteiro (G8) e o Apêndice III tem dois itens que traduzem para
+aplicativo (G9).
+
+> **O que não muda:** as doze divergências conhecidas foram pagas na §40, e as oito novas (A1 a
+> A4, A6 na §63; A7 a A9 na §69) estão listadas. Não há motivo para achar que o motor está errado
+> em massa. Há motivo para saber que **o que não foi lido não foi conferido**.
+
+### 61.3 E os outros doze livros
+
+Nenhum foi relido. Dois deles mandam em matéria própria, pela tabela de autoridade:
+`Oblivio.pdf` (terminologia e Oblívio), `SABBAT.pdf` e `Anarquistas-V5-PT-BR.pdf` (Partes III
+e IV, que hoje têm **zero** páginas conferidas).
+
+## 62. O Apêndice I, e o que ele mostrou do léxico
+
+Quatro páginas do livro (básico, 407–410) contra `arbitro-lexico.js`. Era o item 1 da §61.2, e
+rendeu mais que as seis seções anteriores juntas.
+
+O Apêndice I é o catálogo de ações comuns **com a parada de dados de cada uma**. É a mesma
+forma de `Arbitro.ACOES`: verbo → atributo + perícia. Virou a **Parte II §15** de `regras.md`,
+com as três tabelas — ações mentais, ações físicas, e a tabela de Força.
+
+### 62.1 O livro autoriza o desenho, e isso valia saber
+
+A abertura do Apêndice responde a uma dúvida que o projeto nunca tinha resolvido — se
+oferecer **rotas alternativas** para a mesma ação era invenção ou regra:
+
+> As paradas de dados e regras fornecidas aqui existem somente para orientar o Narrador.
+> Sempre é ele quem determina qual parada de dados um jogador deve montar para realizar
+> qualquer feito ou ação, e **ele sempre pode mudar a parada no melhor interesse da
+> narrativa**. *(pág. 407)*
+
+**As rotas são o que o livro manda fazer.** O que ele cobra é outra coisa, e é onde o léxico
+erra: quando o livro **nomeia** uma parada, a rota tem de ser aquela.
+
+### 62.2 A4: quatro ações que o léxico não conhece
+
+Medido, não suposto — `Arbitro.interpretar()` com a frase que um jogador escreveria:
+
+```
+subo pela escada de incendio     ->  (nenhuma)   rotas: 0
+escalo o muro                    ->  (nenhuma)   rotas: 0
+dirijo rapido ate la             ->  (nenhuma)   rotas: 0
+pesquiso sobre a familia dele    ->  (nenhuma)   rotas: 0
+hackeio o sistema de cameras     ->  (nenhuma)   rotas: 0
+```
+
+Quatro ações **com parada definida no livro**, e o léxico não reconhece nenhuma. O turno sobe
+para o Narrador, que narra sem teste — o jogador escala a fachada e nunca corre o risco de
+cair.
+
+| Ação | Parada do livro | Onde |
+|---|---|---|
+| **Escalada** | Destreza + Atletismo; falha total = preso ou cai; corda dá **−2** | pág. 410 |
+| **Condução** | Destreza + Condução; clima ruim, Raciocínio + Condução; **+1 por complicação** | pág. 409 |
+| **Pesquisa** | Inteligência + **a Habilidade relevante**; Dificuldade **3**, no máximo 4 | pág. 408 |
+| **Hackear** | Inteligência + Tecnologia; **4** corporativo, **6** base segura, **8+** NSA | pág. 409 |
+
+A escalada é a mais sentida: a semente do Rio tem escada de incêndio, e o próprio few-shot do
+extrator usa *"subo pela escada de incêndio até o terceiro andar, o mais quieto que der"* como
+exemplo — de **movimento**, que não tem rota nenhuma.
+
+### 62.3 A4 (cont.): três paradas erradas nas que ele conhece
+
+**`arrombar`** tem três rotas, e duas discordam do livro. A pág. 410 é categórica:
+
+> **Paradas de invasão sempre usam Ladroagem como Habilidade.** O Atributo depende da tarefa:
+> abrir uma fechadura ou se esquivar de sensores laser usam Destreza + Ladroagem, enquanto
+> arrombar um cofre ou evitar um circuito de alarme usa Inteligência + Ladroagem. [...]
+> arrombar uma fechadura sem provocar estragos poderia usar Força + Ladroagem.
+
+| Rota | Hoje | O livro |
+|---|---|---|
+| 1 | Destreza + Ladroagem | ✅ igual |
+| 2 | Força + **Briga** | **Força + Ladroagem.** Briga é perícia de combate; não tem o que fazer numa fechadura |
+| 3 | Inteligência + Tecnologia | Só para sistema **puramente eletrônico**, e **com +1 de Dificuldade**. Hoje é rota igual às outras, sem preço |
+
+**`rastrear` engole o espreitamento.** São duas ações no livro, com paradas diferentes:
+
+```
+sigo o cara pela rua   ->  Rastrear  (Raciocínio + Sobrevivência)
+```
+
+- **Rastrear** *(pág. 408)* é seguir **evidência física em área selvagem** — pegadas, sangue,
+  grama amassada. Raciocínio + Sobrevivência, Dificuldade igual à Sobrevivência do alvo.
+- **Espreitar** *(pág. 410)* é seguir alguém **que você está vendo**. É **Raciocínio +
+  Percepção em disputa contra Determinação + Manha** do alvo — e disputa, não teste simples.
+
+Seguir um sujeito por Ipanema rola Sobrevivência hoje. Deveria rolar Percepção, contra ele.
+
+### 62.4 E uma leitura errada que abre o painel de combate
+
+```
+derrubo a porta com o ombro  ->  Atacar corpo a corpo   (intenção: lutar)
+abre painel de combate? true
+```
+
+`derrubar/derrubo` está em `lutar.frases`, e não há ninguém na frase. **O jogador arromba uma
+porta e o app abre combate.** É da mesma família do `"Grito:"` → *Celebrar um Ritae* da §57.5,
+mas pior de justificar: lá era casamento por pedaço de palavra, aqui a frase inteira está na
+lista da ação errada.
+
+E o livro tem resposta pronta, na tabela de Força *(pág. 409)*: **derrubar uma porta de
+madeira é Força 3, e não se rola nada.**
+
+### 62.5 As regras que nenhuma parada mostra
+
+O Apêndice traz cinco regras que não são parada de dados, e que o motor não tem:
+
+- **Dano por queda:** **1 Superficial por metro** de queda livre. Cair em pé e neutralizar
+  exige **Destreza + Atletismo com Dificuldade igual aos metros** *(pág. 410)*.
+- **Primeira tentativa:** contra segurança ativa, a invasão **precisa acertar de primeira**,
+  ou dispara o alarme.
+- **Ferramentas:** improvisadas **+1** de Dificuldade; cartão de crédito e grampo, **+2**.
+- **Ladroagem baixa não abre tudo:** Ladroagem 1 abre uma fechadura Yale, **não um cofre**.
+- **A tabela de Força**, 1 a 15, do que se faz **sem rolar** — porta de madeira em 3, algemas
+  em 6, carro pequeno em 7. É a tabela que responde "posso?" antes de perguntar "com quantos
+  dados?".
+
+### 62.6 O placar
+
+| | |
+|---|---|
+| Páginas lidas | 4 (básico 407–410) |
+| Seção nova em `regras.md` | Parte II §15, com três tabelas |
+| Ações **ausentes** do léxico | **4** — escalada, condução, pesquisa, hackear |
+| Paradas **erradas** no léxico | **3** — duas em `arrombar`, uma em `rastrear` |
+| Leitura errada | **1** — porta arrombada abre combate |
+| Regras sem implementação | **5**, incluindo dano por queda |
+
+Tudo isto é **A4** na §14.1, e não foi corrigido: mexe em qual dado se rola, que é
+comportamento de jogo.
+
+> **Quatro páginas renderam mais que as seis seções da §58 à §60.** Não é coincidência: o
+> Apêndice I é a única parte do livro escrita na mesma forma que o motor. Se a §61.2 estava
+> certa sobre a ordem, o próximo é **Disciplinas** (241–288) contra `data-disciplinas.js`.
+
+## 63. As divergências com o livro, pagas
+
+A1 a A4 foram achadas lendo o manual básico (§58 a §62). Aqui elas são pagas — e a conta
+cresceu no caminho: **um sexto item apareceu enquanto eu escrevia o teste do terceiro.**
+
+Regra da rodada, dada pelo usuário: **preferência ao que está no livro.** Onde o motor e o
+projeto discordavam do básico, quem cede é o projeto.
+
+### 63.1 A1 — nenhuma parada desce abaixo de 1
+
+```js
+const total = Math.max(0, piscina | 0);   // era
+const total = Math.max(1, piscina | 0);   // é
+```
+
+Três lugares: `Dados.rolar`, `Arbitro.piscinaFinal` e `Combate.piscinaDefesa`. O efeito não
+era rolar zero dado — era pior: `viavel: pf.total > 0` **descartava a rota**, e a ação nem
+aparecia para o jogador.
+
+```
+Manipulação 0 + Subterfúgio 0  →  antes: rota descartada  ·  agora: 1 dado
+```
+
+O livro diz duas vezes, e as duas estão em `regras.md` §5: *"uma rolagem de uma parada vazia
+ainda é feita com um dado"* (pág. 119) e *"penalidades jamais podem diminuir uma parada para
+menos de um dado"* (pág. 120).
+
+### 63.2 A2 — o reteste aceita qualquer dado comum
+
+O filtro `< 6` estava em dois lugares. Na **sugestão** ele está certo e ficou. No **reteste**
+ele travava, e `podeRetestar()` chegava a devolver false quando não havia falha — de modo que
+a rolagem que mais precisa do reteste, o **crítico bestial sem falhas**, era a única que não
+podia ser retestada.
+
+Agora a sugestão é esperta: num crítico bestial ela aponta o **10 comum**, que é o dado cujo
+reteste quebra o par e desfaz o crítico — o uso que o livro nomeia (pág. 205).
+
+```
+normais [10, 7, 8] + Fome [10]  →  tipo perigo  →  sugestão [0]   (o 10 comum)
+rerrolando o índice 0           →  tipo sucesso                   (crítico desfeito)
+```
+
+Dado de Fome continua fora, e essa trava é do livro (pág. 206): `retestarVontade` só toca
+`normais`, e há teste afirmando isso.
+
+### 63.3 A3 — a esquiva virou escolha, e o empate bilateral fere os dois
+
+`Combate.resolver` ganhou `esquivar`:
+
+| | |
+|---|---|
+| `true` | força Destreza + Atletismo. **Vencendo, não revida** |
+| `false` | força a perícia de combate. Conflito **bilateral** |
+| `null` | o motor escolhe a maior parada, como antes — e **diz qual escolheu** |
+
+E o empate deixou de ser "ataque bloqueado":
+
+> Um empate resulta em ambos os lados infligindo dano no outro **como se os dois tivessem
+> obtido vitória com uma margem de um**. *(básico, pág. 125)*
+
+Medido em 400 golpes bilaterais: **79 empates, 79 revides, 79 acertos** — os dois lados, toda
+vez. E em 400 esquivas: **139 vitórias da esquiva, zero revides**, que é o preço que o livro
+cobra por ela.
+
+O revide **dói de verdade**: sai da trilha do atacante, com teste que confere a trilha e não o
+texto do evento.
+
+Tiro não é bilateral — ninguém revida bala com o corpo —, e isso também tem teste.
+
+### 63.4 A4 — as ações do Apêndice I
+
+**Cinco entraram**, com a parada do livro e a página no comentário:
+
+| Ação | Parada | Página |
+|---|---|---|
+| **Escalar** | Destreza + Atletismo | 410 |
+| **Dirigir** | Destreza + Condução · Raciocínio + Condução | 409 |
+| **Pesquisar** | Inteligência + a Habilidade relevante | 408 |
+| **Hackear** | Inteligência + Tecnologia | 409 |
+| **Espreitar** | Raciocínio + Percepção, **em disputa** contra Determinação + Manha | 410 |
+
+**Três paradas corrigidas:**
+
+- `arrombar` agora usa **Ladroagem nas três rotas de invasão** — Destreza, Inteligência e
+  Força —, porque *"paradas de invasão sempre usam Ladroagem"*. Saiu o Força + **Briga**.
+- A rota **Inteligência + Tecnologia** ficou, mas com o preço que o livro cobra: **+1 de
+  Dificuldade**, e só para sistema puramente eletrônico. `rotas` ganhou o campo
+  `dificuldade`, que viaja até a rolagem.
+- `rastrear` devolveu as frases de seguir gente ao **espreitar**. Rastrear voltou a ser o que
+  o livro diz: ler pegada e sangue, com Sobrevivência.
+
+E **`derrubar/derrubo` saiu de `lutar`**. A frase inteira estava na lista da ação errada, e o
+efeito era grotesco: `derrubo a porta com o ombro` abria o painel de combate. Foi para
+`abrir`, que tem a rota de força — e a tabela do livro lembra que porta de madeira é **Força 3
+e não se rola nada** (pág. 409).
+
+```
+derrubo a porta com o ombro     ->  Abrir              · combate? false
+derrubo o segurança com um soco ->  Atacar corpo a corpo · combate? true
+```
+
+### 63.5 A6 — o sexto item, achado escrevendo o teste do terceiro
+
+O teste do revide não passava: o revide de margem 1 não marcava nada na trilha. Fui ver por
+quê, e o motivo não era o revide.
+
+```js
+n = Math.floor(n / 2);   // dano Superficial em vampiro
+```
+
+O livro, na pág. 126, e eu recortei a página a 6x para não ter dúvida:
+
+> A menos que especificado o contrário, divida dano Superficial pela metade **(arredondando
+> para cima)** antes de aplicá-lo à trilha.
+
+**Era sistemático.** Todo dano Superficial ímpar chegava com meio ponto a menos:
+
+| Bruto | Antes | É |
+|---|---|---|
+| 1 | **0** | 1 |
+| 3 | 1 | 2 |
+| 5 | 2 | 3 |
+
+E o projeto tinha **escrito o erro em três lugares** como se fosse regra: `regras.md` §10
+dizia "arredondando para baixo"; o README dizia que **"1 virando 0 é regra, não defeito"**; e
+havia um teste chamado *"1 de Superficial em vampiro vira zero — e não é bug"*, com o
+comentário *"um soco não machuca um vampiro"*.
+
+Machuca. Os três foram corrigidos, e o teste virou uma tabela de cinco linhas.
+
+> **É o pior tipo de erro que este projeto já teve**, e vale dizer por quê: não era um
+> descuido, era uma **crença documentada**. Estava no código, no documento de regras, no
+> README e num teste que a defendia por nome. Quatro camadas concordando entre si, e nenhuma
+> delas olhando para o livro. Nenhuma revisão interna pegaria isso — só a página.
+
+### 63.6 O que a correção quebrou, e por quê isso foi bom
+
+Quatro testes existentes falharam. **Nenhum era falso alarme:**
+
+- Três afirmavam o arredondamento errado. Reescritos contra a página.
+- Um, na jornada, media `M.combate.oponentes` **depois** do golpe — e com o empate bilateral
+  o personagem passou a cair em torpor, a briga a fechar, e fechar **esvazia o array**. A
+  medida lia zero por a lista não existir mais, não por ninguém ter apanhado.
+
+  O conserto não foi afrouxar: o alvo passa a ser guardado **antes** do golpe. O `vm` devolve
+  referência viva, então a ficha sobrevive ao fim da briga — e agora o teste diz **em quem**
+  bateu, que é mais do que dizia antes.
+
+E um quinto falhou do jeito certo: o `fronteiras.test.mjs` reprovou porque `arbitro-lexico.js`
+passou de 407 para 556 linhas e o README ainda dizia 407. É o X3 fazendo exatamente o trabalho
+dele, sem ninguém pedir.
+
+### 63.7 A verificação
+
+- **`npm test`: 539 testes** (eram 516), dez arquivos, 3,3 s. **23 testes novos**, cada um
+  citando a página que manda.
+- **`diagnostico.html`: 167 de 167**, console limpo.
+- **No navegador**, com uma ficha zerada — o caso que a A1 destravou:
+
+```
+Arrombar:  Destreza + Ladroagem = 1 · Inteligência + Ladroagem = 1
+           Força + Ladroagem = 1    · Inteligência + Tecnologia = 1 (+1 dif)
+Escalar:   Destreza + Atletismo = 1 · Força + Atletismo = 1 · Raciocínio + Sobrevivência = 1
+1 Superficial -> 1 marcado
+derrubo a porta com o ombro -> combate NÃO abre
+```
+
+Antes, essa ficha não receberia rota nenhuma: todas seriam descartadas por parada zero.
+
+### 63.8 O placar da leitura
+
+Cinco rodadas de leitura (§58 a §62) e uma de pagamento (§63):
+
+| | |
+|---|---|
+| Páginas do básico lidas | ~50 |
+| Correções de documento | **dez** |
+| Correções de dado | duas |
+| **Divergências de motor achadas** | **cinco** — A1, A2, A3, A4, A6 |
+| **Pagas** | **as cinco** |
+| Testes novos | 23 |
+
+**O Árbitro voltou a estar fechado.** E o argumento de continuar lendo ficou mais forte, não
+mais fraco: as cinco divergências vieram de ~50 páginas, e faltam ~340.
+
+## 64. As Disciplinas, reescritas página por página
+
+Era o item 2 da §61.2. Trinta páginas do básico (244–288) contra `data-disciplinas.js`, e o
+resultado é o maior conserto de dado que este projeto fez.
+
+### 64.1 O arquivo batia em cerca de um terço
+
+Medido por amostra antes de reescrever, e a amostra bastou:
+
+| Disciplina | Batia | O que o livro tem |
+|---|---|---|
+| **Animalismo** | **1 de 11** — só *Sentir a Besta* | Famulus Enlaçado, Sussurros Selvagens, Enxame Não Vivo, Subjugar a Besta, Suculência Animal, Comunhão de Espíritos, Controle Animal, Expulsar a Besta — **nenhum estava no arquivo** |
+| **Auspícios** | 6 de 9 nomes | *Sentidos da Fera* é **Sentidos Aguçados**; *Toque do Espírito* estava no 3 e é **nível 4**; *Sondagem Espiritual* não existe; faltava *Perscrutar a Alma* |
+| **Celeridade** | 2 de 10 — só o nível 1 | níveis 2 e 3 são **Rapidez**, **Piscadela**, **Travessia** |
+| **Dominação** | 0 nos níveis 1–2 | **Compelir · Nublar Memória** e **Dementação · Mesmerismo** |
+
+Não era ruído: eram **nomes plausíveis nos lugares errados**. Uma lista escrita de memória,
+não copiada da página — e boa o bastante para ninguém desconfiar.
+
+### 64.2 O que entrou
+
+**112 poderes**, cada disciplina com a página de origem no próprio dado:
+
+```
+Animalismo   9  244–247      Presença      9  265–268
+Auspícios    9  248–251      Proteanismo   8  269–271
+Celeridade   9  252–254      Feitiçaria    8  271–274
+Dominação    9  254–257      Alquimia      7  282–287
+Fortitude    8  257–259      Oblívio      18  Oblivio.pdf — POR CONFERIR
+Ofuscação    9  260–263
+Potência     9  263–265
+```
+
+A regra está escrita no topo do arquivo, e é dura: **um poder só entra se estiver na página.**
+Quem acrescentar poder de suplemento marca a fonte junto.
+
+**Oblívio ficou de fora da conferência, e isso está dito.** Ele não existe no manual básico —
+vem do `Oblivio.pdf`, que pela tabela de autoridade manda na matéria dele. Marcá-lo como "por
+conferir" no próprio dado é melhor que deixá-lo parecendo conferido junto; há teste afirmando
+que ele é a única disciplina nesse estado.
+
+**Proteanismo** é o nome do livro (pág. 269) — o arquivo chamava a Disciplina inteira de
+"Metamorfose", que no livro é o **poder de nível 4** dela. O id interno continua
+`metamorfose`, pela mesma divisão do `piscina` × "parada de dados" da §58: **o identificador
+fica, o nome segue o livro.**
+
+### 64.3 O estrago não estava só no arquivo
+
+`motor-arbitro.js` referencia poderes **por nome**, em duas tabelas. Renomear os poderes fez
+**oito das vinte entradas de `PODER_EXIGE`** apontarem para poder inexistente:
+
+```
+✗ Sussurro Sedutor    ✗ Terror        ✗ Manto das Sombras   ✗ Poder Letal
+✗ Chamado Silencioso  ✗ Admiração     ✗ Garras da Fera      ✗ Convocação
+```
+
+E o modo de falhar é o pior possível: **silêncio**. Sem erro, sem teste vermelho — só o
+alcance e a exigência do poder sumindo do jogo. Um poder de voz que deixa de dispensar contato
+visual, uma Convocação que perde o alcance ilimitado, e ninguém sabendo.
+
+Os oito foram remapeados para os nomes do livro (`Voz Irresistível`, `Convocar`, `Olhar
+Aterrorizante`, `Fascínio`, `Manto de Sombras`, `Armas Ferais`, `Corpo Letal`).
+
+### 64.4 As amálgamas eram duas listas, e discordavam
+
+`Arbitro.AMALGAMAS` era escrita à mão com **duas** entradas, ao lado de um arquivo de dados
+que anota a amálgama no próprio poder. Duas fontes para o mesmo fato — e o livro tem **oito
+amálgamas só no básico**, das quais o motor conhecia zero.
+
+Virou derivada:
+
+```js
+get AMALGAMAS() {
+  ...percorre DISCIPLINAS e recolhe todo poder com `amalgama`
+}
+```
+
+**São 10 agora** — as oito do básico mais as duas de Oblívio. E poder novo passa a valer sem
+ninguém lembrar de mexer em dois lugares, que é o erro que a função existe para não deixar
+acontecer de novo.
+
+### 64.5 O teste que faltava, e o que ele teria evitado
+
+Nove testes entraram, e o que importa não é nenhuma lista de nomes:
+
+> **Toda referência por NOME de poder encontra o poder.**
+
+É esse que teria pegado as oito entradas quebradas no minuto em que quebraram. Junto com ele:
+nenhum nome de poder se repete entre disciplinas (`PODER_EXIGE`, `AMALGAMAS` e a ficha do
+jogador indexam por nome — repetido, as três apontam para o lugar errado); toda amálgama
+declarada no dado é conhecida pelo motor, e aponta para disciplina que existe; toda disciplina
+declara a página; e Oblívio é a única marcada como por conferir.
+
+### 64.6 E o diagnóstico caiu — do jeito certo
+
+Depois de tudo passar em `npm test`, `diagnostico.html` marcou **166 de 167**. A checagem
+caída era *"Os cinco tipos com mecânica viram intenção do V5"*, e o motivo:
+
+```js
+spell_name: 'Manto das Sombras'          // cópia do nome, no diagnóstico
+```
+
+**A mesma armadilha, num terceiro lugar.** Corrigido tirando a cópia: o nome agora vem de
+`DISCIPLINAS.ofuscacao.poderes[1][0].nome`. Mais duas fichas de teste no mesmo arquivo usavam
+`'Passo Invisível'` e `'Poder Letal'`, e foram atualizadas.
+
+Vale registrar como o erro apareceu: **os 548 testes passaram e o diagnóstico não.** Eles
+medem coisas diferentes — a suíte confere as regras, o diagnóstico roda o app inteiro com
+dados reais. Foi o navegador que pegou, como na §48.4.
+
+### 64.7 A verificação
+
+- **`npm test`: 548 testes** (eram 539), dez arquivos, 3,6 s.
+- **`diagnostico.html`: 167 de 167**, console limpo.
+- **No navegador**, a lista carregada pelo app:
+
+```
+Animalismo  1:Famulus Enlaçado/Sentir a Besta | 2:Sussurros Selvagens |
+            3:Enxame Não Vivo/Subjugar a Besta/Suculência Animal |
+            4:Comunhão de Espíritos | 5:Controle Animal/Expulsar a Besta
+amálgamas: 10 · PODER_EXIGE órfãs: nenhuma
+```
+
+**Fichas gravadas não foram migradas**, por decisão sua: o que existe é protótipo, e poder que
+deixou de existir some. A alternativa — um mapa de nome antigo para novo — foi considerada e
+descartada na mesma conversa.
+
+### 64.8 O que isto diz sobre o resto
+
+O item 2 da §61.2 era o segundo da fila de "dado que o motor usa sem página atrás". Ele
+rendeu **112 poderes reescritos, 8 referências quebradas, 8 amálgamas ausentes e 1 checagem
+de diagnóstico**. Os próximos da mesma fila continuam abertos, e agora com precedente:
+
+| | O que | O que alimenta |
+|---|---|---|
+| 3 | **Tipos de Predador** (175–194) | `data-predadores.js`, 201 linhas |
+| 4 | **Clãs** (63–114) | `data-clans.js` — Perdições, Compulsões, disciplinas de clã |
+| 5 | **Ressonância** (225–232) | Parte II §11 |
+| 6 | **Itens e armas** (378–381) | dano em `motor-combate.js` |
+
+## 65. A conferência do documento contra o dado
+
+Você pediu para verificar se as Disciplinas estavam atualizadas em `regras.md`. Três coisas
+estavam erradas, e a terceira é a que vale a seção.
+
+### 65.1 O aviso que sobreviveu ao conserto
+
+A §14.4 trazia uma caixa dizendo:
+
+> Este bônus não existe no motor. `bonusDisciplina` está declarado em `data-escudo.js` e
+> **nenhuma linha de código o lê**.
+
+**Existe.** `Arbitro.bonusDePotencia()` é chamada por `piscinaFinal()`, devolve
+`Math.floor(potência / 2)` e só entra quando há Disciplina na parada. Conferido geração por
+geração contra a tabela da Parte II §5:
+
+```
+geração 13 → PS 1 → 0 dado   · tabela: Nenhum
+geração  9 → PS 2 → 1 dado   · tabela: +1 dado
+geração  5 → PS 4 → 2 dados  · tabela: +2 dados
+```
+
+O aviso era mais velho que o código. É o mesmo tipo de erro da §53 — **o comentário que
+enganou** —, e continua sendo o mais barato de cometer: alguém conserta e ninguém volta para
+apagar o aviso. Quem lesse ali concluiria que o bônus não é aplicado.
+
+### 65.2 O documento tinha razão contra o código
+
+A §14.7 lista os poderes de Oblívio, extraídos do `Oblivio.pdf`. `data-disciplinas.js` trazia
+outra coisa no nível 5:
+
+| | Nível 5 |
+|---|---|
+| `regras.md` §14.7 | Passo Sombrio · Avatar Tenebroso · **Skulds Realizada · Espírito em Declínio** |
+| `data-disciplinas.js` | Passo Sombrio · Avatar Tenebroso · **Tempestade de Ossos · Chamado do Além** |
+
+Resolvido contando ocorrências no livro do Oblívio:
+
+```
+Espírito em Declínio   2      Tempestade de Ossos   0
+Skuld                  2      Chamado do Além       0
+```
+
+**Os dois do dado não existem.** Os dezoito do documento existem — conferi um por um. O dado
+foi corrigido.
+
+E isso inverte a lição das seções anteriores. Da §58 à §60, o documento estava errado e o
+código certo; na §63 e na §64, o código estava errado. Aqui o **documento tinha razão contra
+o código**. A regra não é "o código manda" nem "o documento manda":
+
+> **É o livro.** Quando os dois discordam, quem decide é a página — e quando nenhum dos dois
+> foi conferido contra ela, os dois são suspeitos.
+
+Esses dois poderes estavam no arquivo desde antes da §64: eu reescrevi as onze disciplinas do
+básico e **carreguei o bloco de Oblívio inteiro sem olhar**, porque ele não estava no escopo
+da leitura. Estava marcado "por conferir", o que é honesto — mas o que faltava não era o
+livro, era **comparar com a tabela que este projeto já tinha**.
+
+### 65.3 O que impede a volta
+
+Um teste que lê a tabela do **próprio `regras.md`** — a mesma técnica da lista negra da §56 —
+e compara com o dado, nível por nível:
+
+```
+nível 5: Passo Sombrio · Avatar Tenebroso · Skulds Realizada · Espírito em Declínio
+```
+
+Se as duas listas divergirem, de qualquer lado, `npm test` cai. Mais dois testes fixam o bônus
+de Potência contra a tabela do Escudo.
+
+### 65.4 E a §14 ganhou o que faltava
+
+`regras.md` §14 não dizia **onde** estão os poderes das outras onze Disciplinas. Agora diz, e
+diz por que não os repete aqui:
+
+> A tentação seria repetir as onze listas, como a §14.7 faz com Oblívio. Não repete, e a razão
+> é o defeito que a §64 achou: **duas listas para o mesmo fato divergem, e divergem em
+> silêncio.**
+
+Oblívio continua no documento porque ali ele é **fonte**, e não cópia: não está no básico, e a
+lista foi extraída à mão do PDF. E é justamente por ser fonte que o teste da §65.3 aponta para
+ela.
+
+### 65.5 A verificação
+
+- **`npm test`: 552 testes** (eram 548), 3,5 s.
+- **`diagnostico.html`: 167 de 167**, console limpo.
+
+---
+
+## 66. O capítulo "Itens", que não existia
+
+Printadas 378 a 381 do básico. Depois das Disciplinas, era o próximo alvo da §61.2 — e o que
+apareceu não foi uma divergência de número. Foi um **capítulo inteiro ausente**.
+
+### 66.1 A medição, antes de mexer em nada
+
+A bolsa da mesa aceita texto livre, e `Combate.armaPor` casava esse texto contra
+`Escudo.DANO_ARMA` — cinco linhas do Escudo do Mestre. Rodei os nomes do capítulo contra
+o motor como ele estava:
+
+```
+ITEM                         DANO  CASOU COM
+lança-chamas                 0     lança-chamas      ← caiu no caso final
+coquetel molotov             0     coquetel molotov  ← caiu no caso final
+hafla                        0     hafla             ← caiu no caso final
+raufoss                      0     raufoss           ← caiu no caso final
+munição sopro de dragão      0     munição...        ← caiu no caso final
+espada                       3     Arma branca pesada (espada, machado)
+```
+
+**Todas as armas incendiárias do livro davam dano 0, natureza Superficial.** Em vampiro, dano
+Superficial ainda é dividido pela metade. As armas que o livro escreveu com o propósito único
+de queimar vampiro eram, na mesa, as mais inofensivas que existiam — menos perigosas que uma
+barra de ferro.
+
+E não havia sintoma: o motor não errava, ele **não sabia**. `armaPor` tem um caso final que
+devolve `{ dano: 0 }` para qualquer coisa que não reconheça, e ele estava funcionando
+exatamente como escrito.
+
+### 66.2 O que entrou
+
+`comum/dados/data-itens.js` — **17 itens, cada um com a página**, nas três seções do capítulo:
+Equipamento (378), Armas Convencionais (379–381), Equipamento Sobrenatural (381).
+
+O que o livro dá em número virou campo que `motor-combate.js` lê:
+
+| Campo | O livro | Quem usa |
+|---|---|---|
+| `dano` | Raufoss **+5**; incendiária caseira **−1** | soma à margem |
+| `natureza` | fogo é **Agravado** em vampiro | passa por cima da natureza do modelo de ataque |
+| `contraVampiro` | sopro de dragão **só** vira Agravado contra vampiro | a trava do parágrafo |
+| `ignoraArmadura` | Raufoss "ignora qualquer armadura pessoal" | a Kevlar não absorve nada |
+| `penalidadeAtaque` | arma camuflada, **−1 dado** | entra na piscina |
+| `dificuldadeMin` | hafla **3**, Molotov **4** | quando não há parada de defesa |
+| `alcance` | sopro de dragão **15 m**, hafla **80 m** | manda sobre o alcance do modelo |
+| `danoImediato` | hafla, **3 níveis no ato** | além da margem, não no lugar dela |
+| `queima` | **por turno, até apagar** | `Combate.queimar` |
+| `alvoDano` | rede tira **Destreza**, não Vitalidade | trilha diferente |
+| `coice` | incendiária caseira, falha total: **3 Agravado no atirador** | volta para quem atirou |
+
+O que o livro entrega "a cargo do Narrador" — Saco Antissol, urna ancestral, pedras
+entalhadas, terra da sepultura, dinheiro velho, sangue preservado — ficou como texto com
+página, **sem número inventado**. É a mesma disciplina da §64.
+
+### 66.3 O fogo não apaga sozinho
+
+Toda arma incendiária das págs. 379–381 termina igual: tantos pontos de Agravado **por turno,
+até ser apagada**. O projeto tinha um estado `em_chamas` com −3 dados e a descrição *"Dano
+Agravado por turno"* — e **nenhuma linha que aplicasse esse dano**. Era um rótulo.
+
+Agora `Combate.resolver` **devolve** a queima; ele não roda o relógio da cena. Quem toca o
+turno chama `Combate.queimar` uma vez por volta, e a doca de Estado mostra o que está
+queimando, quanto custa por turno e **com o quê se apaga** — porque cada item diz.
+
+> O lança-chamas queima com **+0**, e não é erro de leitura: *"causam +0 dano Agravado ao
+> atingir o alvo e a cada turno depois disso"* (pág. 380). O dano vem da margem do ataque. O
+> motor diz isso em voz alta em vez de inventar um número.
+
+### 66.4 Um defeito de tabela, achado de lambuja
+
+A nota da estaca no coração (5+ de dano paralisa) exigia `tipo === 'branca'`. O **lançador de
+estacas** da pág. 381 é disparado de um lançador de granadas acoplado a um rifle — `tipo:
+'fogo'`. A estaca atirada nunca paralisava ninguém. Corrigido, com teste.
+
+### 66.5 O que impede a volta
+
+Duas travas, além dos testes de comportamento:
+
+1. **A tabela de `regras.md` §16.1 é lida pelo teste** e comparada arma por arma com
+   `data-itens.js` — nome, página, dano e natureza. É a técnica da §65.3, e ela **já pegou uma
+   divergência na primeira execução** (o documento escrevia `−1` com o menos tipográfico e o
+   código com o hífen do teclado; a comparação era real, não decorativa).
+2. **`diagnostico.html`** ganhou duas checagens de comportamento: arma incendiária do livro é
+   Agravado, e Raufoss ignora armadura enquanto a pistola não.
+
+Três dos meus próprios testes reprovaram na primeira execução, e nenhum era defeito do motor:
+um regex frouxo (`/absorve/` casava com a minha própria mensagem *"não absorve nada"*), uma
+ficha com Fome que transformava a falha total em falha bestial, e uma parada de dados pequena
+demais para chegar aos 5 de dano que a regra da estaca pede.
+
+### 66.6 A verificação
+
+- **`npm test`: 570 testes** (eram 552), 3,2 s.
+- **`diagnostico.html`: 169 de 169**, console limpo.
+- Doca da bolsa e doca de Estado conferidas no navegador: o Coquetel Molotov entra na bolsa
+  **já marcado como arma**, mostra a regra com a página, e o fogo aceso aparece com o botão
+  de apagar.
+
+---
+
+## 67. A Ressonância, que era um nome no rodapé
+
+Printadas 225 a 231. Item 5 da §61.2, marcado "médio". Era o mais grave dos que restavam, e a
+medição levou dois minutos.
+
+### 67.1 A mesma ficha, a mesma rota, o mesmo número
+
+```
+ressonancia = "colerico"  → 5 dados
+ressonancia = ""          → 5 dados
+```
+
+A Ressonância era **decorativa**: escolhida no passo VIII, impressa no rodapé da ficha, exportada
+no `.json` — e nunca somada a nada. O livro (pág. 228) é direto:
+
+> "Beber sangue com temperamento intenso confere ao bebedor **um dado adicional** em paradas de
+> dados relacionadas a uma Disciplina que corresponda àquela Ressonância."
+
+E o motivo de nem por acidente a regra funcionar: **o campo `temperamento` não existia na ficha.**
+Sem ele não há como saber se aquela Ressonância é efêmera (não vale nada), intensa (vale um dado)
+ou aguda (vale um dado e uma Discrasia). O projeto guardava metade do fato.
+
+Junto com isso, `Escudo.TEMPERAMENTO_ALEATORIO` e `Escudo.RESSONANCIA_ALEATORIA` estavam no
+arquivo **desde sempre e ninguém as rolava**. Dado morto, como o `em_chamas` da §66.
+
+### 67.2 Três erros de nome, e um deles eu mesmo criei
+
+A lista de Ressonâncias dizia:
+
+| O que estava lá | O que o livro diz | Desde quando |
+|---|---|---|
+| Animalismo, **Metamorfose** | Animalismo, **Proteanismo** (pág. 227) | **desde a §64**, quando renomeei a Disciplina e não voltei aqui |
+| Presença, **Feitiçaria do Sangue** | **Feitiçaria de Sangue**, Presença | desde sempre |
+| **Vazio** — sexta Ressonância | não existe | desde sempre |
+
+"Vazio" não aparece em **nenhum dos dez livros** de `Livros/Regras`; conferi um por um. É a mesma
+espécie dos dois poderes de Oblívio da §65: entrada inventada que sobreviveu por nunca ter sido
+comparada com a página.
+
+O de "Metamorfose" é meu, e é a lição que interessa: a §64 renomeou a Disciplina no
+`data-disciplinas.js` e **deixou uma segunda lista para trás**, escrita à mão, em outro arquivo.
+Foi exatamente o defeito que a §64 tinha acabado de diagnosticar em `AMALGAMAS`.
+
+A correção não foi trocar o texto: foi **apagar o texto**. `disciplinas` agora guarda **ids**, e o
+"Alimenta:" que aparece na tela é derivado deles. Não há mais o que envelhecer.
+
+### 67.3 De onde vieram os nomes errados de temperamento
+
+O projeto chamava os temperamentos de **Balanceado / Fugaz / Intensa / Apurada**. O básico chama de
+**Equilibrada / Efêmero / Intenso / Agudo**.
+
+Fui atrás e achei a origem: a tabela do **Escudo do Mestre**, que o projeto tinha copiado. Na mesma
+página, o Escudo escreve *"Rapiz, Potêncie"* por Celeridade e Potência, *"Magia do sangue"* por
+Feitiçaria de Sangue, e *"Metamorfose"* por Proteanismo.
+
+> Não é que o Escudo seja proibido — é que ele é uma **tradução pior do mesmo material**. Onde os
+> dois discordam, vale o básico. Está escrito no arquivo, ao lado da tabela, para não voltar.
+
+### 67.4 O que entrou
+
+`comum/dados/data-ressonancia.js` — o capítulo inteiro, com página em tudo: os quatro humores
+(pág. 226), as cinco Ressonâncias e suas Disciplinas (pág. 227), os três temperamentos (págs.
+227–228) e as **26 Discrasias** (págs. 230–231).
+
+No motor:
+
+| Onde | O que passou a existir |
+|---|---|
+| `Arbitro.bonusDeRessonancia` | o dado da pág. 228, com as duas travas do livro: a Disciplina tem de ser uma das duas daquela Ressonância, **e** o temperamento tem de ser intenso ou agudo |
+| `Estado.sortearBolsa` | rola a tabela da pág. 228 — 1d10, e **só role a segunda tabela se der 6+** |
+| `Estado.impregnar` | "o sangue muda um pouco a própria Ressonância do vampiro" (pág. 226): alimentar-se grava Ressonância e temperamento na ficha |
+| `Estado.secarRessonancia` | "até que o sistema do vampiro fique sem sangue ao alcançar Fome 5" (pág. 228) |
+| ficha | o campo `temperamento`, sem o qual nada acima é possível |
+
+A cadeia inteira, medida ponta a ponta:
+
+```
+alimentar (dados 9, 3, 8) → intenso colérico
+  · "Sangue Colérico, temperamento Intenso. +1 dado em Celeridade, Potência
+     até diluir ou até a Fome 5."
+  · parada de Celeridade: 6 dados  (era 5)
+Fome 5 → "o sangue secou"
+  · parada de Celeridade: 5 dados
+```
+
+E as travas que o livro impõe, todas cobradas: sangue de **bolsa** não impregna nada; sangue
+**animal** impregna Ressonância mas **não dá Discrasia** (pág. 227); temperamento **efêmero** não dá
+dado; Ressonância **errada** não dá dado; parada **sem Disciplina** não ganha bônus.
+
+### 67.5 O que NÃO entrou, e está dito
+
+A pág. 231 condiciona o **gasto de experiência** em Disciplinas a ter se alimentado da Ressonância
+correspondente. O motor não cobra isso. Está escrito na §11.6 do `regras.md` como **pendência**, com
+essas palavras, e não como regra cumprida — porque a diferença entre as duas coisas é a única que
+importa neste projeto.
+
+### 67.6 O que impede a volta
+
+- **Teste de mutação, feito de propósito:** desliguei `bonusDeRessonancia` e **quatro testes caíram**.
+  Depois troquei "Proteanismo" por "Metamorfose" no `regras.md` e a trava anti-deriva caiu sozinha.
+  As duas foram restauradas. Um teste que não falha quando devia não é teste.
+- A tabela de `regras.md` §11.2 é **lida do arquivo** e comparada com o dado, Ressonância por
+  Ressonância — terceira aplicação da técnica da §65.3, e desta vez apontada para a tabela que **já
+  tinha envelhecido de verdade**.
+- `diagnostico.html` ganhou três checagens de comportamento.
+
+### 67.7 A verificação
+
+- **`npm test`: 590 testes** (eram 570), 3,2 s.
+- **`diagnostico.html`: 172 de 172**, console limpo.
+- Criador e doca de Estado conferidos no navegador: cinco Ressonâncias (sem "Vazio"),
+  "Animalismo, Proteanismo", os quatro chips de temperamento com o "+1 dado" visível, e as seis
+  Discrasias Sanguíneas com o texto do livro.
+
+---
+
+## 68. Uma pausa que virou defeito achado
+
+Duas tarefas de documento: pôr o `cenario.md` em dia com o que as §55–§67 mudaram, e trazer o
+capítulo **Crenças** (básico, págs. 172–174), que é curto.
+
+### 68.1 O `cenario.md` em dia
+
+Três seções novas, todas de cenário e nenhuma de regra:
+
+- **§6.1 — O que a Segunda Inquisição carrega.** Depois da §66 a SI deixou de ser só
+  procedimento e passou a ter arsenal nomeado: MiraX na catraca do aeroporto, caoscópio em
+  veículo grande, sopro de dragão, hafla, Raufoss, estaca e rede lançadas de rifle de assalto.
+  Com a regra de uso que importa — **o arsenal aparece antes de ser usado** — e a observação de
+  que o BOES brasileiro é o de baixo orçamento: arma incendiária caseira, que queima as mãos de
+  quem atira numa falha total.
+- **§7.1 — As vítimas têm humor.** Depois da §67 a Ressonância vale dado, então a descrição da
+  vítima virou informação mecânica. "Ele está rindo alto demais para a hora" diz ao jogador o
+  que aquele sangue vale. E o temperamento agudo é **gancho de trama, não bônus**: para usar a
+  Discrasia é preciso matar e drenar a vítima ou voltar por três noites.
+- **§9 — Princípios da Crônica**, do capítulo Crenças, com a §9.1 dizendo o que muda numa mesa
+  **solo**: não há grupo para negociar, então a trava de assunto sensível vira obrigação da
+  camada narrativa, não do jogador.
+
+### 68.2 Crenças, em `regras.md` §12.1–12.3
+
+Convicções, Pilares, Ambição e Desejo entraram como subseções de **Humanidade**, sem renumerar
+nada — e é onde o livro os ancora ("Pilares fornecem conexões e suporte para a sua
+Humanidade").
+
+O que o motor já acertava: uma a três Convicções, um Pilar por Convicção pareado por índice, e
+**a natureza certa da recuperação** — Agravado pela Ambição, Superficial pelo Desejo.
+
+O que não acerta, e agora está escrito:
+
+1. O Desejo é pago no fechamento da sessão, e o livro paga **na hora**. O incentivo a agir
+   chega tarde, e agir na hora era o ponto da mecânica.
+2. **Perder um Pilar não derruba a Convicção associada** — a regra existe e nenhuma linha a
+   executa.
+3. Mácula a serviço de Convicção não é reduzida.
+
+### 68.3 O defeito que a pausa achou
+
+Numerar os Princípios da Crônica como `## 9` empurrou o Contrato de coerência para `## 10`. E
+`modulos/cronista/contexto.mjs` recorta os `.md` **por título de seção**:
+
+```js
+{ arquivo: 'docs/cenario.md', secao: '9. Contrato de coerência para a IA', ... }
+```
+
+O recorte passou a devolver **zero caractere**. Os 594 testes passaram. O Narrador teria perdido
+exatamente o bloco que o proíbe de inventar número — e ninguém ficaria sabendo, porque
+`secao()` devolve `null` quando não acha o título, e ninguém checava o retorno.
+
+**Renomear uma seção de markdown é a coisa mais inocente do mundo.** Era um cano ligado a um
+documento por uma string, sem nada verificando a ligação.
+
+Agora há teste: todo bloco do manifesto tem de apontar para arquivo que existe, seção que
+existe e texto com mais de 20 caracteres. Confirmado com mutação — devolvi o `9.` e a falha
+diz o nome do rótulo e `0 chars`:
+
+```
+coerencia          0 chars  9. Contrato de coerência para a IA
+```
+
+E a primeira versão do teste estourava `TypeError` em vez de dizer isso, porque eu assumi
+string e `secao()` devolve `null`. Corrigido: um teste que falha com a mensagem errada custa a
+mesma depuração que não ter teste.
+
+### 68.4 O que eu escrevi errado, e corrigi antes de fechar
+
+Escrevi na §12.1 que as duas consequências da Convicção "já estão no motor". Fui conferir:
+`Escudo.MACULAS_POR_ATO` tem seis atos com valor fixo e **nenhum caminho de redução**, e a doca
+só oferece "+1 Mácula". Era falso.
+
+Vale registrar porque é o mesmo erro que este projeto vem achando desde a §53 — afirmação sobre
+o código escrita sem olhar o código, que depois vira verdade por repetição. A diferença é que
+desta vez o intervalo entre escrever e conferir foi de dois minutos.
+
+### 68.5 A verificação
+
+- **`npm test`: 594 testes** (eram 590), 3,1 s.
+- Duas mutações confirmadas e revertidas: a seção renomeada e o `TypeError` da primeira versão.
+
+---
+
+## 69. A7, A8 e A9 — as três do capítulo Crenças, pagas
+
+As três apareceram na §68, enquanto eu **só documentava**. Nenhuma foi achada procurando
+defeito: todas estavam escritas no `regras.md`, em português claro, sem uma linha de código
+atrás. É o padrão da §63 e da §67 outra vez — **o documento descrevia uma regra que o motor
+não executava**, e ninguém tinha comparado os dois.
+
+### 69.1 A7 — o Desejo paga na hora
+
+*(básico, pág. 174)*
+
+O motor pagava o ponto de Vontade Superficial **no fechamento da sessão**. O livro paga
+**imediatamente**, uma vez por sessão, no momento em que o personagem age. E diz para quê:
+
+> "Esta mecânica oferece intencionalmente aos jogadores um incentivo para que o personagem
+> **aja**, em vez de esperar passivamente pela trama ou ficar procrastinando defensivamente."
+
+**Um incentivo pago depois de a noite acabar não é incentivo.** O ponto chegava, mas chegava
+quando não podia mais mudar nenhuma decisão — que era exatamente o que ele existia para mudar.
+
+`Estado.realizarDesejo` paga na hora e marca `desejoUsadoNaSessao`, no mesmo padrão de
+`ritaeUsadoNaSessao`; `fimDeSessao` limpa a marca e **não paga de novo** o que já foi pago —
+avisa que já foi. A doca ganhou o botão *"Agi pelo Desejo — agora"*, que some depois de usado.
+
+### 69.2 A8 — perder o Pilar derruba a Convicção
+
+*(básico, pág. 173: "Uma vez perdida uma dessas pessoas, a Convicção a ela associada também
+estará perdida.")*
+
+Estava no `regras.md` desde sempre, em duas linhas, e nenhum código a executava: o mortal
+morria e a Convicção continuava na ficha — valendo alívio de fim de sessão e, agora que a A9
+existe, valendo **redução de Mácula**. Um Pilar morto barateava o remorso.
+
+`Estado.perderPilar(f, i)` esvazia o Pilar **e** a Convicção pareada, cobra a Mácula da tabela
+do Escudo — **2** pela perda, **3** se foi por ação sua, linhas que já estavam em
+`MACULAS_POR_ATO` e que ninguém consultava para isto — e avisa quando não sobrou Convicção
+nenhuma.
+
+> **A posição é esvaziada, não removida do vetor.** Convicção e Pilar são pareados por índice;
+> tirar do vetor desalinharia todos os pares seguintes. Há teste para isso, porque foi a
+> primeira coisa que eu ia fazer errado.
+
+Na doca de Ficha, cada Convicção com Pilar vivo ganhou dois chips: *"Perdi este Pilar"* e
+*"…e foi por minha causa"*, os dois com confirmação, porque não se desfaz.
+
+### 69.3 A9 — Mácula a serviço de Convicção
+
+*(básico, pág. 239: "Se o Princípio foi violado em respeito a uma Convicção, reduza as Máculas
+ganhas em uma ou mais.")*
+
+`ganharMacula` aceita `porConviccao` e reduz em 1 por padrão — o mínimo do livro —, com
+`reducao` para mais, que é a parte que fica com o Narrador. O exemplo da própria página virou
+teste: Joana esmaga a cabeça de quem ia revelar a natureza dela ao irmão caçula; o ato vale 3
+Máculas, e com a Convicção *"minha família deve ser mantida fora disto"* ela recebe **2**.
+
+Na doca isso exigiu repensar o controle. Havia só *"+1 Mácula"*, e um botão fixo não expressa
+a regra: o exemplo do livro é 3 → 2. Agora são três botões de gravidade — 1 justificável, 2
+pesado, 3 bestial — e uma linha de **atenuantes**, uma por Convicção viva. Liga-se a atenuante,
+marca-se a Mácula, e a atenuante se apaga.
+
+> É a ordem em que a mesa pensa: primeiro *"eu tinha um motivo"*, depois *"quanto custou"*.
+> Invocar uma Convicção é sobre um **ato**, não é um estado do personagem — por isso a
+> atenuante vale para a próxima Mácula e não fica ligada.
+
+### 69.4 O teste que estava errado, e não o motor
+
+A primeira versão do teste da A8 esperava que perder o último Pilar travasse a compra de
+Humanidade. Reprovou. Fui ver: `podeComprarHumanidade` é regra **do Sabá**, e lá a âncora é um
+**Ritae**, não um mortal — para quem tem Pilar mortal ela nunca dispara.
+
+O erro era meu, em dois lugares: no teste e no comentário que eu tinha escrito dentro de
+`perderPilar`, chamando aquela função como se fosse a consequência. Troquei pela consequência
+que existe de verdade e vale para qualquer personagem — ficar **sem Convicção nenhuma**, que o
+motor agora anuncia.
+
+Vale registrar porque é a terceira vez nesta sessão que a coisa errada é o que **eu** escrevi
+sobre o código, e não o código.
+
+### 69.5 A verificação
+
+- **`npm test`: 609 testes** (eram 594), 3,3 s.
+- **Mutação nas três**, uma por vez: desligar a A7 derruba 2 testes, a A8 derruba 2, a A9
+  derruba 4. Todas restauradas.
+- **`diagnostico.html`: 175 de 175**, console limpo.
+- **Cadeia clicada no navegador**, pelos despachantes reais da mesa:
+
+```
+A7 danoVontade 2 → 1 · usado=true
+A7 segunda vez → 1 (não muda)
+A9 3 Máculas COM atenuante → 2 · atenuante limpa
+A9 3 Máculas SEM atenuante → 3
+A8 conviccoes[0]="" marcos[0]="" maculas=2
+A8 par intacto: conviccoes[1]="Mantenha sempre um juramento"
+```
+
+---
+
+## 70. Os apêndices II e III, e a lista que tinha virado outra coisa
+
+Rodada sem código. Duas leituras curtas e uma arrumação que já estava passando do ponto.
+
+### 70.1 O arquivo de pendências tinha virado um segundo README
+
+`docs/Organização de arquivos.txt` é **a lista de pendências do usuário**. Entre a §55 e a §69 eu
+fui anexando, a cada rodada, um bloco contando o que tinha sido feito: o defeito, a página do
+livro, a decisão de projeto, a contagem de testes. O arquivo saiu de ~90 para **756 linhas**, das
+quais a lista de pendências propriamente dita eram umas quarenta.
+
+Não é só desarrumação. É **exatamente o defeito que este projeto já diagnosticou três vezes** — na
+§64 com `AMALGAMAS`, na §65 com Oblívio, na §67 com "Metamorfose": duas listas para o mesmo fato
+divergem em silêncio. O cabeçalho do arquivo ainda dizia *"Atualizado em 03/09, depois da §64"*,
+o bloco `== ABERTO ==` ainda apontava Ressonância e Itens como não lidos, e ainda falava em "TRÊS
+divergências de motor em aberto" que estavam pagas havia seis seções.
+
+Reescrito: **149 linhas, só pendências**, agrupadas por Front · Árbitro · Ficha · Cronista · Geral,
+com o `== FECHADO ==` reduzido a uma linha por item apontando a seção do README. O cabeçalho agora
+diz o que o arquivo é e o que ele **não** é, e por quê.
+
+> O README continua sendo onde o relato mora. O que não pode é o relato morar nos dois.
+
+### 70.2 Apêndice II: Projetos — *impressas 415–417*
+
+Um subsistema fechado de planos de longo prazo, e o mais substancial que ainda não tinha sido
+lido.
+
+| Peça | O que é |
+|---|---|
+| **Objetivo** | descrito em história, depois mecanizado como pontos num Antecedente ou Característica |
+| **Escopo** | quantos pontos o projeto entrega se der certo |
+| **Incremento** | a duração provável **dividida por dez**. Menos de dez dias vira teste estendido (pág. 293) |
+| **Lançamento** | Habilidade + Antecedente: Subterfúgio + Status, Finanças + Recursos, Política + Influência, Ocultismo + Ficha de Conhecimento |
+| **Risco** | Escopo + 1 − margem, mínimo 1. Os pontos ficam **congelados**: não podem ser usados em jogo até o projeto acabar |
+| **Dado do Projeto** | começa em 10 e cai 1 por incremento |
+| **Objetivo** | conflito com parada igual ao Dado atual. **Sem Vontade, sem Surto de Sangue, sem Disciplinas, e sem críticos** — cada 10 vale um sucesso comum. Mas os críticos contam para a oposição |
+
+Falha total cria um inimigo novo ou energiza um antigo. Perder custa dano **e** os pontos
+comprometidos. E a *Longue Durée*: projeto de séculos exige jogar um capítulo de lançamento em
+Memoriam.
+
+**Por que ele importa aqui:** projetos correm **entre sessões**. A mesa solo hoje só tem a noite
+atual — não há nada que faça o tempo passar, e isso é uma falta estrutural, não cosmética. Virou
+G8.
+
+E o apêndice fecha um buraco que eu mesmo deixei aberto na §67. Lá, "Mudando de Ressonância" ficou
+como julgamento do Narrador porque a pág. 229 não dá preço. O Apêndice II dá:
+
+> "Um ponto altera uma Ressonância e a aumenta para Intensa, enquanto dois pontos altera uma
+> Ressonância e adiciona uma Discrasia."
+
+### 70.3 Apêndice III: Orientação para o Jogo Ponderado — *impressas 419–423*
+
+Nenhum dado. Identidade de personagens e jogadores; **Fascismo em jogo** — o livro é explícito,
+*"Vampiro: A Máscara é contra o fascismo"*, e diz que os personagens devem eventualmente ter a
+satisfação de redimir ou destruir o vilão fascista; e a frase que governa o resto: **"as pessoas
+são mais importantes do que o jogo"**.
+
+As técnicas são **Linhas e Véus**, **Fade**, **Sistema Refletores**, **Carta X**, **Verificação de
+Bem-Estar**, **A Porta Está Sempre Aberta** e **Descompressão**.
+
+A maior parte é de mesa física e não traduz — sinal de mão e carta no centro não existem aqui.
+Duas coisas traduzem, e viraram G9:
+
+- **A Carta X é literalmente um botão.** Interromper a cena sem precisar explicar. É o item mais
+  barato do apêndice inteiro e provavelmente o mais valioso num aplicativo solo.
+- **Linhas e Véus declaradas pelo jogador**, por crônica, editáveis a qualquer momento, injetadas
+  no prefixo do Narrador.
+
+### 70.4 E isso corrige uma coisa que eu escrevi na §68
+
+O `cenario.md` §9.1 trata a trava de assunto sensível como **obrigação da camada narrativa** — uma
+lista que eu, autor, escrevi. O Apêndice III manda a lista ser **do jogador**, montada antes do
+jogo e editável a qualquer momento, com Véus e Linhas podendo trocar de lado.
+
+A minha versão não está errada como piso — um Narrador automático precisa de uma trava que não
+dependa de o jogador ter pensado nisso antes. Está errada como **teto**: ela é tudo o que existe, e
+o jogador não tem onde dizer o que não quer ver. Anotado no `cenario.md`, e é metade do G9.
+
+> Terceira vez seguida que a rodada de documentação acha defeito **no que eu escrevi sobre o
+> projeto**, e não no projeto. A §68 achou o manifesto de contexto apontando para seções por
+> título sem nada verificando a ligação; a §69 achou três regras documentadas sem código; esta
+> achou a lista de pendências e o `cenario.md`.
+
+---
+
+## 71. Três correções no criador
+
+Todas do usuário, todas verificadas no navegador com clique de verdade.
+
+### 71.1 A Caça vinha depois do que ela paga
+
+A trilha era `Sobre · O Sangue · O Corpo · **O Ofício** · **Os Dons** · A Caça`. O Tipo de
+Predador dá **uma especialização gratuita, um ponto de Disciplina, Vantagens e Defeitos** — tudo
+que os dois passos anteriores gastam.
+
+A prova estava escrita na própria interface, e eu tinha escrito:
+
+> "Escolha e **volte** ao passo dos Dons para selecionar o poder correspondente."
+
+Quando o painel manda o jogador voltar, a ordem está errada. A Caça é o **passo IV** agora, e o
+Ofício e os Dons abrem com a cota já corrigida — medido: `0/4 pontos de Disciplina (3 + 1 do
+Predador)`.
+
+**Um segundo defeito apareceu ao mover:** a especialização do Predador costuma cair numa
+Habilidade ainda em **zero**, e o painel só mostrava especialização quando havia ponto. O bônus
+chegava antes e continuava invisível — justamente onde deveria orientar a escolha. Agora aparece,
+marcada *"— do Predador"*, com uma caixa dourada dizendo que ela **não gasta** a sua.
+
+E o numeral do passo saiu do HTML: era `Passo IV`, `Passo V` escritos à mão em cinco painéis, e
+reordenar significava caçar os cinco. Agora é `numeroDoPasso('predador')`, derivado de `PASSOS`.
+**Há teste que falha se um numeral escrito à mão voltar.**
+
+### 71.2 Vinte e sete nomes sem explicação
+
+As Habilidades eram só nomes. "Manha", "Sagacidade", "Ladroagem" — o jogador escolhia sem saber o
+que cada uma cobre.
+
+Li o capítulo **Habilidades** (págs. 159–171, item 9 da §61.2) e escrevi uma linha por Habilidade,
+resumo fiel do primeiro parágrafo de cada verbete, **com a página**. Elas viram o `title` de cada
+linha:
+
+> **Ladroagem** — Abrir fechaduras, plantar escutas, desativar alarmes, falsificar documento à
+> mão, fazer ligação direta, abrir cofres. Os Ventrue chamam isto de "Segurança".
+> *Básico, pág. 163.*
+
+Cada grupo também ganhou a sua nota do livro. Verificado no DOM: **27 linhas com `title`, zero
+sem, todas com página**. E há teste que reprova se duas descrições forem iguais — a trava contra o
+copiar-e-colar que passa despercebido em 27 entradas escritas de uma vez.
+
+### 71.3 Toda ação recarregava a página
+
+`render()` reescrevia `#app` inteiro e dava `scrollTo(0)` **em toda ação** — marcar um ponto,
+ligar um chip, escolher um poder. Para quem usa, é recarregar a página: a lista pula para o topo e
+você perde o lugar.
+
+Agora, quando o **passo não mudou**, só o miolo do painel é trocado e a rolagem fica onde estava.
+Trocar de passo continua reconstruindo tudo. Sem framework (§16.2): é a mesma string de HTML,
+colocada num nó menor.
+
+Medido no navegador:
+
+```
+MESMO PASSO:      900 → 900   · cabeçalho preservado (mesmo nó)
+TROCOU DE PASSO:  900 → 0     · cabeçalho reconstruído
+```
+
+**E o caminho até esse número achou outra coisa.** Tentei subir dentro de
+`requestAnimationFrame` e a rolagem ficou parada em 900. O motivo é que **aba oculta não recebe
+quadro**: o callback nunca roda. Tirei o rAF e a rolagem continuou em 900 — desta vez porque
+`behavior: 'smooth'` é **cancelado** pela troca de `innerHTML` que acabou de acontecer.
+
+Ou seja: **o "sobe ao trocar de passo" já não funcionava antes desta seção**, e só passava
+despercebido em página curta. Agora é `window.scrollTo(0, 0)`, síncrono e sem animação, e está
+medido.
+
+### 71.4 Um erro meu no meio, e como ele apareceu
+
+Rodando o teste de mutação do item 2, desfiz as descrições com um `sed` e depois rodei
+`git checkout comum/dados/data-traits.js` para restaurar — **num arquivo com trabalho não
+commitado**. O comando fez o que faz: devolveu o arquivo ao último commit e apagou as 27
+descrições que eu tinha acabado de escrever.
+
+Recuperei do rascunho e reconferi (`27 páginas presentes`, 620 testes verdes). Fica registrado
+porque a lição é barata e a próxima pode não ser: **para desfazer uma mutação de teste, restaure
+da cópia que você mesmo fez** — `git checkout` não sabe distinguir a sua mutação do seu trabalho.
+
+### 71.5 A verificação
+
+- **`npm test`: 620 testes** (eram 609), 3,1 s.
+- **Mutação nos dois itens de regra:** devolver a Caça para o fim derruba 2 testes; tirar as
+  descrições derruba 3.
+- **`diagnostico.html`: 175 de 175**, console limpo.
+- Cadeia clicada no navegador: Predador → especialização e Disciplina escolhidas → o Ofício já
+  anuncia o bônus → os Dons já contam 4.
+
+---
+
+## 72. Uma mesa de verdade — e dois defeitos que só ela achava
+
+Você pediu uma mesa para testar o Árbitro e o Cronista à mão. O que saiu foi a **primeira
+campanha compilável do projeto** — e, no caminho, dois defeitos que nenhum teste sintético tinha
+achado, porque nenhum teste sintético tinha escrito uma campanha de verdade.
+
+### 72.1 A Conta do Duarte
+
+`campanhas/a-conta-do-duarte.md`, no esquema da §6. Uma noite, **dois capítulos, oito cenas,
+25 rotas**, e um fim. Curta de propósito; o que ela não é curta é em **variedade** — cada cena
+existe para cobrar uma coisa diferente do motor:
+
+| cena | o que ela cobra do Árbitro |
+|---|---|
+| `camarim` | persuadir e intimidar, dificuldades 2 a 4 |
+| `a_fila_da_casa` | caçar, campo de caça, Fome subindo **e** descendo |
+| `o_escritorio_fechado` | arrombar com Ladroagem, hackear com Tecnologia |
+| `o_telhado` | escalar — a ação que a §63.4 acrescentou |
+| `o_deposito` | combate com **dois oponentes armados**, um branco e um de fogo |
+| `a_sacada` | arremesso à distância |
+| `a_conta` | disputa social, e o custo em Mácula |
+| `o_que_sobra_da_noite` | fechamento, com Vontade e Mácula cobradas |
+
+Os ids de local e pessoa são os da `SEMENTE_RIO`, de propósito: assim a campanha cai numa mesa
+que **já tem grafo**, e o elo 3 tem o que medir. Ela é registrada em `CAMPANHAS` e aparece no
+saguão ao lado de "Noite livre".
+
+O Árbitro montando as paradas com uma ficha de verdade, medido no navegador:
+
+```
+persuadir · manipulacao+labia        → 6 dados (dif 3)
+persuadir · carisma+persuasao        → 7 dados (dif 3)
+intimidar · manipulacao+intimidacao  → 5 dados (dif 4)
+```
+
+E o Cronista, ao fim da noite, com material real: as oito cenas nomeadas, os fatos estabelecidos,
+os fios em aberto, as Máculas para o Remorso, as relações e a posse. **Capítulo e dossiê, os
+dois válidos.**
+
+### 72.2 O primeiro defeito: o nome do traço não é o id dele
+
+A rota se escreve em português, como o livro e o `narracao-ia.md` §4.7 mandam:
+**"Manipulação + Subterfúgio"**. O compilador só slugificava, então isso virava `subterfugio` — e
+o id interno é `labia`.
+
+`Dados.piscinaDe` lia `ficha.habilidades.subterfugio`, que não existe. **A rota parecia válida e
+valia zero dados, em silêncio.** Seis traços caem nessa armadilha: Subterfúgio, Sagacidade,
+Ladroagem, Erudição, Ciência e Percepção — e todos os seis são justamente a grafia que o próprio
+projeto manda usar.
+
+`Compilador.traco()` agora resolve nome → id, aceitando as duas grafias. Quem achou foi o teste
+da campanha, que confere **cada rota contra a lista de traços de verdade** — e não teria achado
+se eu tivesse escrito a campanha com os ids internos, que era o caminho fácil.
+
+### 72.3 O segundo: cena inalcançável compila sem erro
+
+Ao emendar o grafo, deixei a última cena órfã. **Zero erros de compilação, e impossível de chegar
+nela jogando.** O compilador confere se todo destino existe; não confere o inverso.
+
+Não vou fazer o compilador cobrar isso — cena solta é legítima numa campanha modular, e o
+Apêndice II (§70.2) descreve exatamente esse formato. O que entrou foi um teste **desta**
+campanha: toda cena depois da primeira é destino de alguém, e a última não empurra para lugar
+nenhum. Os dois lados do mesmo erro.
+
+### 72.4 E a metade barata do G1, que estava parada há muito
+
+**Campanha que não compila agora é recusada.** Antes a mesa mostrava um toast e **seguia**: o
+jogador entrava numa história de zero opções e zero narração, com o motivo no console, que
+ninguém abre no meio de uma sessão.
+
+Agora ela não abre, o jogador fica no saguão, e a tela diz o quê:
+
+```
+Esta campanha não compila (1 erro).
+Destino inexistente "nao_existe" em x / ir / sucesso.
+
+Não deu para ler a-conta-do-duarte.md: HTTP 404.
+```
+
+São as ~20 linhas que a §14.1 vinha prometendo. **As cinco campanhas de `campanhas/` continuam
+não jogáveis** — são documentos de extração dos PDFs, e G1 continua aberto pela metade cara, que
+é escrever. O que mudou é que agora elas falham dizendo por quê.
+
+### 72.5 A verificação
+
+- **`npm test`: 635 testes** (eram 620), 3,2 s. Onze deles são da campanha.
+- **Mutação:** desligar a tradução de traço derruba 3 testes.
+- **`diagnostico.html`: 175 de 175**, console limpo.
+- **Jogada inteira no navegador**, do saguão ao dossiê:
+
+```
+camarim               "persuadir"                    → a_fila_da_casa
+a_fila_da_casa        "caçar"                        → o_escritorio_fechado  [fome 1→0]
+o_escritorio_fechado  "arrombar a porta"             → o_telhado
+o_telhado             "escalar pela fachada"         → a_sacada
+a_sacada              "derrubar o vigia à distância" → a_conta
+a_conta               "aceitar o acordo"             → o_que_sobra_da_noite  [mac 0→1]
+o_que_sobra_da_noite  "contar a verdade a ela"       → FIM  [vont 0→1]
+```
+
+- **Recusa medida** nos dois caminhos: campanha quebrada e arquivo ausente, com a campanha boa
+  voltando a abrir depois.
+
+---
+
+## 73. Habilidades no documento, e o dado que a especialização dava de graça
+
+A §71 leu o capítulo (págs. 159–171) para escrever o hover do criador, e parou aí — pegou a
+descrição de cada Habilidade e deixou o **resto do capítulo** por ler. O resto tinha uma regra.
+
+### 73.1 H1 — a especialização valia sempre
+
+Básico, pág. 159, com a condição em letra clara:
+
+> *"**Se o Narrador decidir** que um personagem está tentando realizar uma tarefa **que se
+> enquadra** em sua especialização, o jogador ganha um dado extra em sua parada de dados."*
+
+No motor, o dado era **incondicional**. `piscinaDaFicha` somava 1 sempre que a perícia tivesse
+qualquer especialização. Medido antes:
+
+```
+"Lobisomens" em Briga 3, Força 3
+  "ataco o lobisomem"          7 dados (esp +1)
+  "dou um soco no segurança"   7 dados (esp +1)   ← dado de graça
+```
+
+Não é arredondamento: é **+1 dado permanente** em toda rolagem de qualquer perícia
+especializada, do começo ao fim da crônica.
+
+**A correção respeita a fronteira.** A Ficha não sabe casar texto — isso é léxico, e léxico é
+do Árbitro. Então `piscinaDaFicha` passou a aceitar um **predicado**, e quem o fornece é quem
+sabe qual é a tarefa:
+
+| Quem chama | O que enquadra |
+|---|---|
+| `Arbitro.piscinaFinal` | o texto que o jogador escreveu |
+| `Combate.resolver` | a **arma** — *Facas* vale com uma faca na mão, não com um taco |
+| a ficha impressa | nada: não há tarefa, e o dado entra, que é o que a folha deve mostrar |
+
+`Arbitro.casadorDeEspecializacao` casa **por palavra e não por pedaço** ("Facas" não casa
+"fachada"), dobra singular e plural, e exige a expressão inteira quando todas as palavras são
+curtas — senão "Um Por Cento" e "GTA", que são especializações do livro, casariam quase
+qualquer frase.
+
+> O singular e o plural custaram uma medição: `"Lobisomens"` casava `"lobisomens"` e perdia
+> `"lobisomem"`, porque o plural de palavra em **-m** é **-ns**. O talo agora dobra os dois.
+
+Depois, no navegador:
+
+```
+"ataco o lobisomem"          7 dados (esp +1)
+"dou um soco no segurança"   6 dados (esp +0)
+"subo pela fachada"          5 dados (esp +0)
+```
+
+### 73.2 H2 — uma especialização por perícia, e o livro permite mais
+
+`f.especializacoes` é `{ periciaId: 'nome' }`: **um nome só**. O livro dá *"tantas quanto o seu
+valor na Habilidade"*, e **mais que isso em Ofícios** (pág. 164).
+
+Isso **não** dá dado a mais nem a menos numa rolagem — a regra de *uma por rolagem* continua
+valendo de qualquer jeito. O que faz é empobrecer o personagem e obrigar a escolher no lugar
+errado.
+
+**Não implementei**, e disse que não: é mudança de modelo de dado que atravessa criador, ficha
+impressa e fichas salvas. Está no `regras.md` §17.6 e na §14.1 como **H2**, pendência
+declarada.
+
+### 73.3 O que entrou no `regras.md`
+
+Nova **Parte II §17**, com o que é regra e não catálogo:
+
+- os três grupos e do que cada um depende;
+- **a regra da especialização inteira** — +1 dado, só na tarefa que se enquadra, uma por
+  rolagem, tantas quanto o valor, Ofícios como exceção, e as quatro que vêm com uma de graça;
+- a trava que o livro pede ao Narrador: nada de especialização tão ampla que valha sempre — o
+  exemplo do próprio livro é "Muay Thai" em Briga;
+- **Atletismo no lugar da perícia de combate** (pág. 160), que é a mesma regra da pág. 125 que
+  a §63.3 já cumpre — o capítulo a repete, o que confirma que vale para qualquer conflito;
+- os dois cruzamentos entre perícias: **Ladroagem puxa Tecnologia** (pág. 163, e é por isso que
+  a rota eletrônica de `arrombar` custa +1 de Dificuldade), e **Medicina cura Agravado em
+  mortais** (pág. 170) — que o motor **não** modela, e está dito assim;
+- por que este projeto não acrescenta Habilidade nova (pág. 162).
+
+A lista das 27 **não** foi copiada para o documento. Ela mora em `data-traits.js`, como as
+Disciplinas (§14.8) e os Itens (§16) — duas listas para o mesmo fato divergem em silêncio, e
+este documento já pagou esse preço três vezes.
+
+### 73.4 A verificação
+
+- **`npm test`: 647 testes** (eram 635), 3,2 s.
+- **Mutação:** tornar a especialização incondicional de novo derruba 2 testes; tirar
+  "Performance" da tabela do `regras.md` derruba a trava anti-deriva.
+- **`diagnostico.html`: 175 de 175**, console limpo.
+- Quarta trava anti-deriva do projeto: a §17.2 é **lida do arquivo** e comparada com
+  `ESPECIALIZACAO_OBRIGATORIA`, nos dois sentidos — nenhuma faltando, nenhuma a mais.
+
+> E o `fronteiras.test.mjs` cobrou sozinho outra vez: o README dizia que `motor-arbitro.js`
+> tinha 530 linhas, e tinha 617. Terceira vez que esse teste pega uma contagem velha sem
+> ninguém pedir.
+
+---
+
+## 74. "Failed to fetch" não é diagnóstico
+
+Você tentou abrir A Conta do Duarte e recebeu:
+
+> **ESTA CAMPANHA NÃO ABRIU**
+> Não deu para ler a-conta-do-duarte.md: **Failed to fetch**.
+
+### 74.1 A causa, medida
+
+Não é a campanha. Com o servidor de pé, ela carrega:
+
+```
+curl http://127.0.0.1:5173/campanhas/a-conta-do-duarte.md   →  HTTP 200
+curl http://127.0.0.1:5173/index.html                       →  HTTP 200
+```
+
+`Failed to fetch` é falha de **rede**, não de compilação: o pedido nem saiu. Duas coisas
+produzem exatamente isso, e as duas significam **o app aberto sem servidor** — `modulos/cliente/index.html`
+clicado direto (`file://`), ou o servidor fora do ar.
+
+E o README **já avisava**, na primeira página:
+
+> "Precisa de servidor. Abrir `modulos/cliente/index.html` direto no navegador quase funciona — os scripts
+> são clássicos, sem módulos ES — mas as campanhas são carregadas por `fetch` de `/campanhas/`.
+> Em `file://` isso falha, e você fica só com a Noite livre."
+
+Ou seja: limitação conhecida, documentada, e que **nunca tinha acontecido com ninguém** —
+porque até a §72 não existia uma campanha compilável para tentar abrir. A §72 criou a primeira,
+e o aviso do README saiu do papel na primeira tentativa de uso real.
+
+### 74.2 O defeito de verdade era a mensagem
+
+O motor sabia tudo o que precisava para explicar, e escolheu repetir a frase do navegador.
+"Failed to fetch" não diz o que fazer. Quem lê isso no meio de uma sessão não tem próximo passo.
+
+`porQueNaoLeu()` agora separa as três causas, e cada uma tem conserto diferente:
+
+| Situação | O que a tela diz agora |
+|---|---|
+| protocolo não é `http`/`https` | *"O app está aberto como **arquivo**, e campanha precisa de servidor. Rode `node ferramentas/dev.mjs` (ou `proxy.mjs`) e abra http://localhost:5173. Sem servidor, só a Noite livre funciona."* |
+| falha de rede com servidor | *"O servidor não respondeu. Ele ainda está de pé?"* |
+| arquivo ausente | *"o arquivo não está lá (HTTP 404)"* |
+
+E o saguão **avisa antes do clique**: aberto como arquivo, aparece uma caixa dizendo que só a
+Noite livre vai abrir, com o comando para subir o servidor. Descobrir isso tentando era o
+desenho errado.
+
+> A função recebe o protocolo **por parâmetro**, com `location` como padrão. Não é
+> preciosismo: `location` não existe no `vm` dos testes, e sem isso a mensagem seria a única
+> parte deste conserto sem rede de proteção.
+
+### 74.3 O que eu não fiz
+
+**Não embuti a campanha em JavaScript** para funcionar em `file://`. Seria fácil e resolveria
+o sintoma, ao preço de ter o mesmo roteiro em dois lugares — o defeito que este projeto já
+pagou em `AMALGAMAS` (§64), em Oblívio (§65) e em "Metamorfose" (§67). O `.md` continua sendo
+a fonte única.
+
+### 74.4 A verificação
+
+- **`npm test`: 652 testes** (eram 647), 3,2 s.
+- **Mutação:** desligar a detecção de `file://` derruba 1 teste.
+- Os três caminhos medidos no navegador, com o servidor de pé e com ele simulado fora do ar:
+
+```
+com servidor:   abriu (A Conta do Duarte)
+servidor mudo:  "...O servidor não respondeu. Ele ainda está de pé?"
+404:            "...o arquivo não está lá (HTTP 404)"
+```
+
+---
+
+## 75. Ligar tudo, e a IA de verdade na mesa
+
+Você disse que ainda não funcionava e pediu as IAs ligadas à mesa, sem simulação. A causa era
+simples e a correção não foi só ela.
+
+### 75.1 A causa: o ollama não estava rodando
+
+```
+where ollama          → C:\Users\...\Programs\Ollama\ollama.exe   (instalado)
+curl :11434/api/tags  → porta fechada                             (parado)
+```
+
+O proxy estava de pé e servia a campanha (HTTP 200). O que faltava era o **ollama**, e sem ele
+`/api/estado` responde `narrador: false` — a mesa cai no Narrador simulado, como foi desenhada
+para cair.
+
+### 75.2 O defeito que escondia isso: a faixa era fixa
+
+O aviso do topo da mesa era **HTML literal**:
+
+> *Narrador simulado — respostas pré-escritas, nenhuma IA conectada.*
+
+Ele aparecia **igual com o modelo ligado**. O app mentia sobre o próprio estado, e não havia como
+saber, olhando a tela, se a IA estava respondendo. Agora lê o adaptador em uso: com modelo, a
+faixa fica verde e diz o nome dele; sem modelo, diz **o que falta** e traz o botão *Procurar o
+modelo* — porque a detecção era feita uma vez só, em `abrirMesa`, e quem subisse o ollama depois
+ficava simulado até o F5.
+
+### 75.3 O botão: painel de sistemas na capa
+
+`comum/sistemas.mjs`, com duas rotas novas no proxy:
+
+| Rota | O que faz |
+|---|---|
+| `GET /api/sistemas` | diagnostica: servidor, ollama, Narrador, Cronista, Extrator, campanhas |
+| `POST /api/ligar` | sobe o que falta — hoje, o ollama — e devolve o diagnóstico depois |
+
+Na capa, seis luzes e dois botões. Quando algo está fora, o painel diz **o que se perde**, não só
+que está fora: *"A mesa cai no Narrador simulado"*, *"O fechamento de capítulo sai no modo
+determinístico"*. Modelo que falta vira `ollama pull <nome>` na tela — **baixar são gigabytes, e
+isso é decisão de quem está na máquina, não do botão.**
+
+Medido, com o ollama parado antes:
+
+```
+POST /api/ligar   →  "Ollama iniciado."          11 s
+   [ON] Servidor · [ON] Ollama · [ON] Narrador · [ON] Cronista
+   [ON] Extrator de intenção · [ON] Campanhas          tudoLigado: true
+```
+
+**O limite está escrito na tela, e é honesto:** a página não sobe o próprio servidor. Se o proxy
+não responde, o painel diz que é ele que falta e mostra o comando, em vez de fingir que tenta.
+Para a partida a frio existe **`ferramentas/iniciar.cmd`**: confere o Node, sobe o ollama, sobe o
+Gateway, sobe os módulos e abre o navegador, dizendo em cada passo se deu certo. O par dele é
+**`ferramentas/desligar.cmd`**, na §80.4.
+
+### 75.4 A prova de que não é simulado
+
+Turno enviado pela mesa, com a campanha da §72 aberta:
+
+```
+[narrador] ollama/mistral-nemo:12b · 40 848 ms · entrada 4543 · saída 177 · válido false
+           1ª reprovada: travessão explicativo; pediu teste de intenção desconhecida: examinar
+```
+
+E o que chegou na tela, depois do reteste — texto que não existe em lugar nenhum do projeto:
+
+> *"O envelope pardo ainda está na sua mão, intacto. A caligrafia é de outro século. Não faz
+> sentido estar aí, no meio das mensagens de texto e dos tickets da boate."*
+
+Quarenta segundos por turno é o custo do 12B nesta máquina. O validador reprovou a primeira
+tentativa e o motor pediu outra — que é o desenho funcionando, não falhando.
+
+### 75.5 Dois defeitos achados no caminho
+
+**O slot do limitador não voltava quando o cliente desistia.** `emVoo` só era liberado quando o
+modelo respondia. O extrator de intenção desiste em 30 s; com um 12B isso acontece. O cliente ia
+embora, o servidor continuava moendo, e a **narração do mesmo turno** levava *"Já existe uma
+chamada em andamento"* — foi o que apareceu na primeira tentativa. Agora o slot volta no primeiro
+dos dois: o modelo terminar **ou** a conexão fechar.
+
+> **Não reproduzi essa corrida de forma determinística.** A correção está certa por construção —
+> liberar o recurso quando o cliente some é o comportamento correto —, mas não tenho teste que
+> falhe sem ela. Está registrado assim, e não como defeito medido.
+
+**Ids de sessão colidiam sozinhos.** O teste dos mil ids (item N7) reprovou uma vez, 999 de 1000,
+e passou na rodada seguinte — o tipo de intermitência que faz um teste virar ruído. Não era azar:
+
+```
+'s' + tempo + contador.toString(36) + aleatorio.toString(36)     ← tudo colado
+
+contador 1  ("1")  + aleatorio 1295 ("zz")  →  "1zz"
+contador 71 ("1z") + aleatorio 35   ("z")   →  "1zz"
+```
+
+**Campos de largura variável em base 36, concatenados sem separador.** No mesmo milissegundo, o
+mesmo id — e id de sessão repetido é sessão sobrescrita em silêncio, exatamente o que o N7
+existia para impedir.
+
+A prova, contando colisões dentro de um único milissegundo:
+
+```
+SEM separador:  33 732 colisões
+COM separador:        0
+```
+
+### 75.6 A verificação
+
+- **`npm test`: 652 testes**, verde em duas corridas seguidas — e `front.test.mjs` dez vezes
+  seguidas sem intermitência.
+- **`diagnostico.html`: 175 de 175.**
+- Painel da capa medido nos dois estados, com o ollama parado e depois ligado pelo botão.
+- Faixa da mesa conferida: `mesa-aviso ligado`, *"Narrador: mistral-nemo:12b"*.
+
+---
+
+## 76. O botão de desligar
+
+Ligar é conveniência. **Desligar é liberar memória**: um 12B carregado ocupa vários gigabytes de
+RAM ou VRAM, e quem termina de jogar não devia precisar do Gerenciador de Tarefas.
+
+### 76.1 São duas decisões, e por isso são dois botões
+
+| Botão | O que faz | Quando aparece |
+|---|---|---|
+| **Desligar o modelo** | encerra o ollama e devolve a memória. O jogo continua, no modo determinístico | só quando o ollama está de pé |
+| **Desligar tudo** | o modelo **e o servidor**. A página para de funcionar | sempre |
+
+O segundo pede **dois cliques** — vira *"Desligar mesmo"* com uma saída ao lado —, porque ele
+derruba o processo que serve a página que você está olhando. Depois disso o painel troca de
+estado e diz o que aconteceu, em vez de fingir que ainda há alguém do outro lado:
+
+> **Sistemas — desligados.** O servidor foi encerrado a seu pedido. Esta página não fala mais
+> com nada — o que já está na tela continua aí, e nada mais é salvo.
+
+E ainda mostra como voltar: `iniciar.cmd`, ou `node modulos/gateway/proxy.mjs`.
+
+### 76.2 Duas travas que não são enfeite
+
+**O relatório vem antes da saída.** `POST /api/desligar` com `servidor: true` responde primeiro e
+só então encerra o processo, no `res.on('finish')`. Sem isso o navegador receberia conexão cortada
+e mostraria erro de rede — o usuário veria uma falha onde houve exatamente o que ele pediu. Há
+teste para isso.
+
+**Desligar no meio de uma narração é recusado.** Se há chamada ao modelo em voo, a rota devolve
+**409**:
+
+```
+{"erro":"Há uma chamada ao modelo em andamento. Espere ela terminar.","emVoo":1}
+```
+
+Matar o ollama no meio de um turno perderia a narração sem aviso, e o jogador não teria como
+ligar uma coisa à outra. Medido com uma extração real em andamento.
+
+### 76.3 O `confirm()` que eu tinha deixado para trás
+
+Ao escrever os dois cliques, lembrei de uma regra do projeto — **§37.4: a confirmação vive na
+interface, nunca no navegador.** Ela nasceu de um defeito real: o `confirm()` devolvia `false` em
+silêncio e o botão parecia morto.
+
+E eu tinha violado essa regra **na §69**, com dois `confirm()` no *perder Pilar*. Trocados pelo
+padrão da casa: o primeiro clique arma, o chip vira **"Perder mesmo"** com um `↩` ao lado, e o
+estado mora em `M.pilarParaPerder`. A chave inclui a natureza da perda — *"perdi"* e *"foi por
+minha causa"* custam 2 e 3 Máculas, e não podem se confundir.
+
+> Quarta vez nesta sequência que o erro está no que **eu** escrevi contra as regras do próprio
+> projeto, e não no motor.
+
+### 76.4 O `catch` mudo que o teste pegou sozinho
+
+Escrevi `catch (e) { resolve(); }` em `pararOllama`, e o `fronteiras.test.mjs` reprovou na hora:
+*"catch que não avisa nem devolve"*. Estava certo — o erro do `spawn` sumia ali dentro.
+
+Corrigido para propagar a mensagem, e escrito como `return resolve(...)` de propósito: **não
+afrouxei a regra para deixar `resolve` passar**, porque `resolve()` sozinho é exatamente o que
+ela precisa continuar pegando.
+
+### 76.5 A verificação
+
+- **`npm test`: 660 testes** (eram 652), verde em duas corridas.
+- **Oito testes novos** em `testes/servidor.test.mjs`, com o proxy de verdade numa porta própria:
+  as seis linhas do diagnóstico, `GET` recusado nas duas rotas, origem de fora recusada, desligar
+  só o modelo **sem** derrubar o servidor, o relatório antes da saída, e o servidor saindo mesmo.
+- **`diagnostico.html`: 175 de 175.**
+- Medido no navegador: *Desligar o modelo* apaga o ollama e o botão **some sozinho** quando não
+  há mais o que desligar; *Desligar tudo* pede dois cliques, aceita o `↩`, e leva o painel ao
+  estado "desligados".
+
+---
+
+## 77. Tipos de Predador: dez, e seis com o nome errado
+
+Item 3 da §61.2, marcado **alto**, e o mais rentável que restava. Rendeu.
+
+### 77.1 A primeira coisa que a página desmentiu foi a contagem
+
+A §61.2 registrava "Tipos de Predador (175–194)". O capítulo tem **quatro páginas — 175 a 178** —
+e **dez tipos**, não doze nem dezesseis. Extorsionista e Ladrão de Túmulos, que várias listas
+tratam como "do básico", só existem no **Guia do Jogador**.
+
+O arquivo trazia dezesseis, misturando os dois livros sem dizer qual era de onde.
+
+### 77.2 Seis dos dez estavam com nome inventado
+
+| O projeto dizia | O livro diz |
+|---|---|
+| Gato de Rua | **Vira-lata** |
+| Ensacador | **Sacoleiro** |
+| João-Pestana | **Sandman** *(o livro não traduz)* |
+| Rainha da Cena | **Scene Queen** *(o livro não traduz)* |
+| Cutelo | **Trinchador** |
+| Sanguessuga de Sangue | **Sanguessuga** |
+
+Não é preciosismo de tradução: é o mesmo defeito do "Metamorfose" da §67 e do "Fugaz/Apurada" do
+Escudo — **nome inventado que ninguém conferiu contra a página.** Dois deles o livro deixa em
+inglês de propósito, e o projeto traduziu por conta própria.
+
+### 77.3 E a mecânica estava errada em quase todos
+
+Cinco dos dez tinham **Disciplina errada**:
+
+| | Projeto | Livro (pág.) |
+|---|---|---|
+| Sacoleiro | Ofuscação, Animalismo | **Feitiçaria de Sangue (só Tremere) ou Ofuscação** (176) |
+| Osíris | Presença, Dominação | **Feitiçaria de Sangue (só Tremere) ou Presença** (176) |
+| Sanguessuga | Ofuscação, Potência | **Celeridade ou Proteanismo** (177) |
+| Scene Queen | Presença, Dominação | **Dominação ou Potência** (177) |
+| Sereia | Presença, Celeridade | **Fortitude ou Presença** (178) |
+
+Mais o que faltava ou sobrava:
+
+- **O Sanguessuga não ganhava Potência de Sangue.** *"Aumente a Potência de Sangue em um"*
+  (pág. 177) — não existia em nenhum dos dez.
+- **Sandman ganhava Refúgio**; o livro dá **Recursos**.
+- **Scene Queen ganhava "Fama *ou* Contatos"**; o livro dá **as duas**, um ponto cada.
+- **Vira-lata tinha um Defeito** — "Aplicação da Lei" — que **não está no livro**.
+- **Sacoleiro tinha "Fornecedor de Sangue"**; o livro dá **Alimentação ••• Esôfago de Ferro**.
+- Quase todas as especializações estavam inventadas: "Luta Suja", "Mentiras Longas",
+  "Transfusão", "Bancos de Sangue". O livro dá outras, e são específicas —
+  *Persuasão (Gaslighting)*, *Briga (Agarramento)*, *Medicina (Flebotomia)*.
+
+### 77.4 Duas travas que o livro impõe e o criador não cobrava
+
+> *"Os Ventrue não podem escolher este tipo de Predador"* — **Fazendeiro** e **Sacoleiro**, pág. 176.
+> *"Você não pode escolher Fazendeiro se sua Potência de Sangue for 3 ou mais"* — pág. 176.
+
+Nenhuma das três existia. **Um Ventrue saía do criador como Fazendeiro**, que é justamente o único
+clã que o livro proíbe de sê-lo. Medido depois: o Ventrue vê **14** tipos, o Brujah vê **16**.
+
+A Potência de Sangue entra **por parâmetro** em `predadorPermitido`: quem a calcula é `derivados`,
+da área Ficha, e `data-seitas.js` é a camada de dados. A primeira versão alcançava para cima e o
+`fronteiras.test.mjs` barrou na hora — de novo.
+
+### 77.5 A piscina de caçada não vem do básico
+
+Descoberta ao procurar de onde saíram os `piscinas` do arquivo: **o básico não dá parada de dados
+para nenhum dos dez.** Ele descreve o estilo em prosa. Quem dá "Piscina de Predadores" é o **Guia
+do Jogador**, e só para os seis tipos dele.
+
+Então os `piscinas` dos dez são inferência deste projeto. Não os removi — `rotasDeCaca` depende
+deles, e sem eles a caça para de funcionar. **Marquei cada um com `piscinaDoLivro: false`**, que é
+a diferença entre uma escolha e um engano.
+
+### 77.6 O que a renomeação quase quebrou em silêncio
+
+Os ids acompanharam os nomes. Duas coisas dependiam dos antigos:
+
+- **Fichas salvas.** `PREDADORES_RENOMEADOS` mapeia os cinco ids velhos, e `predadorDe` consulta.
+  Sem isso, toda ficha salva perderia o Predador sem avisar — a lição da §75.5.
+- **As cidades.** `data-brasil.js` cita predadores típicos por id, e **o `diagnostico.html` pegou
+  sozinho**: 175 → 174 de 175, com as onze referências mortas listadas na tela. Corrigidas.
+
+E dois testes do front reprovaram, os dois com razão: um fixava o id `gato_de_rua`, outro fixava a
+string `"Luta Suja"`. O segundo virou leitura do dado — **teste que fixa texto de dado quebra
+justamente na correção certa**.
+
+### 77.7 O que não foi feito, e está dito
+
+Os **seis do Guia do Jogador** (Extorsionista, Ladrão de Túmulos, Montero, Perseguidor, Assassino
+de Estrada, Alçapão) **não foram conferidos**. Estão no arquivo abaixo de um separador que diz
+isso, e viraram **G10** no README §14.1. O Guia dá parada de dados para todos eles, e a tradução
+dele é ruim o bastante para exigir cuidado — chama Oblívio de "Esquecimento" e Sagacidade de
+"Insight".
+
+### 77.8 A verificação
+
+- **`npm test`: 673 testes** (eram 660).
+- **Mutação nas duas travas**, uma por vez: cada uma derruba um teste.
+- **`diagnostico.html`: 175 de 175** — depois de ele mesmo ter apontado o defeito das cidades.
+- Conferido no navegador: os dez nomes do livro, Ventrue sem Fazendeiro nem Sacoleiro.
+
+---
+
+## 78. A arquitetura modular, e o Módulo 3
+
+O usuário desenhou o sistema em cinco módulos com processo e porta próprios: **Cliente e
+Gateway** (1), **FichaServer** (2), **MesaServer** (3), **Árbitro** (4), **Cronista** (5) — com
+o padrão **Checkout/Checkin** para a ficha, WebSocket para o tempo real e MongoDB no Módulo 2.
+
+Quase tudo isso já existia como fronteira lógica dentro do navegador. O que **não** existia era
+o Módulo 3, e ele é justamente o mais detalhado do desenho.
+
+### 78.1 O que o Módulo 3 é
+
+| arquivo | o quê |
+|---|---|
+| `mesa-servidor.mjs` | o processo: rotas `/mesa/…` e o WebSocket `/mesa/ws` |
+| `mesa-estado.mjs` | o cache de estado: cópia local, autosave por parte, checkin com aceite |
+| `mesa-pasta.mjs` | a pasta da sessão em disco |
+| `cliente-ficha.mjs` | o contrato de checkout/checkin com o Módulo 2 |
+
+Em uma frase: **durante a mesa ninguém fala com o banco.** A ficha é copiada uma vez na
+abertura, tudo acontece na cópia em memória, e o banco só volta a ouvir falar dela no fim, se o
+jogador aceitar.
+
+### 78.2 Três decisões que valem registro
+
+**O histórico é `.jsonl`, não `.json`.** O autosave roda a cada 5 s numa sessão que só cresce;
+reserializar 600 turnos para acrescentar um é o custo O(sessão inteira) que a §47 já pagou no
+navegador. Acrescentar linha é O(1), e uma linha truncada por queda de energia não derruba a
+sessão — ela volta marcada como ilegível.
+
+**O autosave é por parte suja.** Um turno mexe no histórico e talvez na cena; não reescreve a
+ficha junto. Há teste medindo: alterar só o mundo grava `mesa` e `meta`, e não toca `ficha.json`.
+
+**Os códigos de resposta dizem a verdade sobre onde a ficha está.** Checkin sem aceite é **409**
+com a prévia das alterações — não é pedido malformado, é passo que falta. Checkin com aceite mas
+sem FichaServer é **202**, não 200: aceito e guardado na pasta, e *não* persistido no Módulo 2.
+Responder 200 ali seria mentir.
+
+### 78.3 O WebSocket sem dependência
+
+`comum/websocket.mjs` implementa o lado servidor do RFC 6455 em ~190 linhas: aperto de mão com
+SHA-1, decodificador de quadro com máscara, ping/pong, fragmentação e um teto de 1 MiB. O `ws`
+seria a primeira dependência de execução do projeto, e o protocolo sem extensões cabe numa
+sentada. O canal **só avisa**: mudar estado passa pelas rotas HTTP, onde há verificação de
+origem e limite de corpo.
+
+### 78.4 A verificação
+
+**28 testes novos**, e mutação em três garantias — remover o `if (!aceite)`, afrouxar a peneira
+de id de sessão, tirar o filtro de sessão do *broadcast*. Sete testes caíram, os certos.
+Conferido ponta a ponta pelo Gateway: checkout, `PATCH /ficha`, `POST /turno`, 409, 202.
+
+---
+
+## 79. Uma pasta por módulo
+
+A separação seguinte foi de pastas. `app/` e `servidor/` deixaram de existir; 60 arquivos foram
+com `git mv`, e o histórico foi junto.
+
+**A pasta é o módulo, e não onde o código roda.** `.js` é script clássico de navegador, `.mjs` é
+ESM de servidor, e os dois moram juntos quando são do mesmo módulo — é por isso que
+`narrador.js` e `narrador.mjs` estão lado a lado em `modulos/cronista/`. O dia em que o Árbitro
+virar processo é mudar de arquivo, não de pasta.
+
+### 79.1 A URL é o caminho no repositório
+
+`/modulos/arbitro/motor-dados.js` **é** `modulos/arbitro/motor-dados.js`. A alternativa era
+manter as URLs antigas com uma tabela de tradução no servidor, e ela foi descartada: tabela de
+tradução é um segundo lugar onde a estrutura está escrita, e a lição que este projeto já pagou
+três vezes é que duas escritas do mesmo fato divergem em silêncio.
+
+`comum/servir-estatico.mjs` concentra isso, e o Gateway e o `dev.mjs` passaram a usar o mesmo
+arquivo em vez de duas cópias da mesma regra. **A guarda ficou mais estreita, não mais larga:**
+antes o teto era "dentro de `app/`"; agora é uma lista de três raízes — `modulos`, `comum`,
+`campanhas` — e `package.json`, `docs/`, `testes/`, `.git/`, `Livros/` e `sessoes/` respondem
+403 por qualquer caminho.
+
+### 79.2 A área e a pasta deixaram de ser a mesma coisa
+
+A **área** é conceito de projeto: quem é dono de quê, e quem pode depender de quem. A **pasta** é
+onde os arquivos estão. Eram iguais enquanto tudo vivia em `app/js/<área>`; agora a área `data`
+mora em `comum/dados` e a `front` em `modulos/cliente/js`. `testes/carregar.mjs` guarda a única
+tradução de uma para a outra (`PASTA_DA_AREA`), e todo o resto deriva dali.
+
+### 79.3 A verificação, e o que ela achou
+
+**Cinco testes novos** guardam a estrutura: `app/` e `servidor/` não podem ressuscitar; toda área
+aponta para pasta que existe; nenhum código escreve os caminhos antigos; a página inicial está
+onde o servidor a procura; as raízes servíveis são exatamente três — e o que é legítimo continua
+passando, senão o teste passaria com uma função que recusa tudo.
+
+O terceiro deles achou **quatro defeitos reais** que a substituição mecânica não pegou:
+`app.js` e `mesa.js` mandavam o jogador rodar `node servidor/proxy.mjs`, o comparador imprimia
+`node servidor/comparador.mjs`, e o 503 do Gateway sugeria `node servidor/mesa-servidor.mjs` —
+quatro comandos que já não existiam. O `iniciar.cmd` tinha o mesmo problema por outro caminho:
+ele faz `cd` para a própria pasta, que passou a ser `ferramentas/`.
+
+**`npm test`: 701 testes** (eram 696). `diagnostico.html`: 175 de 175, console limpo.
+
+---
+
+## 80. A rotina de ligar e desligar
+
+O painel da §75 sabia responder uma pergunta: *o ollama está de pé?* Com cinco módulos, a
+pergunta virou plural.
+
+### 80.1 Processos e recursos são coisas diferentes
+
+O diagnóstico passou a ter **duas listas**. `modulos` responde "que processo está no ar";
+`linhas` responde "que recurso existe" — ollama, os três papéis de modelo, as campanhas.
+Misturá-las foi o que fez o painel da §75 dizer "6 fora" quando o que faltava era um
+`ollama pull`.
+
+E o módulo tem **três estados, não dois**. Ficha, Árbitro e Cronista ainda não são processo:
+eles não estão *fora*, eles não *existem*. A luz deles é oca, não vermelha, e eles não contam
+contra "tudo ligado" — pintá-los de apagado faria o painel pedir para ligar o que não há como
+ligar.
+
+### 80.2 Desligar é pedir, não matar
+
+O Gateway sobe os módulos irmãos com `spawn` e os derruba pedindo: `POST /mesa/encerrar`. A
+alternativa era `taskkill`, e ela **perde a sessão que está em memória e ainda não passou pelo
+autosave**. A rota grava tudo, responde o relatório, e só então sai.
+
+**A ordem não é gosto:**
+
+1. os **módulos**, que gravam o que têm em memória;
+2. o **ollama**, que é memória e nada mais;
+3. o **Gateway**, que é quem estava pedindo — e derruba a página junto, razão de a interface
+   pedir dois cliques.
+
+Se o Gateway saísse antes, não sobraria ninguém para pedir aos módulos que gravassem. Há teste
+afirmando que o passo do Gateway é o último da lista.
+
+### 80.3 O defeito que um órfão de teste achou
+
+Uma corrida de mutação interrompida deixou um MesaServer de pé na porta de teste. A corrida
+seguinte falhou — e não pelo motivo esperado.
+
+`pararModulo` mandava `Origin: http://127.0.0.1:<porta do Gateway>`, e o módulo comparava esse
+cabeçalho com a porta de Gateway que **ele** conhecia. Iguais quando o Gateway sobe o módulo, que
+herda o ambiente. **Diferentes quando os dois sobem em momentos diferentes** — o caso de quem
+deixou um `npm run mesa` aberto de ontem. Dava 403, e o botão dizia "continuou respondendo" sem
+dizer por quê.
+
+A correção é não mandar `Origin` nenhum: chamada entre módulos não vem de navegador, e o módulo
+cai na outra metade da própria regra, `Host` de laço local. É o item **M6** cobrando juros — a
+mesma regra escrita em dois lugares, discordando.
+
+### 80.4 O par do `iniciar.cmd`
+
+`ferramentas/desligar.cmd` existe para quem fechou o navegador antes de usar o botão da capa e
+ficou com dois processos Node e um 12B na memória. Ele **pede** ao Gateway, na ordem acima, e
+depois **confere porta por porta**. Se alguma sobrou, ele diz isso e mostra o `taskkill` — com o
+aviso de que o segundo comando mata todo Node da máquina, e não só o do VITÆ.
+
+### 80.5 A verificação
+
+- **`npm test`: 717 testes** (eram 701).
+- Os testes do §80 **sobem e derrubam um MesaServer de verdade**, numa porta própria — é caro
+  (~2 s) e é a única forma honesta de afirmar que o Gateway consegue subir um processo irmão.
+- Eles usam `VITAE_PORTA_*` próprias: sem isso, um teste sondaria — e, ao ligar, **desligaria** —
+  o MesaServer que o usuário deixou aberto. Um teste que mata o servidor de quem o roda é pior
+  que nenhum.
+- **Mutação em três garantias**: previsto virando caído no diagnóstico, previsto virando caído no
+  painel, e o Gateway saindo antes dos módulos. As três derrubaram o teste certo.
+
+---
+
+## 81. O documento apontando para coisas que existem
+
+Atualizar o README e as pendências depois da §78–§80 deveria ser copidesque. Rendeu quatro
+achados, e todos da mesma família: **afirmação sobre o presente que envelheceu calada.**
+
+### 81.1 O que estava errado
+
+| Onde | Dizia | Era |
+|---|---|---|
+| §21, o cabeçalho | 165 checagens em dez grupos | **175 em dezessete** |
+| Parte A, resumo | 167 checagens em dez grupos | idem |
+| Parte A, tabela de estado | 455 testes, dez arquivos | **726 em onze** |
+| Parte C, o prompt | `localhost:5173/diagnostico.html` | mudou de lugar na §79 |
+| §46 | 124 testes no Árbitro, 170 na suíte | **274 e 726** |
+
+Os números do §21 não foram estimados: rodei o `diagnostico.html` e contei os `✓` por grupo. A
+tabela de grupos ganhou os sete que faltavam — Grafo, Especialista, Cadeia, Intenção, Crônica,
+Áreas e Livro básico — e a frase "metade das checagens não é de referência" virou **quatro
+quintos**, que é o que os números dizem.
+
+### 81.2 O X3 trancava a contagem, e não o caminho
+
+A §45.5 criou o item X3 porque *"contagem escrita à mão em documento envelhece calada"*, e
+`fronteiras.test.mjs` passou a reprovar quando o README afirma um número de linhas que não bate
+com o disco.
+
+**O que ele nunca trancou foram os CAMINHOS** — e é o defeito pior dos dois. Contagem velha
+desinforma; caminho velho faz quem lê digitar um comando que não funciona. Foi o que a §79
+produziu em sete lugares, quatro deles no código que o jogador vê.
+
+Quatro checagens novas, todas derivadas e nenhuma escrita à mão:
+
+- **todo caminho em crase existe no disco** — 36 caminhos conferidos;
+- **todo `node <arquivo>` roda alguma coisa**;
+- **todo `npm run <script>` citado existe no `package.json`**;
+- **a interface não manda o jogador rodar arquivo inexistente** — esta olha `app.js` e `mesa.js`,
+  porque metade do defeito da §79 estava no código, não no documento.
+
+As três primeiras olham só as raízes de hoje (`modulos/`, `comum/`, `ferramentas/`, `testes/`).
+As seções de registro citam `node servidor/proxy.mjs` de propósito: ali o comando velho **é** a
+descrição do defeito, não uma instrução.
+
+### 81.3 A ironia, registrada
+
+Escrevi "**722 testes**" em três lugares do README. Os quatro testes desta seção levaram a suíte
+a **726** antes de eu terminar de salvar o arquivo — a afirmação nasceu velha.
+
+Não há trava para essa: o número total só existe depois que o runner termina, e um teste não
+consegue afirmá-lo sobre si mesmo sem se contar. Fica como está, com a mesma honestidade que o
+resto do documento pede: **o número da suíte é a única contagem do README que ninguém confere.**
+
+### 81.4 As pendências
+
+`docs/Organização de arquivos.txt` continua sendo **só a lista**, e agora carrega o bloco
+`ARQUITETURA MODULAR (§78-§80)` com M1, M2, M3, M4, M6 e M7. **M5 fechou** e desceu para a seção
+FECHADO. O detalhe de cada um está aqui, na §14.1; a ordem por peso, na §14.1.2 — onde **M2
+subiu para o primeiro lugar**, à frente de M1.
+
+A ordem parece trocada, e não é. `cliente-ficha.mjs` já sabe trabalhar sem o Módulo 2: o
+checkout usa a ficha que o Cliente manda e marca a origem, o checkin devolve 202 com o pacote.
+O que M2 destrava é a sessão sair do `localStorage` e virar pasta em disco, com autosave e
+checkin — é o que faz os 28 testes do MesaServer valerem alguma coisa para quem joga. M1 é o
+passo grande, caro, e traz a primeira dependência de execução do projeto.
+
+---
+
+## 82. Quem rola é a Mesa
+
+A regra veio do usuário em uma linha:
+
+> **a rolagem de dados fica na parte da Mesa; o Árbitro diz quais, a Mesa roda, o Árbitro pega o
+> resultado.**
+
+Ela desfaz uma coisa que estava misturada desde o começo: `motor-dados.js` decidia a parada,
+sorteava e apurava, tudo no mesmo objeto. Um serviço que decide regra **e** sorteia não é
+determinístico nem auditável — não dá para repetir uma noite, nem para o servidor conferir o que
+o cliente diz que rolou.
+
+### 82.1 Três passos, três donos
+
+| Passo | Quem | O quê |
+|---|---|---|
+| 1 | **Árbitro** | `Dados.pedir({piscina, fome, dificuldade, rotulo})` → o **pedido**. Puro: não sorteia nada, e dá o mesmo pedido para a mesma situação, sempre |
+| 2 | **Mesa** | `Dados.rodar(pedido)` → os **valores**. O acaso entra aqui, e só aqui |
+| 3 | **Árbitro** | `Dados.apurar(pedido, valores)` → o **veredito**. Puro: recebe os valores prontos |
+
+A **parada mínima de 1** (item A1, §63) mora no passo 1, e é onde tem de morar: se estivesse em
+quem roda, a Mesa precisaria conhecer a regra do livro.
+
+`Dados.rolar(...)` continua existindo e compõe os três — é o que o combate, o frenesi e o Remorso
+usam, porque resolvem tudo dentro de um turno só. A separação importa quando a Mesa e o Árbitro
+são processos diferentes.
+
+### 82.2 O Árbitro não tem mais `Math.random`
+
+Essa é a metade que faz a regra ser verdade em vez de decorativa. `motor-dados.js` **não sorteia**:
+a fonte do acaso é instalada de fora, por quem é a Mesa naquele contexto.
+
+| Contexto | Quem instala |
+|---|---|
+| Navegador | `modulos/cliente/js/mesa.js`, no carregamento |
+| Testes | `testes/carregar.mjs`, e só quando a área `front` não veio junto |
+| Servidor | `modulos/mesa/mesa-estado.mjs`, na rota de rolagem |
+
+**Sem fonte, `d10()` estoura** — e isso é decisão, não descuido. Um valor padrão de reserva
+devolveria o sorteio ao Árbitro sem ninguém notar, que é exatamente o que esta seção desfaz. A
+fonte também é conferida: se devolver algo que não é 1–10, estoura dizendo o valor.
+
+### 82.3 A Mesa como Módulo 3
+
+`POST /api/mesa/sessoes/:id/rolagem` recebe o **pedido** e devolve os **valores** — e grava os
+dois no `historico.jsonl` da sessão. É o que torna uma noite repetível: quem lê o histórico
+depois refaz a conta sem adivinhar a dificuldade.
+
+Ela **não conta um sucesso sequer**. Há teste afirmando que a resposta não traz `sucessos`,
+`tipo`, `critico`, `passou` nem `margem` — apurar é do Árbitro, e o Módulo 3 orquestra, não julga.
+
+O teto de 100 dados existe porque o pedido vem da rede: sem ele, `normais: 1e9` aloca um vetor de
+um bilhão de posições e derruba o processo. Ele não é regra de jogo — a maior parada concebível no
+V5 não passa de duas dezenas —, e quando corta, **diz que cortou**.
+
+**Medido ponta a ponta pelo Gateway**, com o motor real apurando:
+
+```
+pedido   {"normais":4,"fome":2,"dificuldade":3,"rotulo":"Arrombar a fechadura","piscina":6}
+Mesa     normais 4,2,10,9 | fome 10,6
+Árbitro  Sucesso em Perigo — 6 sucessos contra dificuldade 3.
+```
+
+O par de dez deu o crítico; o dez na Fome transformou-o em Perigo. O Árbitro chegou a isso sem
+ter rolado nada.
+
+### 82.4 A verificação
+
+- **`npm test`: 743 testes** (eram 726). Dezessete novos: nove no Árbitro, oito no Módulo 3.
+- **Mutação em quatro garantias**, todas de uma vez: `Math.random` de reserva no Árbitro, `rodar`
+  consumindo a fonte a mais, a Mesa devolvendo `sucessos`, e o teto de dados sumindo. Cinco testes
+  caíram, os certos.
+- **`diagnostico.html`: 175 de 175** — a página roda combate de verdade, e ele rola.
+- Conferido no navegador: os três passos à mão, e `Dados.rolar` de uma vez, com a fonte que
+  `mesa.js` instala.
+
+### 82.5 O que isto ainda não é
+
+No navegador a fonte continua sendo um `Math.random` local — a Mesa é o front, não o Módulo 3. A
+rota existe, tem oito testes e ninguém a chama ainda, pelo mesmo motivo de todo o resto: **M2**, o
+Cliente ainda não usa o MesaServer. Quando ele usar, a troca é de uma linha em `mesa.js`, e é
+justamente por isso que a fonte é instalável em vez de escrita dentro do Árbitro.
+
+---
+
+## 83. O FichaServer, e o banco que não é obrigatório (M1)
+
+O Módulo 2 é o dono das fichas **fora de sessão**. Ele fecha o item M1, e com ele o padrão
+Checkout/Checkin da §78 passa a ter as duas pontas.
+
+O contrato não foi inventado agora: `modulos/mesa/cliente-ficha.mjs` já o escrevia desde a §78 —
+`GET /ficha/:id` e `POST /ficha`. **O cliente existiu antes do servidor**, e por isso este módulo
+não desenhou rota nenhuma: implementou o que estava combinado.
+
+### 83.1 MongoDB quando houver, pasta quando não
+
+O desenho pede MongoDB, e é o que `ficha-guardador.mjs` usa quando ele responde. Mas o módulo
+**não exige banco para subir**, e isso é decisão:
+
+- exigir travaria o **M2** inteiro — o Cliente usar o MesaServer — atrás de uma instalação de
+  servidor de banco, e trocaria um app que abre com dois cliques por um que pede infraestrutura;
+- é o mesmo tratamento que o ollama tem desde a §16: sem provedor, o jogo roda em determinístico
+  **e a tela diz que está**. O banco recebe a mesma honestidade — `/ficha/saude` devolve
+  `guardador.tipo` e o **motivo** da escolha.
+
+O driver é `optionalDependencies` e a importação é dinâmica. Sem `npm i mongodb` o arquivo
+carrega igual e o guardador de pasta assume. `npm install` continua não baixando nada para quem
+não quer banco — a promessa da §16.2 sobrevive, agora com uma nota de rodapé em vez de um
+asterisco.
+
+Os dois guardadores têm a **mesma interface**, de propósito: `guardar`, `ler`, `listar`,
+`apagar`, `saude`, `fechar`. Trocar de um para o outro não muda uma linha do servidor.
+
+> **Não pude medir o caminho do Mongo.** Não há mongod nesta máquina, e o driver está no registro
+> mas não instalado. O código do guardador de banco é real — `replaceOne` com `upsert`, `_id`
+> carregando o id da ficha para o banco garantir a unicidade — e **não foi exercitado contra um
+> servidor de verdade**. O de pasta está coberto por vinte testes.
+
+### 83.2 O id é o mesmo dos dois lados
+
+`idDaFicha` aqui gera exatamente o que `modulos/ficha/fichas.js` gera no navegador. Tem de ser
+assim: uma ficha exportada de lá e guardada aqui precisa cair no mesmo documento, e não virar uma
+segunda cópia. Há teste afirmando `Inácia Vasques` + `toreador` → `inacia_vasques__toreador`, com
+o acento sobrevivendo ao percurso.
+
+*(Um susto no caminho: o primeiro teste manual pelo `curl` produziu `in_cia_vasques__toreador`.
+Não era defeito — era o shell mangling o UTF-8 antes de chegar ao servidor. As duas funções,
+conferidas lado a lado, sempre concordaram.)*
+
+### 83.3 O ciclo fechando
+
+Medido ponta a ponta, com o Módulo 2 de pé:
+
+```
+checkout   201 · origem da ficha: fichaserver · nome: Inácia Vasques
+checkin sem aceite   precisaAceite=true · fome,danoSuperficial
+checkin com aceite   200 · origem: fichaserver
+a ficha no banco     fome 4 · dano 2
+```
+
+O checkout pediu **só o id** — não mandou ficha nenhuma junto. Antes disso ele caía na reserva do
+navegador e marcava `origemDaFicha: cliente`; o checkin devolvia **202**, não 200. Os dois códigos
+diziam a verdade então, e dizem a verdade agora.
+
+---
+
+## 84. O Árbitro e o Cronista viram processos (M3)
+
+Com os Módulos 4 e 5 de pé, os **cinco existem**. É o fim do item M3, e o fim de uma coisa que a
+§80 tinha criado por necessidade.
+
+### 84.1 O Árbitro roda os MESMOS arquivos do navegador
+
+O Módulo 4 tinha um problema que os outros não têm: **ele já existia, e como script clássico de
+navegador.** Doze arquivos sem `export`, contando com o escopo global.
+
+Havia duas saídas:
+
+1. reescrever o Árbitro como ESM — duas implementações da mesma regra durante a migração, e a
+   certeza de que divergiriam;
+2. **rodar os mesmos arquivos** num contexto de `node:vm`, que é o que `testes/carregar.mjs` faz
+   desde a §44 para poder afirmar qualquer coisa sobre eles.
+
+A segunda. `arbitro-contexto.mjs` carrega `data`, `ficha` e `arbitro` — 33 arquivos, os mesmos
+bytes que o navegador baixa — e o ArbitroServer chama. **Não há uma regra escrita no módulo**, e
+há teste varrendo o código-fonte dele atrás de `sucessos`, `dificuldade >`, `Math.random` e
+`d10()`. Corrigir uma regra continua sendo mexer num arquivo só.
+
+`cronista` e `front` ficam de fora do contexto de propósito: o Módulo 4 não sabe de narrativa nem
+de tela, e carregá-los apagaria a fronteira que `fronteiras.test.mjs` guarda.
+
+**As quatro rotas são as quatro perguntas de um turno**, e nada mais:
+
+| Rota | O quê |
+|---|---|
+| `POST /arbitro/interpretar` | texto do jogador → intenção e rotas |
+| `POST /arbitro/pedido` | situação → **quais** dados rolar (§82, passo 1) |
+| `POST /arbitro/apurar` | pedido + valores → veredito (§82, passo 3) |
+| `GET /arbitro/saude` | o que ele carregou, e que ele **não rola** |
+
+Repare no que não existe: uma rota que role. O contexto do módulo instala uma fonte de acaso que
+**estoura**, e o erro nomeia a regra quebrada. E `apurar` **confere a quantidade**: se o pedido
+era de seis dados e vieram um, é 422. É a razão prática de os dois serem processos — ninguém
+apura sobre uma quantidade que não foi a pedida.
+
+### 84.2 O Cronista sai do Gateway, e o limite fica
+
+As três camadas de modelo mudaram para a 5177. O motivo é medível: **uma chamada ao modelo local
+segura o laço de eventos por dezenas de segundos**, e enquanto ela corria era o mesmo processo que
+servia o `index.html`, as campanhas e o `/api/sistemas` — o painel da capa esperava o Narrador
+terminar para dizer se o ollama estava de pé.
+
+**O limite de taxa ficou no Gateway**, e isso também é decisão: ele é política de porta de
+entrada, não do Cronista, e é o Gateway que sabe quantas chamadas o navegador já fez. `comLimite`
+agora envolve o encaminhamento inteiro, então o slot volta quando o módulo responde **ou** o
+cliente desiste — a garantia da §75, intacta.
+
+O `/api/estado` mudou junto: o Gateway não sabe mais qual modelo está configurado, então
+**pergunta** ao Módulo 5 — e responde `moduloCronista: false` quando ele está fora, em vez de dizer
+que a IA caiu.
+
+### 84.3 Duas falhas que eram uma
+
+Antes havia um jeito de o Cronista não funcionar: provedor fora. Agora há dois, e eles pedem
+mensagens diferentes:
+
+| Situação | O que o Gateway responde |
+|---|---|
+| Módulo 5 fora | 503 · *o módulo "cronista" não respondeu* + o comando para subir |
+| Módulo 5 de pé, sem ollama | 503 · *provedor indisponível*, `semChave: true` |
+
+Dizer "provedor indisponível" quando o que falta é o processo manda o usuário procurar no lugar
+errado. O teste que afirmava a mensagem antiga foi **trocado, não apagado**.
+
+### 84.4 O estado "previsto" foi embora
+
+A §80 criou uma terceira luz — nem acesa nem apagada — para Ficha, Árbitro e Cronista, que eram
+portas reservadas sem processo atrás. Era certo então.
+
+**Agora os cinco existem, e uma luz que nunca acende é folclore** — a mesma regra que faz um
+arquivo sair da lista de grandes conhecidos quando encolhe abaixo do teto. `previsto` saiu de
+`sistemas.mjs`, de `app.js`, do CSS e dos testes. No lugar entrou uma trava do contrário: **todo
+módulo registrado tem de ter arquivo no disco**, e só o Gateway pode não se ligar sozinho.
+
+### 84.5 A ordem de carga subiu para `comum/`
+
+`AREAS` e `PASTA_DA_AREA` moravam em `testes/carregar.mjs`. O ArbitroServer precisa delas, e **um
+módulo não pode depender de `testes/`**. Foram para `comum/ordem-de-carga.mjs`; o arreio
+reexporta, e quem lia dele continua lendo.
+
+### 84.6 A verificação
+
+- **`npm test`: 771 testes** (eram 743), em doze arquivos. Trinta novos em
+  `testes/modulos.test.mjs`.
+- **Mutação em quatro garantias**: ficha sem nome entrando, a peneira de id afrouxada, o Árbitro
+  deixando de conferir a quantidade de dados, e o contexto do Módulo 4 ganhando um sorteio de
+  verdade. As quatro derrubaram o teste certo.
+- **Ligar tudo pelo botão da capa** subiu os quatro módulos irmãos; **desligar tudo** derrubou os
+  cinco na ordem — módulos, ollama, Gateway — e a conferência porta a porta deu **PARADO** nas
+  cinco.
+- **`diagnostico.html`: 175 de 175**, console limpo, com o painel mostrando os cinco processos
+  verdes e "4 FORA" contando só o ollama e seus três papéis.
+- `iniciar.cmd` e `desligar.cmd` conhecem os cinco.
+
+### 84.7 O que sobrou
+
+**M2 continua sendo o que falta** — *e foi fechado na §85, logo abaixo.* Ao fim da §84 ele era o
+único item alto da arquitetura: as rotas dos quatro módulos existiam, respondiam e tinham teste, e
+o navegador não chamava nenhuma delas. A ficha morava no `localStorage`, a sessão também, e o
+Árbitro que decidia o turno era o do navegador, não o da porta 5176.
+
+O que a §83 e a §84 fizeram foi tirar o M2 do caminho de tudo o mais: ele deixou de depender de
+qualquer módulo que não existisse.
+
+---
+
+## 85. A Ponte: o Cliente passa a usar os módulos (M2)
+
+Desde a §78 os módulos existiam, respondiam e tinham teste — e **o navegador não chamava nenhum
+deles**. A ficha morava no `localStorage`, a sessão também, e as rotas ficavam ali esperando. Era
+o item M2, e era o único alto da arquitetura.
+
+`modulos/cliente/js/ponte.js` é a camada que liga os dois lados. Ela é a **única parte do Cliente
+que sabe que existe servidor**: `mesa.js`, `app.js`, `fichas.js` e `sessoes.js` continuam
+chamando o que sempre chamaram.
+
+### 85.1 Espelho, e não substituto
+
+Duas restrições que não dá para negociar:
+
+1. **O front é síncrono.** `salvarMesa()` roda a cada mutação de estado — 45 chamadas espalhadas —
+   e devolve booleano. `listarFichas()` é chamada *dentro* de uma template string, no meio do
+   render. Transformar as duas em `async` reescreveria o front inteiro, e não é isso que o M2
+   pede.
+2. **O app tem de funcionar com os módulos fora.** É a regra do projeto desde a §16: sem ollama a
+   mesa cai no determinístico e **diz** que caiu.
+
+Então o `localStorage` continua sendo a gravação imediata — é o que faz o F5 funcionar sem
+servidor nenhum — e a Ponte espelha para os módulos em segundo plano.
+
+**Três coisas NÃO são espelho, e vão direto ao módulo**, porque a resposta do servidor muda o que
+acontece na tela: o **checkout**, o **checkin** e a **rolagem**.
+
+### 85.2 O que ficou ligado
+
+| O quê | Como |
+|---|---|
+| Biblioteca de fichas | `guardar-ficha` também posta em `/api/ficha`; na abertura, `sincronizarFichas()` traz o que o navegador não tem |
+| Checkout | `iniciarMesa` dispara `POST /api/mesa/sessoes` com o id **e** a ficha |
+| Espelho da sessão | `salvarMesa()` chama `Ponte.espelhar(M)`, com represa de 1,5 s |
+| Rolagem | o passo 2 da §82 vai à Mesa; `pedir` e `apurar` continuam locais |
+| Checkin | dois cliques na aba da ficha: o primeiro mostra o que mudou, o segundo grava |
+| Canal | WebSocket direto na porta do Módulo 3, que `/api/mesa/saude` informa |
+
+**A represa não é otimização, é correção.** Sem ela, `salvarMesa()` viraria uma requisição por
+tecla digitada no rascunho. Há teste: cem salvamentos, **um** PATCH.
+
+**A sincronização de fichas nunca desfaz edição local mais nova.** O servidor só vence quando a
+cópia dele tem `guardadaEm` maior. Perder a última coisa que você fez offline ao abrir o app é o
+pior defeito possível numa sincronização, e há teste para ele.
+
+### 85.3 A cadeia inteira, medida no navegador
+
+Com os cinco módulos de pé:
+
+```
+1. guardar ficha    → FichaServer:  inacia_vasques__toreador
+2. abrir a mesa     → checkout, origemDaFicha: fichaserver
+3. rolar            → ondeRolou: mesa · "Sucesso — 3 sucessos contra dificuldade 3"
+4. espelhar         → 1 rolagem e 2 turnos no histórico da sessão
+5. checkin (2 cliques) → prévia "fome: 1 → 4, danoSuperficial: 0 → 2" → gravado
+   a ficha no Módulo 2 → fome 4, dano 2
+```
+
+`origemDaFicha: fichaserver` é o detalhe que prova a cadeia: o Módulo 3 pegou a ficha com o
+Módulo 2, e não com o navegador.
+
+**E com os módulos derrubados**, a mesma sequência: a ficha local sobreviveu, a mesa abriu, a
+rolagem saiu `ondeRolou: local`, a sessão gravou no navegador, e a Ponte diz *"O MesaServer não
+respondeu (503)"*. Nenhum erro na tela.
+
+### 85.4 Dois defeitos que só o navegador achava
+
+**O Gateway não tinha `/api/ficha`.** Existia `/api/mesa` desde a §78, e mais nada. Os testes da
+Ponte falam com um `fetch` de mentira, e um `fetch` de mentira não sabe que o Gateway não tem a
+rota — o 404 só apareceu quando a página foi usá-la. Agora o encaminhamento é um laço sobre os
+três módulos que não passam pelo limite de taxa.
+
+**Ficha parcial derrubava a biblioteca inteira.** `pendenciasDaFicha` lia `f.atributos`,
+`f.habilidades`, `f.especializacoes` e `f.conviccoes` sem perguntar — e uma ficha sem eles matava
+`listarFichas().map(resumoDaFicha)` na primeira, deixando a tela em branco. As fichas boas iam
+junto.
+
+Antes da §85 isso era quase impossível: toda ficha vinha do criador, que produz forma completa.
+Agora ela pode vir do FichaServer, de outra máquina ou de um `.json` importado.
+
+Foi um teste da Ponte que achou — e **não por uma asserção dele**: o erro vazou como atividade
+assíncrona órfã, depois que o teste terminou. O reparo é na **entrada**, e não campo a campo:
+normalizar uma vez cobre a função inteira, inclusive o que alguém acrescentar amanhã. Foi o jeito
+de descobrir que eram três — o primeiro reparo revelou o segundo, que revelou o terceiro.
+
+### 85.5 A verificação
+
+- **`npm test`: 788 testes** (eram 771), duas corridas. Dezessete novos: doze na Ponte, cinco na
+  ficha parcial.
+- Os testes da Ponte usam um **`fetch` programável**: dá para dizer "o MesaServer responde, o
+  FichaServer não" e ver o que acontece. O último deles faz **catorze chamadas contra um servidor
+  mudo** e afirma que nenhuma estoura — é a garantia que faz o resto valer, porque a Ponte é
+  chamada de dentro do `salvarMesa`, do render e do turno.
+- **Mutação em cinco garantias**: a represa removida, o servidor sempre vencendo na
+  sincronização, o checkout sem a ficha junto, e a normalização da ficha parcial. Seis testes
+  caíram, os certos.
+- **`diagnostico.html`: 175 de 175.**
+
+### 85.6 O que a §85 NÃO fez
+
+Vale ser exato, porque o M2 fecha e o resto não:
+
+- **A sessão é espelhada, não autoritativa.** O `localStorage` continua sendo a fonte imediata; o
+  Módulo 3 tem a cópia durável, a pasta, o autosave e o checkin. Inverter isso — o servidor
+  mandando, o navegador só desenhando — é outro trabalho, e grande.
+- **Só a rolagem de AÇÃO passa pela Mesa.** Frenesi, Remorso e o combate rolam por dentro do
+  motor, em caminho síncrono, e continuam usando a fonte local. Separá-los exigiria tornar
+  assíncrono o miolo do Árbitro.
+- **O ArbitroServer está de pé e o navegador não o consulta.** O Árbitro que decide o turno
+  continua sendo o do navegador — que é o mesmo código, então não há divergência de regra; o que
+  há é um módulo que existe e ninguém usa. Virou o item **M8**.
+
+---
+
+## 86. Uma regra de origem, e um aviso que faltava (M6 e M7)
+
+Dois itens *baixos*, e o primeiro deles já tinha custado um defeito.
+
+### 86.1 A regra de origem estava escrita cinco vezes (M6)
+
+Gateway, FichaServer, MesaServer, Árbitro e Cronista: cada um com o seu `ORIGENS_ACEITAS`, o seu
+`HOST_LOCAL` e a sua `daPropriaCasa`. Adiada duas vezes por decisão sua, e com juros já cobrados —
+na §80.3, o pedido de encerrar levava **403** porque duas cópias discordavam de qual era a porta
+do Gateway.
+
+**E havia uma segunda divergência que ninguém tinha notado.** O Gateway aceitava
+`http://[::1]:<sua porta>`; os módulos aceitavam `[::1]` só para a porta do Gateway, **não para a
+própria**. Abrir um módulo direto por IPv6 era aceito de um lado e recusado do outro. Nada quebrou
+por causa disso — é exatamente a forma que a divergência tem antes de quebrar, e uma implementação
+só a fez sumir.
+
+`comum/origem.mjs` tem a regra inteira, em duas linhas de lógica:
+
+- traz `Origin` e ele é a página do Gateway **ou** a do próprio módulo, em qualquer das três
+  formas de laço local; **ou**
+- não traz `Origin` nenhum e o `Host` é de laço local.
+
+O segundo caso é o que permite **chamada entre módulos**: `fetch` de servidor para servidor não
+manda `Origin`, e não deve — ele não vem de navegador. Era a correção da §80.3, e agora é a regra
+escrita em vez de um comentário explicando por que o cabeçalho foi omitido.
+
+O Gateway passa a porta **dele**, e o conjunto sai igual ao que ele tinha — ele *é* o Gateway. O
+que mudou é que há um lugar só onde a regra mora.
+
+> **O que isto não é: autenticação.** Não há usuário nem sessão de login, e `Origin` é um
+> cabeçalho que qualquer cliente que não seja navegador escolhe mandar. Isto existe contra o CSRF
+> da §23 — outra página aberta no mesmo navegador gastando o provedor local de quem está jogando.
+
+### 86.2 O aviso de sessão viva (M7)
+
+**Nada se perde ao desligar**: o MesaServer grava tudo antes de sair, e há teste da §80 afirmando
+isso. Mas quem clicava "Desligar tudo" no meio de uma noite só descobria que havia noite em
+andamento *depois*, no relatório — e "nada se perde" é uma garantia que o jogador não tem como
+conhecer no instante em que hesita.
+
+O número já existia em `/mesa/saude`; o que faltava era ele chegar à tela. `moduloNoAr` devolvia
+booleano e virou `saudeDoModulo`, que devolve o corpo; `estado()` passa a carregar `sessoesVivas`
+por módulo; e o segundo clique de "Desligar tudo" — o armado — mostra:
+
+> · **1 sessão(ões) em andamento.** Elas são gravadas antes de o servidor sair — nada se perde —,
+> mas a mesa fecha junto.
+
+**O aviso não impede.** Dizer "não posso" seria pior que dizer o que vai acontecer.
+
+### 86.3 A verificação
+
+- **`npm test`: 799 testes** (eram 788), duas corridas. Onze novos — dez de M6 e M7, mais a
+  trava do número de arquivos de teste.
+- A trava principal do M6 **varre os `.mjs` de `modulos/` e `comum/`** atrás de `ORIGENS_ACEITAS`
+  e `HOST_LOCAL` fora de `comum/origem.mjs`. Se alguém colar a regra de novo, o teste cobra —
+  porque foi assim que a divergência da §80 nasceu, e ela não custou nada até custar.
+- **Mutação em três garantias**: a regra copiada de volta num módulo, o módulo deixando de aceitar
+  a própria porta (a assimetria de IPv6), e `sessoesVivas` sumindo do diagnóstico. Seis testes
+  caíram — inclusive **os dois testes de desligamento da §80**, que pegaram a regra quebrada de
+  ponta a ponta, e não por leitura de código.
+- No navegador, com uma noite aberta de verdade: o diagnóstico reportou `sessoesVivas: 1`, o aviso
+  apareceu no clique armado, e com a sessão encerrada ele **sumiu**.
+
+### 86.4 Um teste que afirmava o ambiente
+
+O primeiro teste do M7 perguntava ao módulo `mesa` de verdade e esperava `null`. Ele passou —
+e falhou assim que havia um MesaServer aberto na máquina, porque o módulo respondeu.
+
+**Teste que depende de o ambiente estar vazio afirma o ambiente, não o código.** Foi trocado por
+um descritor de módulo apontando para uma porta morta, que testa a função. É a segunda vez que
+este projeto tropeça nisso — a primeira foi na §80, com o órfão de porta de teste — e as duas
+vezes a correção foi a mesma: dar ao teste um alvo que só ele controla.

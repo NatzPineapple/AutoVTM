@@ -22,6 +22,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { RAIZ } from './carregar.mjs';
 
 /* Os dois juízes — Narrador e Cronista — leem a MESMA lista negra, da
@@ -37,6 +38,15 @@ function termosDaListaNegra() {
 
 const PORTA = 51873;
 const BASE = `http://127.0.0.1:${PORTA}`;
+/* Os módulos ficam em PORTA+1 … PORTA+4 — ver `subir()`. */
+const PORTA_MESA = PORTA + 2;
+
+const SESSOES_DE_TESTE = fs.mkdtempSync(path.join(os.tmpdir(), 'vitae-proxy-sessoes-'));
+const FICHAS_DE_TESTE  = fs.mkdtempSync(path.join(os.tmpdir(), 'vitae-proxy-fichas-'));
+test.after(() => {
+  fs.rmSync(SESSOES_DE_TESTE, { recursive: true, force: true });
+  fs.rmSync(FICHAS_DE_TESTE, { recursive: true, force: true });
+});
 
 /* Teto baixo de propósito: com 20 (o padrão) o teste de limite de
    taxa precisaria de 21 requisições. Com 3, precisa de 4. */
@@ -50,14 +60,30 @@ let processo = null;
    respondido ANTES de o balde ser tocado. */
 async function subir() {
   if (processo) return;
-  processo = spawn(process.execPath, [path.join(RAIZ, 'servidor', 'proxy.mjs')], {
+  processo = spawn(process.execPath, [path.join(RAIZ, 'modulos', 'gateway', 'proxy.mjs')], {
     cwd: RAIZ,
     env: Object.assign({}, process.env, {
       PORTA: String(PORTA),
       VITAE_ESCUTAR: '127.0.0.1',
       VITAE_TETO_JANELA: String(TETO),
       /* porta morta: `configurado()` devolve false sem esperar */
-      OLLAMA_HOST: 'http://127.0.0.1:1'
+      OLLAMA_HOST: 'http://127.0.0.1:1',
+      /* PORTAS PRÓPRIAS PARA OS MÓDULOS.  (§80)
+
+         Sem isto o teste sondaria — e, ao ligar, DESLIGARIA — o
+         MesaServer que você deixou aberto na porta de verdade. Um
+         teste que mata o servidor do usuário é pior do que nenhum. */
+      VITAE_PORTA_FICHA: String(PORTA + 1),
+      VITAE_PORTA_MESA: String(PORTA + 2),
+      VITAE_PORTA_ARBITRO: String(PORTA + 3),
+      VITAE_PORTA_CRONISTA: String(PORTA + 4),
+      /* E o módulo que este teste sobe de verdade grava sessão: que
+         seja numa pasta descartável, não na do jogador. */
+      VITAE_SESSOES: SESSOES_DE_TESTE,
+      /* O FichaServer que o teste sobe grava ficha. Que seja numa pasta
+         descartável, e não na do jogador. (§84) */
+      VITAE_FICHAS: FICHAS_DE_TESTE,
+      VITAE_FICHA_GUARDADOR: 'pasta'
     }),
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -101,7 +127,7 @@ test('Servidor — o proxy', async (t) => {
   });
 
   await t.test('serve os scripts com o tipo certo', async () => {
-    const r = await pegar('/js/ficha/motor-ficha.js');
+    const r = await pegar('/modulos/ficha/motor-ficha.js');
     assert.equal(r.status, 200);
     assert.match(r.headers.get('content-type') || '', /javascript/);
   });
@@ -109,12 +135,12 @@ test('Servidor — o proxy', async (t) => {
   await t.test('NADA é cacheado — é a razão de o servidor existir', async () => {
     /* Sem isto, o F5 não mostra a alteração, e a §36 registra três
        diagnósticos errados por cache. */
-    const r = await pegar('/js/ficha/motor-ficha.js');
+    const r = await pegar('/modulos/ficha/motor-ficha.js');
     assert.match(r.headers.get('cache-control') || '', /no-store|no-cache/);
   });
 
   await t.test('arquivo que não existe é 404, e diz qual', async () => {
-    const r = await pegar('/js/nao-existe.js');
+    const r = await pegar('/modulos/cliente/js/nao-existe.js');
     assert.equal(r.status, 404);
     assert.ok((await r.text()).includes('nao-existe'));
   });
@@ -128,7 +154,7 @@ test('Servidor — o proxy', async (t) => {
       '/../package.json',
       '/../../package.json',
       '/..%2fpackage.json',
-      '/js/../../package.json',
+      '/modulos/cliente/js/../../../package.json',
       '/%2e%2e/package.json',
       '/....//package.json'
     ]) {
@@ -180,18 +206,26 @@ test('Servidor — o proxy', async (t) => {
     assert.match((await r.json()).erro, /origem/i);
   });
 
-  await t.test('sem provedor no ar, responde 503 e explica', async () => {
-    /* Este é o caminho de quem só quer jogar: sem ollama, a rota diz
-       503 com motivo, e o cliente cai no determinístico. */
+  await t.test('sem o Módulo 5 no ar, o 503 diz que falta o MÓDULO', async (t2) => {
+    /* DUAS FALHAS DIFERENTES, DESDE A §84. Antes o Cronista rodava
+       dentro do Gateway, e só havia um jeito de ele não funcionar: o
+       provedor fora. Agora há dois — o módulo fora, e o módulo de pé
+       sem provedor —, e dizer "provedor indisponível" quando o que
+       falta é o processo manda o usuário procurar no lugar errado.
+
+       Este teste roda ANTES do `/api/ligar`, então o Módulo 5 ainda
+       não subiu. */
     const r = await pegar('/api/cronista', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Origin': BASE },
       body: JSON.stringify({ tipo: 'capitulo' })
     });
-    assert.equal(r.status, 503);
     const d = await r.json();
-    assert.ok(d.erro && d.erro.length > 10, 'disse 503 sem explicar');
-    assert.equal(d.semChave, true);
+    t2.diagnostic(`${r.status} · ${d.erro} · ${d.comando || ''}`);
+    assert.equal(r.status, 503);
+    assert.match(d.erro, /módulo "cronista" não respondeu/i);
+    assert.match(d.comando || '', /cronista-servidor\.mjs/);
+    assert.ok(!d.semChave, 'culpou o provedor quando o que faltava era o processo');
   });
 
   await t.test('o estado do servidor é consultável sem POST', async () => {
@@ -260,7 +294,7 @@ test('Servidor — o provedor local', async (t) => {
   /* `OLLAMA_HOST` é lido na carga do módulo, então é preciso apontá-lo
      para a porta morta ANTES do import. */
   process.env.OLLAMA_HOST = 'http://127.0.0.1:1';
-  const provedor = await import('../servidor/provedor-ollama.mjs');
+  const provedor = await import('../modulos/cronista/provedor-ollama.mjs');
 
   await t.test('é o único transporte, e se identifica', () => {
     assert.equal(provedor.id, 'ollama');
@@ -297,7 +331,19 @@ test('Servidor — o provedor local', async (t) => {
   await t.test('NÃO existe provedor pago no projeto', () => {
     /* Decisão do usuário, §16.2 — e ela já foi revertida por engano uma
        vez. O teste é a trava. */
-    const arquivos = fs.readdirSync(path.join(RAIZ, 'servidor'));
+    /* Varre o projeto inteiro, e não uma pasta só: depois da §79 o
+       provedor mora em `modulos/cronista/`, e apontar para `servidor/`
+       — que já nem existe — faria o teste passar sempre, sem olhar. */
+    const varrer = (pasta) => {
+      const fora = [];
+      for (const item of fs.readdirSync(path.join(RAIZ, pasta), { withFileTypes: true })) {
+        if (item.isDirectory()) fora.push(...varrer(`${pasta}/${item.name}`));
+        else fora.push(`${pasta}/${item.name}`);
+      }
+      return fora;
+    };
+    const arquivos = ['modulos', 'comum', 'ferramentas'].flatMap(varrer);
+    assert.ok(arquivos.length > 30, 'a varredura não achou arquivo nenhum');
     const pagos = arquivos.filter(n => /anthropic|openai|claude|gpt/i.test(n));
     assert.deepEqual(pagos, [], 'apareceu arquivo de provedor pago');
   });
@@ -312,7 +358,7 @@ test('Servidor — o provedor local', async (t) => {
    ============================================================ */
 
 test('Cronista — o validador do servidor', async (t) => {
-  const cronista = await import('../servidor/cronista.mjs');
+  const cronista = await import('../modulos/cronista/cronista.mjs');
 
   /* Uma crônica limpa, no tamanho pedido, sem nada que reprove. */
   const prosaDe = (n) =>
@@ -485,7 +531,7 @@ test('Cronista — o validador do servidor', async (t) => {
    ============================================================ */
 
 test('Narrador — o validador do servidor', async (t) => {
-  const narrador = await import('../servidor/narrador.mjs');
+  const narrador = await import('../modulos/cronista/narrador.mjs');
 
   const prosaDe = (n) =>
     'A porta range e alguém do outro lado decide não responder ainda. '
@@ -633,8 +679,8 @@ test('Narrador — o validador do servidor', async (t) => {
    ============================================================ */
 
 test('Servidor — o turno segmentado (§57)', async (t) => {
-  const narrador = await import('../servidor/narrador.mjs');
-  const intencao = await import('../servidor/intencao.mjs');
+  const narrador = await import('../modulos/cronista/narrador.mjs');
+  const intencao = await import('../modulos/cronista/intencao.mjs');
 
   const base = { cena: { local: 'boate_ipanema', hora: '23h40' }, personagem: 'Marina',
                  presentes: ['Bia'], pessoas: [], locais: [], fios: [], historico: [],
@@ -727,7 +773,7 @@ test('Servidor — o turno segmentado (§57)', async (t) => {
 
 test('Contexto — todo bloco do manifesto existe de verdade (§68)', async (t) => {
 
-  const { manifesto, secao } = await import('../servidor/contexto.mjs');
+  const { manifesto, secao } = await import('../modulos/cronista/contexto.mjs');
 
   await t.test('o manifesto não está vazio', (t2) => {
     const m = manifesto();
@@ -769,5 +815,291 @@ test('Contexto — todo bloco do manifesto existe de verdade (§68)', async (t) 
       assert.ok(!antes, `rótulo "${b.rotulo}" aparece em ${antes} e em ${b.secao}`);
       vistos.set(b.rotulo, b.secao);
     }
+  });
+});
+
+/* ============================================================
+   §75/§76 — LIGAR E DESLIGAR
+
+   O painel da capa e as rotas que ele usa. Com `OLLAMA_HOST` na
+   porta morta, o que se afirma é o comportamento SEM provedor —
+   que é o caso de quem abre o app pela primeira vez, e o caso em
+   que o painel mais precisa estar certo.
+
+   Estes testes ficam por ÚLTIMO no arquivo de propósito: o último
+   deles encerra o proxy, que é justamente o que ele afirma.
+   ============================================================ */
+
+const posta = (caminho, corpo, origem = `http://127.0.0.1:${PORTA}`) =>
+  pegar(caminho, { method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: origem },
+    body: JSON.stringify(corpo) });
+
+test('Servidor — o diagnóstico dos sistemas (§75)', async (t) => {
+  await subir();
+
+  await t.test('lista os seis sistemas, e o servidor está sempre ligado', async (t2) => {
+    const r = await pegar('/api/sistemas');
+    assert.equal(r.status, 200);
+    const d = await r.json();
+    t2.diagnostic(d.linhas.map(l => `${l.ligado ? 'ON' : 'off'} ${l.id}`).join(' · '));
+    const ids = d.linhas.map(l => l.id);
+    for (const esperado of ['servidor', 'ollama', 'narrador', 'cronista', 'intencao', 'campanhas'])
+      assert.ok(ids.includes(esperado), `falta a linha "${esperado}"`);
+    /* Ele está respondendo: é a única linha que não precisa de sonda. */
+    assert.equal(d.linhas.find(l => l.id === 'servidor').ligado, true);
+  });
+
+  await t.test('sem ollama os três papéis caem junto, e dizem o que se perde', async (t2) => {
+    const d = await (await pegar('/api/sistemas')).json();
+    const fora = d.linhas.filter(l => !l.ligado).map(l => l.id);
+    t2.diagnostic(`fora: ${fora.join(', ')}`);
+    for (const esperado of ['ollama', 'narrador', 'cronista', 'intencao'])
+      assert.ok(fora.includes(esperado), `"${esperado}" devia estar fora sem ollama`);
+    assert.equal(d.tudoLigado, false);
+    /* A informação útil não é "está fora": é o que isso custa ao jogo. */
+    assert.match(d.linhas.find(l => l.id === 'narrador').faltando, /simulado/i,
+      'a linha do Narrador não diz o que se perde sem ele');
+  });
+
+  await t.test('a campanha jogável da §72 aparece na contagem', (t2) => {
+    const arquivos = fs.readdirSync(path.join(RAIZ, 'campanhas')).filter(f => f.endsWith('.md'));
+    t2.diagnostic(`${arquivos.length} campanha(s)`);
+    assert.ok(arquivos.includes('a-conta-do-duarte.md'));
+  });
+});
+
+/* ============================================================
+   §80 — A ROTINA DE LIGAR E DESLIGAR OS MÓDULOS
+
+   Estes testes sobem e derrubam um MesaServer DE VERDADE, numa
+   porta própria. É caro (~2 s) e é a única forma honesta: o que
+   se afirma é que o Gateway consegue subir um processo irmão e
+   pedir que ele saia — e isso não se verifica lendo código.
+
+   Eles vêm ANTES do §76 de propósito: o último teste do §76
+   encerra o proxy, e depois dele não há a quem perguntar.
+   ============================================================ */
+
+test('Servidor — os módulos no diagnóstico (§80)', async (t) => {
+  await subir();
+  /* UMA CORRIDA INTERROMPIDA DEIXA ÓRFÃO. Se a anterior morreu no meio,
+     ficou um MesaServer de pé na porta de teste, e as asserções abaixo
+     — que afirmam que ele está FORA — reprovariam por causa do passado.
+     Pedir o encerramento antes é higiene, não afrouxamento: a porta é
+     privada do teste, e o que se derruba aqui não é de ninguém. */
+  await posta('/api/desligar', { ollama: false, modulos: true });
+
+  await t.test('os cinco módulos aparecem, com número e porta', async (t2) => {
+    const d = await (await pegar('/api/sistemas')).json();
+    t2.diagnostic(d.modulos.map(m =>
+      `${m.numero}.${m.id}:${m.porta}${m.previsto ? '(previsto)' : (m.ligado ? '(on)' : '(off)')}`
+    ).join(' · '));
+    assert.deepEqual(d.modulos.map(m => m.id),
+      ['gateway', 'ficha', 'mesa', 'arbitro', 'cronista']);
+    assert.deepEqual(d.modulos.map(m => m.numero), [1, 2, 3, 4, 5]);
+    /* As portas vêm da variável de ambiente que `subir()` passou. Se
+       elas viessem do padrão, este teste estaria olhando o servidor
+       do usuário em vez do seu. */
+    assert.equal(d.modulos.find(m => m.id === 'mesa').porta, PORTA_MESA);
+  });
+
+  await t.test('o Gateway está ligado sem precisar de sonda', async () => {
+    const d = await (await pegar('/api/sistemas')).json();
+    const g = d.modulos.find(m => m.id === 'gateway');
+    assert.equal(g.ligado, true);
+    /* Ele é o processo que respondeu. Não há botão para ligá-lo. */
+    assert.equal(g.podeLigar, false);
+  });
+
+  await t.test('nenhum módulo é mais "previsto" — os cinco existem (§84)', async (t2) => {
+    /* O estado oco da §80 saiu do código quando deixou de ter ocupante.
+       Este teste é o guarda do contrário: se alguém voltar a reservar
+       uma porta sem processo atrás, ele cobra o arquivo. */
+    const d = await (await pegar('/api/sistemas')).json();
+    const semArquivo = d.modulos.filter(m => !m.comando);
+    t2.diagnostic(d.modulos.map(m => `${m.id}:${m.comando || 'SEM ARQUIVO'}`).join(' · '));
+    assert.deepEqual(semArquivo, [], 'módulo sem arquivo para subir');
+    assert.ok(!d.modulos.some(m => 'previsto' in m && m.previsto),
+      'o estado "previsto" voltou, e nenhum módulo devia estar nele');
+    /* Só o Gateway não se liga sozinho: ele é o processo que respondeu. */
+    assert.deepEqual(d.modulos.filter(m => !m.podeLigar).map(m => m.id), ['gateway']);
+  });
+
+  await t.test('cada módulo aponta para um arquivo que existe', () => {
+    const quebrados = ['ficha', 'mesa', 'arbitro', 'cronista', 'gateway']
+      .map(id => `modulos/${id}/${id === 'gateway' ? 'proxy' : id + '-servidor'}.mjs`)
+      .filter(rel => !fs.existsSync(path.join(RAIZ, rel)));
+    assert.deepEqual(quebrados, [], 'módulo registrado sem processo no disco');
+  });
+
+  await t.test('o MesaServer está fora, e a linha diz o que se perde', async () => {
+    const d = await (await pegar('/api/sistemas')).json();
+    const mesa = d.modulos.find(m => m.id === 'mesa');
+    assert.equal(mesa.ligado, false);
+    assert.equal(mesa.podeLigar, true);
+    assert.match(mesa.faltando, /sess(ão|ao)|checkout/i,
+      'a linha do MesaServer não diz o que falta sem ele');
+    assert.match(mesa.comando, /mesa-servidor\.mjs/);
+  });
+});
+
+test('Servidor — subir e derrubar um módulo irmão (§80)', async (t) => {
+  await subir();
+
+  await t.test('`/api/ligar` sobe o MesaServer de verdade', async (t2) => {
+    /* `ollama: false` porque não há ollama nestes testes e esperar
+       25 s pela desistência dele não afirma nada. */
+    const r = await posta('/api/ligar', { ollama: false });
+    const d = await r.json();
+    t2.diagnostic((d.passos || []).map(p => `${p.ok ? '✓' : '✕'} ${p.texto}`).join(' | '));
+    assert.equal(r.status, 200);
+
+    const passo = (d.passos || []).find(p => p.passo === 'mesa');
+    assert.ok(passo, 'não houve passo para o MesaServer');
+    assert.equal(passo.ok, true, passo.texto);
+
+    /* E ele responde de verdade, na porta dele, sem passar pelo
+       Gateway — senão isto estaria testando o encaminhamento. */
+    const saude = await fetch(`http://127.0.0.1:${PORTA_MESA}/mesa/saude`);
+    assert.equal(saude.status, 200);
+    assert.equal((await saude.json()).modulo, 'mesa');
+  });
+
+  await t.test('e o diagnóstico passa a dizer que ele está no ar', async () => {
+    const d = await (await pegar('/api/sistemas')).json();
+    assert.equal(d.modulos.find(m => m.id === 'mesa').ligado, true);
+  });
+
+  await t.test('ligar de novo não sobe um segundo, e diz isso', async (t2) => {
+    const d = await (await posta('/api/ligar', { ollama: false })).json();
+    const passo = (d.passos || []).find(p => p.passo === 'mesa');
+    t2.diagnostic(passo.texto);
+    assert.match(passo.texto, /já estava/i, 'subiu um segundo MesaServer na mesma porta');
+  });
+
+  await t.test('desligar só o modelo NÃO derruba os módulos', async () => {
+    /* O caso comum: liberar a RAM do 12B e continuar jogando no
+       determinístico. A mesa tem de continuar de pé. */
+    const r = await posta('/api/desligar', { ollama: true });
+    assert.equal(r.status, 200);
+    const d = await r.json();
+    assert.ok(!(d.passos || []).some(p => p.passo === 'mesa'),
+      'derrubou o MesaServer sem ninguém pedir');
+    assert.equal(d.modulos.find(m => m.id === 'mesa').ligado, true);
+  });
+
+  await t.test('`modulos: true` o derruba, e o Gateway continua de pé', async (t2) => {
+    const r = await posta('/api/desligar', { ollama: false, modulos: true });
+    const d = await r.json();
+    t2.diagnostic((d.passos || []).map(p => `${p.ok ? '✓' : '✕'} ${p.texto}`).join(' | '));
+    assert.equal(r.status, 200);
+    assert.equal((d.passos || []).find(p => p.passo === 'mesa').ok, true);
+    assert.ok(!d.servidorEncerrado, 'derrubou o Gateway junto');
+    assert.equal((await pegar('/api/sistemas')).status, 200);
+
+    let caiu = false;
+    try { await fetch(`http://127.0.0.1:${PORTA_MESA}/mesa/saude`); } catch (e) { caiu = true; }
+    assert.ok(caiu, 'o MesaServer continuou respondendo depois de mandar encerrar');
+  });
+
+  await t.test('módulo subido POR FORA também obedece ao pedido de encerrar', async (t2) => {
+    /* O defeito que este teste fecha: `pararModulo` mandava um cabeçalho
+       `Origin` com a porta de Gateway que ELE conhece, e o módulo
+       comparava com a porta de Gateway que ELE conhece. Iguais quando o
+       Gateway sobe o módulo — ele herda o ambiente. DIFERENTES quando os
+       dois são subidos em momentos diferentes, que é o caso de quem deixa
+       um `npm run mesa` aberto de ontem. Dava 403, e o painel dizia
+       "continuou respondendo" sem dizer por quê.
+
+       Aqui o MesaServer sobe com a porta de Gateway PADRÃO (5173),
+       enquanto o Gateway do teste está em 51873. Se o pedido voltar a
+       depender do `Origin`, este teste cai. */
+    const solto = spawn(process.execPath, [path.join(RAIZ, 'modulos', 'mesa', 'mesa-servidor.mjs')], {
+      cwd: RAIZ, stdio: 'ignore', windowsHide: true,
+      env: Object.assign({}, process.env, {
+        PORTA: '5173',                       /* a que ele acha que é o Gateway */
+        VITAE_PORTA_MESA: String(PORTA_MESA),
+        VITAE_SESSOES: SESSOES_DE_TESTE
+      })
+    });
+
+    let noAr = false;
+    for (let i = 0; i < 30 && !noAr; i++) {
+      await new Promise(r => setTimeout(r, 200));
+      try { noAr = (await fetch(`http://127.0.0.1:${PORTA_MESA}/mesa/saude`)).ok; }
+      catch (e) { noAr = false; }
+    }
+    assert.ok(noAr, 'o MesaServer solto não subiu');
+
+    const d = await (await posta('/api/desligar', { ollama: false, modulos: true })).json();
+    const passo = (d.passos || []).find(p => p.passo === 'mesa');
+    t2.diagnostic(passo.texto);
+    assert.equal(passo.ok, true, passo.texto);
+    solto.kill();   /* já saiu; isto é só para não deixar rastro */
+  });
+
+  await t.test('ele GRAVOU antes de sair, e não foi morto', (t2) => {
+    /* A razão de o Gateway PEDIR em vez de matar: `taskkill` perderia
+       a sessão que estava em memória e ainda não passou pelo autosave.
+       A pasta de sessões do teste é descartável, e o que se afirma é
+       que ela existe e é dele — se o processo tivesse morrido antes de
+       gravar, ela nem teria sido criada. */
+    assert.ok(fs.existsSync(SESSOES_DE_TESTE));
+    t2.diagnostic(`pasta de sessões do teste: ${SESSOES_DE_TESTE}`);
+  });
+});
+
+test('Servidor — ligar e desligar (§76)', async (t) => {
+  await subir();
+
+  await t.test('GET não liga nem desliga', async () => {
+    for (const rota of ['/api/ligar', '/api/desligar'])
+      assert.equal((await pegar(rota)).status, 405, `${rota} aceitou GET`);
+  });
+
+  await t.test('POST de outra origem é recusado', async () => {
+    for (const rota of ['/api/ligar', '/api/desligar'])
+      assert.equal((await posta(rota, {}, 'http://exemplo.invalido')).status, 403,
+        `${rota} aceitou origem de fora`);
+  });
+
+  await t.test('desligar só o modelo NÃO derruba o servidor', async (t2) => {
+    /* A garantia que importa: o botão de desligar o modelo não pode
+       matar a página junto. Sem ollama no ar, o passo é "já estava
+       parado" — e o servidor tem de continuar respondendo. */
+    const r = await posta('/api/desligar', { ollama: true });
+    const d = await r.json();
+    t2.diagnostic(`${r.status} · ${(d.passos || []).map(p => p.texto).join(' | ')}`);
+    assert.equal(r.status, 200);
+    assert.ok(!d.servidorEncerrado, 'derrubou o servidor sem ninguém pedir');
+    assert.equal((await pegar('/api/sistemas')).status, 200,
+      'o servidor caiu ao desligar só o modelo');
+  });
+
+  await t.test('desligar tudo responde ANTES de sair', async (t2) => {
+    /* Este é o teste que justifica o `res.on('finish')` no proxy: se o
+       processo saísse antes de escrever, o navegador receberia conexão
+       cortada e mostraria erro de rede em vez do relatório. */
+    const r = await posta('/api/desligar', { ollama: true, servidor: true });
+    const d = await r.json();
+    t2.diagnostic(`${r.status} · servidorEncerrado=${d.servidorEncerrado} · ` +
+      (d.passos || []).map(p => p.texto).join(' | '));
+    assert.equal(r.status, 200);
+    assert.equal(d.servidorEncerrado, true);
+    assert.ok((d.passos || []).some(p => /Gateway encerrado/.test(p.texto)));
+    /* A ORDEM É A GARANTIA.  (§80) O Gateway sai POR ÚLTIMO: se ele
+       saísse antes, ninguém sobraria para pedir aos módulos que
+       gravassem o que tinham em memória. */
+    assert.equal(d.passos[d.passos.length - 1].passo, 'gateway',
+      'o Gateway não foi o último a sair');
+  });
+
+  await t.test('e o servidor sai de verdade', async () => {
+    await new Promise(r => setTimeout(r, 800));
+    let caiu = false;
+    try { await pegar('/api/sistemas'); } catch (e) { caiu = true; }
+    assert.ok(caiu, 'o servidor continuou respondendo depois de mandar encerrar');
+    processo = null;   /* já saiu: o encerramento do arquivo não tem o que matar */
   });
 });

@@ -26,6 +26,25 @@ A ordem de autoridade, do maior para o menor:
 > menor confiança. A revisão contra o básico começou; o que já foi conferido com a página do
 > livro à vista está marcado com a página, assim: *(básico, pág. 205)*. **O que não tem essa
 > marca ainda não foi reconferido.**
+>
+> **A Parte I está fechada: as 17 seções de regra (§2 a §18) foram conferidas contra o
+> manual básico.** A §1 saiu daqui — virou vocabulário, em `narracao-ia.md` §4.7 — e a §19 é
+> inventário do motor, não regra. Na Parte II, 3 das 15 — a §15 nasceu conferida, do Apêndice I.
+>
+> **A revisão está achando erro de conteúdo, e não pouco.** A tabela de Dificuldade da §5
+> estava com os rótulos deslocados em um nível e fechava em 6 em vez de 7 — vinha do Guia do
+> Jogador. A §8 dizia que o Surto de Sangue só vale para Atributo **físico** (vale para
+> qualquer um). A §11 recuperava Vontade **no fim** da sessão, e é no início. A §6 dizia que
+> **empate mantém o status quo**, e o livro dá a vitória a quem age. E a tabela de Potência
+> de Sangue, **já marcada como conferida**, tinha duas células erradas.
+>
+> **Documento desatualizado não é inofensivo só porque o código está certo:** quem lê daqui
+> para implementar a próxima regra programa pelo que está escrito.
+>
+> **E cuidado com célula mesclada.** Duas das correções acima vieram do mesmo engano: no
+> livro, a coluna de penalidade de alimentação mescla as linhas 6–7 e 8–9, e o texto foi
+> lido na altura da linha de baixo. A 2x as bordas do bloco não dão para separar; foi
+> preciso recortar a coluna e renderizar a 5x.
 
 > **Cuidado com `pdftotext` no manual básico.** Ele é digitalizado, e o OCR sai corrompido em
 > 40% das linhas — 76% das páginas têm mais de um quarto do texto sujo. Extrair texto dele e
@@ -42,7 +61,7 @@ A ordem de autoridade, do maior para o menor:
 | Parte | O que traz | Era |
 |---|---|---|
 | **I — Regras do V5** | Terminologia, dados, Disciplinas, estados, combate, criação, XP | regras.md Parte I |
-| **II — Escudo do Mestre** | Tabelas de decisão: dificuldade, oposição, caça, ferimento, NPCs | regras.md Parte II |
+| **II — Escudo do Mestre** | Tabelas de decisão: dificuldade, oposição, caça, ferimento, NPCs, **e a parada de cada ação padrão** | regras.md Parte II |
 | **III — Fichas por seita** | O que muda na criação quando a seita é bifurcação, não rótulo | regras.md Parte III |
 | **IV — Jogando de Sabá** | O que substitui ou acrescenta às regras base | regras.md Parte IV |
 
@@ -61,27 +80,17 @@ da seção 15 **da própria parte** — a Parte I tem uma §15 e a Parte II tem 
 
 ## 1. Terminologia
 
-| Termo usado no app | Variantes encontradas nos livros | Inglês |
-|---|---|---|
-| **Provocação** | Checagem de Sangue, Verificação de Despertar | Rouse Check |
-| **Rerrolagem de Sangue** | — | Rouse Reroll |
-| **Surto de Sangue** | — | Blood Surge |
-| **Gravidade da Perdição** | Gravidade de Bane | Bane Severity |
-| **Perdição do Clã** | Maldição | Clan Bane |
-| **Vitalidade** | Saúde | Health |
-| **Debilitação** | Prejudicado | Impairment |
-| **Mácula** | — | Stain |
-| **Crítico Bestial** | Sucesso em Perigo, Vitória Confusa | Messy Critical |
-| **Falha Bestial** | — | Bestial Failure |
-| **Pilar** | Marco, Toque de Pedra | Touchstone |
-| **Ladroagem** | Furto | Larceny |
-| **Sagacidade** | Intuição | Insight |
-| **Subterfúgio** | Lábia | Subterfuge |
-| **Erudição** | Acadêmicos | Academics |
-| **Percepção** | Consciência | Awareness |
-| **Ciência** | Ciências | Science |
+**Mudou de arquivo: está em `docs/narracao-ia.md` §4.7.**
 
-As seis últimas linhas vêm da ficha oficial e são as que o app usa.
+A tabela de termos vivia aqui e foi para o guia de narração, porque o que ela decide é
+**voz, não mecânica**: o motor não muda de comportamento se a palavra mudar; a prosa, sim.
+Lá ela está conferida contra o básico, com a página em cada linha, e com as duas coisas
+que faltavam:
+
+- **piscina × parada de dados** — o livro diz "parada de dados"; o código diz "piscina".
+  A decisão é dividida: o identificador fica, a prosa usa a do livro.
+- **Checagem de Sangue** é o nome oficial do que este projeto chamava de "Provocação"
+  (básico, pág. 211).
 
 ---
 
@@ -164,52 +173,293 @@ teste tiver falhado. Um 1 na Fome num teste bem-sucedido não faz nada.
 
 ## 4. Reteste de Força de Vontade
 
+*(conferido no básico, págs. 122, 205 e 206)*
+
 Implementado em `Dados.retestarVontade()`.
 
-- Custa **1 ponto de Força de Vontade** (marque 1 de dano Superficial na trilha de Vontade).
-- Permite **rerrolar até 3 dados**.
-- **Dados de Fome nunca podem ser rerrolados.** (Confirmado por exceção: o mérito de
-  coterie Salubri "Restrição" existe justamente para permitir rerrolar dados de Fome,
-  o que prova que a regra padrão proíbe.)
-- **Uma vez por teste.** O resultado do reteste é final.
-- Na prática o jogador escolhe os dados; o app pré-seleciona os que falharam, do pior
-  para o melhor.
+O texto do livro, na íntegra, porque quase toda regra desta seção está nele:
 
-Recuperação de Força de Vontade: some Autocontrole **ou** Determinação (o maior) de
-dano Superficial de Vontade ao fim de cada sessão, ou ao cumprir sua Ambição/Desejo.
+> Personagens podem gastar 1 ponto de Força de Vontade para rerrolar até três dados
+> comuns em qualquer rolagem de Habilidade ou Atributo, incluindo rolagens envolvendo
+> Disciplinas vampíricas. Personagens não podem gastar Força de Vontade para rerrolar
+> dados de Fome ou rolagens de trilha, como Força de Vontade ou Humanidade. Um ponto de
+> Força de Vontade gasto conta como um nível de dano Superficial à Força de Vontade e é
+> marcado como tal. *(básico, pág. 122)*
+
+### O que vale
+
+- Custa **1 ponto de Força de Vontade**, marcado como **1 de dano Superficial na trilha de
+  Vontade**.
+- Rerrola **até 3 dados comuns**.
+- Vale em **qualquer rolagem de Habilidade ou Atributo**, Disciplinas incluídas.
+
+### As duas proibições
+
+**1. Dados de Fome, nunca.** O livro põe isso numa caixa própria, em letra destacada:
+
+> **Dados de Fome jamais podem ser rerrolados usando Força de Vontade** *(básico, pág. 206)*
+
+E dá a razão na pág. 205: *"pois a Fome zomba da tentativa que a mente racional faz para
+domá-la"*.
+
+> **Correção de fonte.** Este documento justificava a proibição por dedução — o mérito de
+> coterie Salubri "Restrição" existe para permitir rerrolar dados de Fome, logo a regra
+> padrão proíbe. A dedução estava certa, mas era dedução. **O livro afirma direto**, e a
+> citação acima substitui o raciocínio.
+
+**2. Rolagens de trilha, nunca** — Força de Vontade e Humanidade. **Esta regra faltava
+neste documento.** É consistente com a pág. 205, que exclui dados de Fome de "paradas de
+Checagens, Força de Vontade e Humanidade", e com a pág. 207: *"Você não rola dados de Fome
+em uma rolagem de Força de Vontade ou Humanidade, portanto, não pode obter um crítico
+bestial nessas rolagens."*
+
+### Uma vez por rolagem
+
+**O livro não diz isso em nenhuma frase de regra** — mas é como o exemplo dele se comporta:
+na pág. 206, Mario rerrola, obtém 4 sucessos, e a Narradora então lhe **oferece vencer a um
+custo** em vez de um segundo reteste. O app mantém "uma vez por teste, e o resultado é
+final", e fica registrado que isto é leitura do exemplo, não citação.
+
+### Para que serve, além de virar falha em sucesso
+
+A pág. 205 lembra um uso que é fácil esquecer: gastar Vontade para **se livrar de 10s
+comuns e assim neutralizar um crítico bestial**. O reteste não serve só para ganhar — serve
+para não ganhar do jeito errado.
+
+E lembra que economizar é bobagem: *"assume-se que a maioria dos vampiros emprega sua
+vontade para esse propósito todas as noites"*. Força de Vontade baixa aumenta o risco de
+frenesi.
+
+### Na interface
+
+O jogador escolhe os dados; o app pré-seleciona os que falharam, do pior para o melhor.
+Como o exemplo do livro mostra um jogador rerrolando **um 10 e duas falhas**, a seleção
+automática é sugestão, e não trava.
+
+### Recuperação
+
+Ao fim de cada sessão, ou ao cumprir sua Ambição/Desejo, some **Autocontrole ou
+Determinação (o maior)** de dano Superficial de Vontade.
 
 ---
 
 ## 5. Dificuldade
 
-| Dificuldade | Situação |
-|---|---|
-| 1 | Trivial, mas sob pressão |
-| 2 | Fácil |
-| 3 | Padrão — o normal para uma tarefa que vale rolar |
-| 4 | Difícil |
-| 5 | Muito difícil |
-| 6+ | Quase impossível para um neonato |
+*(conferido no básico, págs. 119, 120 e 121)*
 
-Testes sem dificuldade declarada usam "1 sucesso basta".
+### O que Dificuldade é, e o que não é
 
-No VITÆ a dificuldade base vem da **calibragem pelo Índice de Força** (ver
-`a Parte B deste README` §4), exceto em testes-marco fixados na campanha.
+> Ao contrário de edições anteriores de **Vampiro**, note que a Dificuldade significa a
+> quantidade de dados bem-sucedidos exigida para realizar a tarefa, e **não** o número a
+> ser tirado em cada dado, que sempre é 6 ou mais. *(básico, pág. 119)*
+
+Dificuldade é **número de sucessos**. Sucessos ≥ Dificuldade é uma **vitória**.
+
+### A tabela
+
+*(básico, pág. 119)*
+
+| Dificuldade | Nome | Exemplos do livro |
+|---|---|---|
+| 1 sucesso | Fácil | atingir um alvo parado; convencer um amigo leal a ajudá-lo |
+| 2 sucessos | Rotineira | seduzir alguém que já esteja no clima; intimidar um fracote |
+| 3 sucessos | Moderada | substituir o sistema de som de um carro; caminhar na corda-bamba |
+| 4 sucessos | Desafiadora | localizar a fonte de um sussurro; criar uma obra de arte memorável |
+| 5 sucessos | Difícil | convencer um policial de que a cocaína não é sua; reconstruir um bloco de motor destruído |
+| 6 sucessos | Muito difícil | correr na corda-bamba sob fogo cruzado; acalmar uma multidão hostil e violenta |
+| 7+ sucessos | Quase impossível | encontrar um indivíduo sem-teto em Los Angeles à noite; recitar perfeitamente um texto longo numa língua que você não fala |
+
+> **A tabela que estava aqui estava errada, e de dois jeitos.** Ela tinha seis linhas
+> (1 Trivial · 2 Fácil · 3 Padrão · 4 Difícil · 5 Muito difícil · 6+ Quase impossível):
+> os rótulos estavam **deslocados em um nível** e o topo fechava em 6 em vez de 7. Ela
+> vinha do Guia do Jogador, que é a fonte de menor confiança.
+>
+> **O motor nunca usou essa tabela.** `data-escudo.js` carrega os sete níveis certos, com
+> os mesmos exemplos do livro — era só este documento que estava errado. Os nomes dos
+> níveis 1 e 2 lá são os do Escudo do Mestre ("Rotineiro", "Direto"), e os dois livros
+> oficiais realmente discordam nesse ponto; a comparação está em `narracao-ia.md` §4.7.
+
+### As três formas de definir oposição
+
+Quando um PN se opõe, o Narrador escolhe a mais rápida *(básico, pág. 119)*:
+
+1. a tabela acima;
+2. **metade da parada do PN**, arredondando para baixo;
+3. **o valor da Habilidade do PN** como Dificuldade — e mesmo com Habilidade 0, a
+   Dificuldade é 1. Valores 2 ou 3 são os mais comuns.
+
+### Modificadores
+
+*(básico, pág. 120)*
+
+Há dois tipos, e a diferença é de quem é a circunstância:
+
+| Tipo | Reflete | Exemplos do livro |
+|---|---|---|
+| **Mudar o tamanho da parada** | circunstância do **personagem** | está drogado, usando uma especialização, parecendo aterrorizante |
+| **Alterar a Dificuldade** | circunstância da **ação** | clima chuvoso, equipamento em más condições, sob fogo cruzado, terreno hostil |
+
+Três regras que o motor precisa respeitar:
+
+- **±2 dados ≈ ∓1 de Dificuldade.** "Aumentar ou diminuir a parada de dados em dois dados
+  tem o mesmo efeito estatístico de aumentar ou diminuir a Dificuldade em 1."
+- **Teto para modificador improvisado do Narrador: ±2 de Dificuldade, ou ±3 dados.** Não
+  vale para especializações nem para regras específicas.
+- **Penalidade jamais leva a parada abaixo de 1 dado.** E "nenhuma parada de dados pode ser
+  inferior a 1, portanto uma rolagem de uma parada vazia ainda é feita com um dado"
+  *(pág. 119)*.
+
+**Equipamento** *(pág. 119)*: se o Narrador considerar o equipamento central à atividade,
+equipamento improvisado, não confiável ou de baixa qualidade dá **+1 à Dificuldade**. **Sem
+equipamento nenhum, a tarefa é impossível** — não é uma penalidade, é um bloqueio.
+
+### Vitória automática
+
+*(básico, pág. 120)*
+
+Quando a parada é o **dobro da Dificuldade**, o Narrador pode conceder a vitória sem rolar.
+O livro manda aplicar isso **vigorosamente** fora de combate — testes de informação, papo,
+manobras que abrem cena. Raramente em combate ou sob estresse.
+
+Em vitória automática, **a margem é sempre zero** *(pág. 121)*.
+
+### Margem
+
+*(básico, pág. 121)*
+
+Sucessos que passaram da Dificuldade. Dificuldade 4 com sete sucessos → margem 3. Dano,
+muitos efeitos de poder e outras regras usam a margem para calcular o grau do efeito.
+
+### Vencer a um custo
+
+*(básico, pág. 121)*
+
+Rolagem com **algum** sucesso, mas insuficiente: o Narrador pode oferecer que você alcance
+o objetivo e algo saia caro — dano, atenção hostil, perda de algo de valor. O custo é
+tanto pior quanto maior for o número de sucessos faltantes, e **o jogador sempre pode
+recusar e falhar** em vez de pagar.
+
+### Trabalho em equipe
+
+*(básico, pág. 122)*
+
+Role a **maior parada** entre os participantes, **+1 dado por auxiliar** que tenha ao menos
+1 ponto na Habilidade envolvida. **Se nenhuma Habilidade estiver envolvida, ninguém pode
+ajudar.**
+
+### No VITÆ
+
+A dificuldade base vem da **calibragem pelo Índice de Força** (Parte B do README §4),
+exceto em testes-marco fixados na campanha. Teste sem dificuldade declarada usa **1
+sucesso basta**, que é a Dificuldade 1 do livro.
 
 ---
 
 ## 6. Tipos de teste
 
-**Simples** — piscina contra dificuldade.
+*(conferido no básico, págs. 122–125 e 293–294)*
 
-**Disputado** — os dois lados rolam; vence quem tiver mais sucessos. Empate mantém o
-status quo. Sucesso em Perigo e Falha Bestial valem normalmente para cada lado.
+### 6.1 Simples
 
-**Prolongado** — acumula sucessos ao longo de várias rolagens até atingir um total.
-Cada rolagem costuma custar tempo, e uma falha total zera o progresso.
+Piscina contra Dificuldade. É a §2 e a §5.
 
-**Em equipe** — um personagem lidera e os outros somam 1 dado cada, desde que tenham
-ao menos 1 ponto na Habilidade usada.
+### 6.2 Checagem
+
+Rolagem de **um dado só**, alvo **6 ou mais** *(pág. 122)*. A Checagem de Sangue é a mais
+comum, mas o termo é geral.
+
+Três travas que valem para **toda** checagem *(págs. 122–123)*:
+
+- **Não se pode gastar Força de Vontade para rerrolar uma checagem.**
+- **Vitória automática jamais se aplica.**
+- **"Pegar a metade" jamais se aplica.**
+
+### 6.3 Disputa
+
+Os dois lados montam parada e rolam. **As Características não precisam ser as mesmas**: o
+Narrador pode pedir Destreza + Furtividade de quem se esgueira e rolar Raciocínio +
+Percepção pelo guarda *(pág. 123)*.
+
+O procedimento, na ordem do livro:
+
+1. você descreve o que quer fazer, e como;
+2. o Narrador decide se há oposição e diz **quais Características suas** entram na parada;
+3. o Narrador escolhe as **do oponente**;
+4. cada lado rola e conta sucessos.
+
+> **O EMPATE É VITÓRIA DE QUEM AGE.** O livro é literal:
+>
+> *"Se o personagem que está agindo rolou mais sucessos **ou a mesma quantidade** que o
+> personagem opositor, o teste é uma vitória."* *(pág. 123)*
+>
+> **Correção:** esta seção dizia "empate mantém o status quo". Está errado, e o erro é caro
+> — empate não é raro, e a regra decide a favor de quem tomou a iniciativa. É a diferença
+> entre um sistema que premia agir e um que premia esperar.
+
+**PEGAR A METADE** *(pág. 123)* — para reduzir rolagens, conte os dados da parada, **divida
+por dois arredondando para baixo**, e considere o resultado o número de sucessos. O livro
+recomenda para PNs em disputas básicas, e **encoraja permitir que os jogadores façam o
+mesmo**.
+
+### 6.4 Conflito
+
+Disputa que **resulta em dano** — físico ou mental *(pág. 125)*. Vale para qualquer
+interação hostil, de briga de rua a debate na corte.
+
+Ambos rolam **simultaneamente**. O vencedor **subtrai os sucessos do perdedor** do seu total
+e aplica o restante como dano, à Vitalidade ou à Força de Vontade.
+
+E aqui o livro separa dois casos, e a diferença é a que mais importa:
+
+| | Quando | O empate |
+|---|---|---|
+| **Unilateral** | só um lado pode causar dano — o defensor está desviando de um tiro | o livro não abre exceção: vence quem tiver mais sucessos |
+| **Bilateral** | os dois podem causar dano; as ações se fundem em **uma única rolagem de disputa** | **os dois causam dano, como se cada um tivesse vencido com margem 1** |
+
+**ESQUIVANDO** *(pág. 125)* — engajado em Briga ou Armas Brancas, **o defensor sempre pode
+optar** por Destreza + Atletismo em vez de uma habilidade de combate. **Se optar, não causa
+dano nenhum ao oponente**, não importa a margem, mesmo vencendo. É uma escolha do jogador,
+com preço: defender-se melhor ou poder revidar.
+
+**MÚLTIPLOS OPONENTES** *(pág. 125)* — quem enfrenta vários **perde 1 dado da parada a cada
+oponente sucessivo** ao se defender. Para atacar mais de um, **divide a parada**.
+
+**QUEM VAI PRIMEIRO** *(pág. 125)* — sem surpresa, age-se em ordem descendente: corpo a
+corpo **já engajado**, depois **à distância**, depois corpo a corpo **recém-iniciado**,
+depois todo o resto. Desempate por **Destreza + Raciocínio**; persistindo, pelos pontos da
+Habilidade usada.
+
+### 6.5 Estendido
+
+Para tarefas que não cabem em uma rolagem *(págs. 293–294)*. **Cinco versões**, e o
+documento só tinha uma:
+
+| Versão | Como funciona |
+|---|---|
+| **Padrão** | O Narrador põe uma Dificuldade **muito alta (10+)** e você acumula sucessos em uma série de rolagens até alcançá-la |
+| **Série de testes** | Uma Dificuldade **comum** a várias tarefas, exigindo um número de **vitórias** — cada alarme, cada fechadura, cada volume do grimório |
+| **Estendido difícil** | Combina os dois, e conta **só a margem** de cada tarefa rumo à Dificuldade final. Feito para uma ou duas rolagens por sessão, em metas de longo prazo com pouca oposição |
+| **Em cascata** | A **margem de cada tarefa vira dados extras na próxima** — sucesso gera sucesso. Em compensação, **uma falha encerra o teste** |
+| **Disputa estendida** | Dois lados correndo para completar primeiro. Cada um rola uma vez por incremento; vence quem acumular o bastante antes. Empatando no mesmo incremento, vence quem acumulou mais sucessos |
+
+Na **disputa estendida com interferência direta**, o Narrador pede uma disputa básica por
+incremento: o vencedor subtrai os sucessos do perdedor dos seus e aplica o resto ao total
+acumulado; **o perdedor não acumula nada naquele incremento**.
+
+**FALHA TOTAL** *(pág. 294)* — apaga **todos** os sucessos e vitórias acumulados; recomeça-se
+do zero. Em alguns casos o Narrador pode determinar que **nem recomeçar é possível**.
+
+**TRABALHO EM EQUIPE no estendido** *(pág. 294)* — vale para a maioria deles; e mesmo quando
+não vale, o Narrador pode permitir **ignorar ou tentar consertar uma falha total** em vez de
+estragar o teste inteiro.
+
+### 6.6 Em equipe
+
+*(básico, pág. 122)*
+
+Role a **maior parada** entre os participantes, **+1 dado por auxiliar** que tenha ao menos
+**1 ponto na Habilidade envolvida**. **Se nenhuma Habilidade estiver envolvida, ninguém pode
+ajudar.**
 
 ---
 
@@ -257,32 +507,126 @@ intensa dá dados temporários às Disciplinas ligadas a ela.
 
 ---
 
-## 8. Provocação e Surto de Sangue
+## 8. Checagem de Sangue e Surto de Sangue
 
-**Provocação (Checagem de Sangue)** — rola 1d10. **Resultado 1 a 5 aumenta a Fome em 1.**
-É o custo de quase todo poder de Disciplina.
+*(conferido no básico, págs. 211, 217 e 218)*
 
-Com Potência de Sangue suficiente, o vampiro ganha **Rerrolagem de Sangue** até certo
-nível de poder: rola de novo e escolhe o melhor resultado.
+> **A seção mudou de nome.** Chamava-se "Provocação e Surto de Sangue". O livro chama de
+> **Checagem de Sangue** — nome cheio, *Checagem de Inflamar o Sangue* (pág. 211). O termo
+> "Provocação" era invenção do projeto, e fica só como apelido reconhecível.
 
-**Surto de Sangue** — antes de um teste que use um Atributo físico, o vampiro pode
-gastar uma Provocação para somar dados conforme a Potência de Sangue. Dura um turno.
+### 8.1 Checagem de Sangue
 
-> Em Oblívio há uma regra extra: numa Provocação para poder ou Cerimônia de Oblívio,
-> um resultado **1 ou 10** gera uma **Mácula**, além da Fome ganha.
+Rola **um único dado**. **6 ou mais é sucesso; 1 a 5 aumenta a Fome em 1.**
+
+Quando ela é exigida *(pág. 211)*: ao despertar a cada pôr do sol, ao bombear Sangue para
+os Atributos, ao ativar Rubor de Vida, ao curar o corpo ferido, e para ativar a maioria dos
+poderes de Disciplina.
+
+**A regra que mais muda o jogo, e é fácil errar** *(pág. 217)*:
+
+> Lembre-se de que falhar em uma Checagem não significa que o dom falha, mas apenas que a
+> Fome aumenta em 1.
+
+Três consequências que o livro deixa explícitas:
+
+- **A Fome ganha é somada DEPOIS de o efeito ser resolvido** *(pág. 211)*. Por isso é
+  aceitável rolar a Checagem junto com — ou até depois de — os outros testes envolvidos,
+  desde que o dado de Fome não se misture à parada.
+- **Dados de Fome não entram na parada de uma Checagem** *(pág. 205)*. A Checagem é o teste
+  que *causa* a Fome; ela não se realimenta.
+- **Com Fome 5, o vampiro jamais pode Inflamar o Sangue intencionalmente** *(pág. 211)*. Se
+  algum fator externo o forçar a uma Checagem, ele rola **imediatamente um teste de frenesi
+  de fome com Dificuldade 4** — e, como sempre, falhar na Checagem ainda ativa o efeito.
+
+**Rerrolagem de Checagem** — a partir de certa Potência de Sangue, o jogador rola **dois
+dados e fica com o maior** em Checagens para poderes de Disciplina até certo nível. Um
+sucesso em qualquer dos dois evita o aumento de Fome; o livro observa que isso equivale a
+rerrolar a Checagem *(pág. 211)*. A faixa por nível está na Parte II §5.
+
+### 8.2 Surto de Sangue
+
+*(básico, pág. 218)*
+
+Adiciona dados a uma parada que empregue um **Atributo** — e o livro diz **Físicos, Sociais
+**ou** Mentais**.
+
+> **Correção.** Esta seção dizia "um Atributo **físico**". Está errado: o Surto vale para
+> qualquer Atributo. O texto do livro é "aumentar temporariamente seus Atributos, sejam
+> Físicos, Sociais ou Mentais".
+
+- Custa **uma Checagem de Sangue**.
+- Quantos dados depende da **Potência de Sangue** (Parte II §5).
+- **Uma por rolagem**, e vale para **uma única rolagem**.
+- **Proibido** em rolagem de **Força de Vontade** ou **Humanidade**, em rolagem que valha
+  para mais de uma cena, em **Combate de Rolagem Única**, e sempre que o Narrador
+  desaprovar.
+- **Não** se aplica vitória automática nem "Pegar Metade" a uma rolagem aumentada por Surto.
+- Os dados do Surto **permanecem** numa rerrolagem paga com Força de Vontade.
+
+### 8.3 Recuperação vampírica, que é Checagem também
+
+*(básico, pág. 218)*
+
+| O quê | Como |
+|---|---|
+| **Superficial na Vitalidade** | Um ou mais pontos por **uma** Checagem de Sangue, conforme a Potência. **Uma Checagem por turno.** |
+| **Agravado na Vitalidade** | Esperar até a **noite seguinte** e fazer **três** Checagens de Sangue, **além** da Checagem regular do despertar |
+
+> Em Oblívio há uma regra extra: numa Checagem para poder ou Cerimônia de Oblívio, um
+> resultado **1 ou 10** gera uma **Mácula**, além da Fome ganha.
 
 ---
 
 ## 9. Potência de Sangue
 
-> **A tabela completa 0–10 e a conversão Geração → Potência estão em
-> **Parte II §5.** O que estava aqui antes tinha
-> quatro valores errados, corrigidos pelo Escudo do Mestre — ver §12 daquele arquivo.
+*(conferido no básico, págs. 215–217; a tabela consolidada está em **Parte II §5**)*
 
-Em resumo: a Potência inicial vem do **mínimo da geração** (12ª–13ª → 1; 9ª → 2;
-14ª–16ª → 0), não de um valor fixo. Ela governa Surto de Sangue, quanto dano a
-Provocação recupera, bônus nas Disciplinas, rerrolagem de Provocação, Gravidade da
-Perdição e o que o sangue de animal e de bolsa ainda consegue saciar.
+### 9.1 Como ela se move
+
+- **Sobe com a idade:** como regra geral, **+1 a cada 100 anos ativo**. Experiências
+  intensas ou exposição a Sangue muito potente aceleram.
+- **Cai no torpor:** **−1 a cada 50 anos** em Torpor.
+- **Nunca sai da faixa da geração** — nem abaixo do mínimo, nem acima do máximo.
+- **Sangues-ralos nunca aumentam**, a não ser que abram caminho com **Diablerie** para a
+  13ª Geração e além.
+
+A Potência inicial vem do **mínimo da geração** (12ª–13ª → 1; 9ª → 2; 14ª–16ª → 0), e não
+de um valor fixo. A tabela Geração → mín./máx. está na Parte II §5.
+
+### 9.2 O que ela governa
+
+Seis colunas, todas na tabela da Parte II §5: **Surto de Sangue**, **dano recuperado por
+Checagem**, **bônus de poder de Disciplina**, **rerrolagem de Checagem para Disciplinas**,
+**Gravidade da Perdição** e **penalidade de alimentação**.
+
+### 9.3 Os dois extremos
+
+**Potência 0 — Sangue-Ralo** *(pág. 215)*. Além do que está na tabela:
+
+- **Sofre dano como os mortais.**
+- **Não** pode criar Laços de Sangue, realizar o Abraço com certeza de sucesso, nem criar
+  carniçais.
+- **Apenas meios sobrenaturais** podem levá-lo a frenesi.
+- Sofre **só 1 ponto de dano Superficial por turno** sob luz solar direta.
+
+**Potência 6 e acima** *(pág. 217)*: o livro diz que esses vampiros **não são destinados a
+personagens de jogador**, e que os níveis constam na tabela **para uso do Narrador**. O app
+permite chegar lá pela geração baixa; quem monta antagonista é quem usa.
+
+### 9.4 Duas células corrigidas
+
+A tabela da Parte II §5 e `data-escudo.js` traziam dois valores errados na coluna de
+penalidade de alimentação. Os dois vieram do mesmo engano: **a célula do livro é mesclada
+entre duas linhas**, e foi lida na altura da linha de baixo.
+
+| PS | Estava | É |
+|---|---|---|
+| 6 | sacia **1** a menos por humano | sacia **2** a menos (bloco mesclado 6–7) |
+| 8 | matar para descer abaixo de **2** | abaixo de **3** (bloco mesclado 8–9) |
+
+Os dois foram corrigidos no documento e no dado. É texto exibido ao jogador, não entra em
+conta nenhuma — mas é regra que ele lê e usa.
 
 ---
 
@@ -297,7 +641,15 @@ Vitalidade = Vigor + 3
 Duas naturezas de dano:
 
 - **Superficial** — contundente, garras, quedas. Para vampiros, **divide-se por dois,
-  arredondando para baixo**, antes de marcar.
+  arredondando para CIMA**, antes de marcar.
+
+  > **Estava escrito "para baixo" aqui, e o motor fazia isso.** O livro diz o contrário, e
+  > em letra clara: *"A menos que especificado o contrário, divida dano Superficial pela
+  > metade (arredondando para cima) antes de aplicá-lo à trilha."* (básico, pág. 126).
+  > O erro era sistemático — todo Superficial ímpar chegava com meio ponto a menos, e **um
+  > soco isolado não marcava nada**. Corrigido no motor e aqui, na §63 (item A6).
+  >
+  > Cuidado para não confundir com "Pegar Metade" (Parte I §6.3), que É para baixo.
 - **Agravado** — fogo, luz solar, presas e garras de outros sobrenaturais, dano de Perdição.
 
 **A ordem importa:** divida o Superficial pela metade **antes** de qualquer conversão.
@@ -335,18 +687,77 @@ máximo convertível é **metade da Medicina, arredondando para cima**.
 
 ## 11. Força de Vontade
 
+*(conferido no básico, págs. 126, 157 e 158)*
+
 ```
-Força de Vontade = Autocontrole + Determinação
+Força de Vontade (máximo) = Autocontrole + Determinação
 ```
 
-Gastos:
+É uma **trilha**, como a Vitalidade: tem um valor máximo e uma parada temporária, que é o
+que sobra sem dano *(pág. 157)*.
 
-- **Reteste** — 1 ponto, rerrola até 3 dados não-Fome (§4).
-- **Resistir a frenesi ou compulsão** — 1 ponto, por um turno.
-- **Ignorar Debilitação** — 1 ponto, por um turno.
+> **Não se compra Força de Vontade.** Nem na criação, nem com experiência. Sobe só
+> aumentando Autocontrole e/ou Determinação *(pág. 157)*. O app já faz assim — `vontade` é
+> derivada em `ficha-regras.js`, e não existe custo de XP para ela.
 
-Recupera-se ao fim da sessão (Autocontrole ou Determinação, o maior) e ao satisfazer
-a Ambição ou o Desejo.
+### 11.1 Os quatro gastos
+
+*(básico, pág. 158)*
+
+1. **Rerrolar até 3 dados normais** (não Fome), exceto onde as regras excluem: rolagens de
+   paradas de **trilhas** e Conflitos de Rolagem Única (§4).
+2. **Assumir o controle do personagem por um turno** durante um frenesi ou sob coerção
+   sobrenatural, como Dominação e Presença.
+3. **Realizar movimentos minuciosos** — flexionar um dedo, abrir os olhos — **com o coração
+   empalado** por uma estaca.
+4. **Ignorar penalidades por dano à Vitalidade, incluindo Debilitação, por um turno.**
+
+> **O que estava aqui errava em dois pontos.** Dizia "resistir a frenesi ou compulsão": o
+> livro não fala em resistir, fala em **assumir o controle por um turno** — o frenesi
+> continua, o personagem é que age. E faltava inteiro o gasto nº 3, o do empalado.
+
+### 11.2 Como o gasto é marcado, e o que acontece quando acaba
+
+*(básico, pág. 126 — a caixa da página)*
+
+> Quando um ponto de uma trilha é gasto voluntariamente, como quando se usa Força de Vontade
+> para rerrolar dados, marque-o como dano Superficial, um "/". **Se todos os pontos já
+> tiverem recebido dano Superficial, transforme um em dano Agravado**, conforme as regras
+> normais de Debilitação. **Dano Superficial sofrido graças a gastos não é dividido pela
+> metade.**
+
+Duas regras que faltavam aqui, e as duas importam:
+
+- **A trilha cheia de Superficial não impede gastar** — o gasto passa a custar **Agravado**.
+  Quem quer muito, paga mais caro; não fica sem opção.
+- **A divisão por dois não vale para gasto.** Dano Superficial *sofrido* é dividido pela
+  metade, arredondando para cima, antes de ir para a trilha; dano de **gasto** vai inteiro.
+
+### 11.3 Debilitação por Vontade
+
+*(básico, págs. 126 e 158)*
+
+Sem pontos sobrando — por Superficial, por Agravado ou pela mistura dos dois — o personagem
+está **Debilitado** e leva **−2 dados nos testes Sociais e Mentais**.
+
+E o livro repete ali a regra da parada mínima: *"ele ainda consegue rolar um dado se for
+necessário rolar sua parada, conforme as regras normais"*. É a mesma regra da §5 que o motor
+ainda não segue — ver §14.1 do README, item A1.
+
+### 11.4 Recuperação
+
+*(básico, pág. 158)*
+
+**No INÍCIO de uma sessão**, remove-se da trilha uma quantidade de dano Superficial igual ao
+**Autocontrole ou à Determinação, o maior dos dois**.
+
+> **Correção:** este documento dizia "ao fim da sessão". O livro diz no início — e a
+> diferença tem consequência, porque existe uma **exceção**: se a noite de jogo terminar em
+> cena de ação em que Vontade baixa aumenta a tensão, os personagens **mantêm** toda a
+> Vontade com que terminaram a última sessão. Recuperar no fim apagaria o gancho.
+
+A recuperação ao cumprir a **Ambição** ou o **Desejo** continua valendo; ela não está nesta
+página, e ainda não foi reconferida.
 
 ---
 
@@ -399,6 +810,118 @@ dia. Humanidade 0 significa **Wight**: o personagem vira um monstro do Narrador.
 
 ---
 
+### 12.1 Convicções *(básico, "Crenças", pág. 172)*
+
+Cada personagem começa com **entre uma e três** Convicções: valores humanos que ele tenta
+manter mesmo depois da morte. Não são Características — **não têm valor numérico** — e
+mesmo assim têm efeito nas regras, porque as regras existem exatamente para representar e
+desenvolver esse drama.
+
+Podem refletir um código religioso, um núcleo ético pessoal, um código vampírico, ou apenas
+as coisas que o personagem faz e se recusa a fazer sem nunca ter pesado o porquê. **O
+Narrador pode rejeitar uma Convicção sugerida** por gosto ou por não caber na história que
+pretende conduzir.
+
+Exemplos do livro, todos eles:
+
+| | |
+|---|---|
+| Não matarás | Roube dos ricos, dê aos pobres |
+| Mate apenas os indignos/incrédulos/em combate justo/em legítima defesa | Rejeite a riqueza, pois ela corrompe |
+| Nunca exponha crianças à violência | Nunca aja contra (insira seu próprio grupo/fé/seita) |
+| Ame teu próximo como a ti mesmo | Ajude sempre as mulheres necessitadas |
+| Desobediência é desonra | Defenda os marginalizados |
+| Proteja os inocentes do perigo | Respeite o/a (insira a religião aqui) como sagrada e obedeça às suas leis morais |
+| Coragem é a maior das virtudes | A verdade é sagrada; não mentirás |
+| Mantenha sempre um juramento | A escravidão é má |
+| Obedeça à autoridade | Minha pátria, certa ou errada |
+| Ninguém pode me controlar | Nunca usar drogas (ou beber álcool) |
+| Não torturarás | O culpado deve ser punido |
+| Que cada um atue segundo suas habilidades, que cada um receba conforme suas necessidades | |
+
+**Duas consequências mecânicas:**
+
+- **Violar uma Convicção pode render uma ou mais Máculas**, a critério do Narrador. O motor
+  tem os botões de Mácula na doca de Estado; **quem decide que houve violação é o jogador**, e
+  é assim que deve ser — a Convicção não tem valor numérico para o motor comparar.
+- **Mácula cometida a serviço de uma Convicção é reduzida em uma ou mais** (pág. 239).
+  Implementado na §69: `Estado.ganharMacula` aceita `porConviccao`, e a doca liga a
+  **atenuante** antes de marcar a Mácula. O exemplo do livro — 3 Máculas viram 2 porque Joana
+  tem a Convicção *"minha família deve ser mantida fora disto"* — é teste, na suíte e no
+  diagnóstico.
+
+### 12.2 Pilares *(básico, pág. 173)*
+
+Cada vampiro começa com **tantos Pilares quanto Convicções** — âncoras, alicerces, pedras de
+toque, conforme o vampiro. São humanos que representam o que você valorizava em vida, e cada
+um encarna uma Convicção específica.
+
+> **Um Pilar tem de ser um ser humano vivo.** "Conectar-se à Humanidade por meio do desumano
+> é, no mínimo, percorrer o caminho mais longo."
+
+**Perdida a pessoa, perde-se a Convicção associada.** É a regra que dá peso a todo NPC que a
+campanha declara como Pilar. Implementada na §69: `Estado.perderPilar(f, i)` esvazia o Pilar
+**e** a Convicção pareada, cobra a Mácula da tabela do Escudo — **2** pela perda, **3** se foi
+por ação sua — e avisa quando não sobrou Convicção nenhuma. A posição é esvaziada, não
+removida do vetor: Convicção e Pilar são pareados por índice, e mexer no comprimento
+desalinharia os outros pares.
+
+Um Pilar pode ser: o cônjuge, amante ou pai/mãe humano ainda vivo; o filho humano ou, para
+vampiros mais velhos, um descendente da família; alguém que se parece com quem você amou em
+vida; alguém que você admirou em vida ou o descendente dele; uma das raras pessoas decentes
+que existem, mesmo aos seus olhos — um voluntário no abrigo de animais, um padre, uma
+enfermeira, uma idosa simpática do bairro; alguém que representa algo que você valorizou e a
+que ainda se apega — um soldado, um jogador de beisebol, um músico, um clérigo da sua fé;
+alguém que guarda ou protege algo que você valoriza — o porteiro do prédio em que você
+morou, o policial da antiga ronda, um repórter comprometido, a mãe solteira que vive na casa
+onde você passou a infância, **o cuidador que varre seu túmulo**.
+
+No projeto, Convicção e Pilar são **pareados por índice** (`conviccoes[i]` ↔ `marcos[i]`),
+que é exatamente o pareamento do livro. No Sabá a âncora troca de natureza: prende-se a um
+**Ritae**, não a um mortal — ver Parte IV §5.
+
+### 12.3 Ambição e Desejo *(básico, págs. 173–174)*
+
+Relacionados, não idênticos. **Ambição** é objetivo de longo prazo — a aspiração de uma vida
+que você não tem mais. **Desejo** é imediato: o anseio por uma vingança apressada, ou a
+satisfação por meio dela.
+
+| | Ambição | Desejo |
+|---|---|---|
+| Prazo | a crônica inteira | uma sessão |
+| Quando paga | **no fim da sessão** em que o personagem trabalhou ativamente por ela | **imediatamente**, uma vez por sessão, ao agir decididamente por ele |
+| O que recupera | 1 ponto de dano **Agravado** à Força de Vontade | 1 ponto de dano **Superficial** à Força de Vontade |
+
+**A Ambição precisa ser mensurável** — "alcançar Humanidade 10", "libertar Chicago da
+Camarilla", "trazer a Morte Final para (o ancião racista desta crônica)". Não serve "acabar
+com o racismo". Se for improvável que se realize, ou se realizá-la encerraria a crônica,
+ainda assim serve de caldo — só precisa ser **teoricamente atingível**. Alcançada, o jogador
+escolhe outra.
+
+**O Desejo se conecta ao mundo exterior.** A regra prática do livro: não vale a pena
+considerar como Desejo algo que não envolva alguém ou algo listado no Mapa de
+Relacionamentos. *"Eu quero dirigir um Maserati cor de cereja"* falha; *"eu quero dirigir o
+Maserati cor de cereja de Cytherea"* funciona. E o Desejo muda rápido demais para ser
+escrito na ficha — é rascunho, e o Narrador precisa vê-lo.
+
+> **A intenção declarada da mecânica:** dar ao jogador incentivo para **agir**, em vez de
+> esperar passivamente pela trama ou procrastinar defensivamente.
+
+**O que o motor faz hoje:** `Estado.fimDeSessao` paga a Ambição no fechamento, com a natureza
+certa — Agravado —, e ainda paga por beneficiar um Pilar.
+
+O **Desejo paga na hora**, desde a §69: `Estado.realizarDesejo(f)` devolve 1 de Vontade
+Superficial **uma vez por sessão**, no momento em que o jogador clica *"Agi pelo Desejo —
+agora"*, e `fimDeSessao` limpa a marca para a noite seguinte. Marcar o Desejo também no
+fechamento não paga duas vezes: o motor avisa que já foi pago.
+
+> Antes da §69 o ponto só chegava depois de a noite acabar. O livro é explícito sobre o
+> propósito — *"um incentivo para que o personagem **aja**, em vez de esperar passivamente
+> pela trama ou ficar procrastinando defensivamente"* — e um incentivo pago no fim da sessão
+> não é incentivo.
+
+---
+
 ## 13. Frenesi e Compulsão
 
 *(conferido no básico, pág. 220)*
@@ -434,14 +957,15 @@ teste.**
 o teste vira sucesso, mas o personagem age de forma desesperada e ganha uma Mácula.
 
 **Compulsão de Clã** — disparada por Falha Bestial (ou a critério do Narrador). Cada
-clã tem a sua, listada em `app/js/data/data-clans.js`, e ela impõe penalidade de dois dados
+clã tem a sua, listada em `comum/dados/data-clans.js`, e ela impõe penalidade de dois dados
 até ser satisfeita.
 
 ---
 
 ## 14. Disciplinas
 
-*(conferido no básico, pág. 244 — as regras gerais quase todas faltavam aqui)*
+*(conferido no básico, págs. 244–288 — as regras gerais na 244, e a lista de poderes de cada
+Disciplina página por página na §64 do README)*
 
 ### 14.1 Aprendendo
 
@@ -480,9 +1004,14 @@ Duas travas:
   a Disciplina como uma das Características da rolagem.
 - Se **mais de uma Disciplina** aumenta a mesma rolagem, o bônus entra **uma vez só**.
 
-> **Este bônus não existe no motor.** `bonusDisciplina` está declarado em
-> `data-escudo.js` e **nenhuma linha de código o lê** — a mesma classe de defeito que a
-> auditoria original achou nos modificadores do Árbitro. Ver §14.1 do README.
+> **Este aviso estava velho, e era falso.** Ele dizia que o bônus não existia no motor e que
+> `bonusDisciplina` não era lido por linha nenhuma. **Existe:** `Arbitro.bonusDePotencia()`
+> é chamada por `piscinaFinal()`, devolve `Math.floor(potência / 2)` e só entra quando há
+> Disciplina na parada. Conferido contra a tabela da Parte II §5, geração por geração, e há
+> teste que compara os dois (§65).
+>
+> Fica o registro do erro, que é do tipo que este documento já cometeu duas vezes: **o aviso
+> sobreviveu ao conserto.** Quem lesse aqui concluiria que o bônus não é aplicado, e ele é.
 
 ### 14.5 Amálgamas
 
@@ -493,6 +1022,11 @@ Para efeito de tipo e classificação, um poder Amálgama **pertence às duas Di
 
 Exemplo: *Braços de Arimã* é Oblívio 2 com Amálgama Potência 2.
 
+> **As amálgamas não são mais uma lista à mão.** Cada poder declara a sua em
+> `data-disciplinas.js`, e `Arbitro.AMALGAMAS` é derivada dali. Eram duas listas para o
+> mesmo fato, e discordavam: o livro tem oito amálgamas só no básico, e o motor conhecia
+> duas. §64.4 do README.
+
 ### 14.6 Rituais e Cerimônias
 
 **Feitiçaria do Sangue** usa **Rituais**; **Oblívio** usa **Cerimônias**. Ambos exigem
@@ -501,7 +1035,15 @@ Disciplina**. O custo em experiência é o **nível do ritual × 3** (§17).
 
 ### 14.7 Oblívio — lista oficial
 
-Extraída de `Livros/Oblivio.pdf`. Azul = mais comum entre Lasombra; vermelho = Hecata.
+Extraída de `Livros/Regras/Oblivio.pdf`. Azul = mais comum entre Lasombra; vermelho = Hecata.
+
+> **Esta tabela estava certa, e o dado errado.** `data-disciplinas.js` trazia no nível 5
+> *Tempestade de Ossos* e *Chamado do Além* — **nenhum dos dois aparece uma única vez** no
+> `Oblivio.pdf`. Os quatro daqui aparecem. Corrigido no dado na §65, e as duas listas agora
+> são comparadas por teste: se divergirem, de qualquer lado, `npm test` cai.
+>
+> Vale a nota: aqui **o documento tinha razão contra o código**, o inverso do que a §58 à §60
+> encontrou. A regra não é "o código está certo" nem "o documento está certo" — **é o livro.**
 
 | Nível | Poderes |
 |---|---|
@@ -523,6 +1065,27 @@ Extraída de `Livros/Oblivio.pdf`. Azul = mais comum entre Lasombra; vermelho = 
 
 Projeções e espíritos de Oblívio sofrem dano de fogo e sol como se fossem vampiros de
 Potência de Sangue 1.
+
+### 14.8 Onde estão os poderes das outras Disciplinas
+
+**Em `comum/dados/data-disciplinas.js`, e só lá.**
+
+A tentação seria repetir aqui as onze listas do básico, como a §14.7 faz com Oblívio. Não
+repete, e a razão é o defeito que a §64 achou: **duas listas para o mesmo fato divergem**, e
+divergem em silêncio. Foi assim que `Arbitro.AMALGAMAS` ficou com duas entradas enquanto o
+livro tinha oito, e foi assim que oito referências de `PODER_EXIGE` passaram a apontar para
+poder inexistente.
+
+O que o dado carrega, e este documento não precisa repetir:
+
+- os **112 poderes**, por Disciplina e por nível;
+- a **página de origem** de cada Disciplina, no campo `pagina`;
+- a **amálgama** de cada poder que tem uma, no próprio poder.
+
+A §14.7 continua aqui porque Oblívio **não está no manual básico** e a sua lista foi extraída
+à mão do `Oblivio.pdf` — ela é fonte, e não cópia. E há teste que compara as duas: se o dado
+e esta tabela divergirem, de qualquer lado, `npm test` cai (§65).
+
 
 ---
 
@@ -676,15 +1239,161 @@ A idade define Potência de Sangue inicial e experiência de partida:
 
 ## 18. Perigos permanentes
 
-| Perigo | Efeito |
+*(conferido no básico, págs. 221–223 — a seção "Os Perigos do Sangue")*
+
+> **A seção era uma tabela de sete linhas sem número nenhum.** Ela dizia o que cada perigo
+> é, e não o que ele faz — e o que o Narrador precisa em jogo é o segundo. O livro dá ritmo,
+> dificuldade e limiar para quase todos.
+
+O livro abre lembrando o que **não** ameaça: *"Balas apenas machucam os Membros; espadas só
+causam arranhões."* Poucas coisas causam dano de verdade.
+
+### 18.1 Luz solar
+
+**Dano Agravado à Vitalidade, em ritmo igual à Gravidade da Perdição, em pontos por turno.**
+Não é uma taxa fixa: um vampiro com Perdição 2 leva 2 por turno; um com Perdição 5, cinco.
+
+| Situação | Ritmo |
 |---|---|
-| **Luz solar** | Dano Agravado por turno, ignora Fortitude parcialmente. Destruição é o resultado normal. |
-| **Fogo** | Dano Agravado. Provoca teste de frenesi de Terror. |
-| **Estaca no coração** | Não mata: paralisa. O vampiro fica consciente e indefeso. |
-| **Torpor** | Sono forçado após Vitalidade cheia de Agravado. A duração cresce com Humanidade baixa. |
-| **Diablerie** | Drenar a alma de outro vampiro. Reduz a geração, mancha a aura por anos e é crime capital em toda seita. |
-| **Vínculo de Sangue** | Três goles do mesmo vampiro em noites separadas. O vínculo é amor imposto, e enfraquece com o tempo se não for renovado. |
-| **Segunda Inquisição** | Vigilância eletrônica e força letal. No Brasil, o BOES — ver `data-brasil.js`. |
+| Luz solar direta | **Perdição** pontos de Agravado **por turno** |
+| Luz obscurecida — cortina, dia muito nublado, casaco pesado, luvas, máscara, chapéu de aba larga e botas | **turno sim, turno não, ou menos** |
+| **Sangue-ralo**, luz direta | **1 ponto Superficial por turno** |
+
+Sangues-ralos podem usar protetor solar de alto fator e cobrir-se **com menos roupa** que
+Membros verdadeiros para chegar ao ritmo alternado.
+
+### 18.2 Fogo
+
+**Agravado à Vitalidade, conforme a quantidade do corpo exposta**, e quem decide é o
+Narrador. O livro dá a escala: **mão exposta ≈ 1 ponto**; **engolfado ≈ 3 ou mais por
+turno**.
+
+Vampiros **não queimam mais rápido** que mortais — o fogo é ameaça por ser onipresente, não
+por ser especialmente veloz contra eles.
+
+### 18.3 Frio extremo
+
+Não mata, mas leva ao Torpor pela porta dos fundos:
+
+- Após **uma hora** a **−30 °C ou menos**, rolar **Vigor + Determinação, Dificuldade 2**,
+  para continuar se movendo.
+- Testa-se de novo **a cada hora**, com **Dificuldade +1** a cada rolagem.
+- **Falhou:** para de se mover, e só consegue usar **Disciplinas mentais**.
+- **Uma hora depois disso:** a carne congela e ele entra em **Torpor**.
+- **Água gelada** testa **a cada meia hora**. Vampiro congelado **afunda** — não há ar nos
+  pulmões para dar flutuabilidade.
+
+O perigo é maior do que parece porque vampiros **não têm calor corporal** (salvo alguns
+minutos depois de se alimentar) e por isso **não percebem** a queda de temperatura.
+
+### 18.4 Decapitação
+
+**Destrói instantaneamente.** Em corpo a corpo exige:
+
+- **ataque localizado**, com penalidade de **−2**;
+- **arma cortante apropriada** — machado, cimitarra, espada de lâmina larga;
+- que cause **10 ou mais pontos de dano de qualquer tipo** à Vitalidade — **antes** da
+  divisão pela metade, no caso de Superficial.
+
+### 18.5 Estacas
+
+Para estacar, o caçador martela a estaca no vampiro **adormecido**, ou atravessa-lhe o
+coração **durante um combate**. No combate:
+
+- **ataque localizado**, penalidade **−2**;
+- **5 ou mais pontos de dano de qualquer tipo** — de novo, **antes** de cortar pela metade;
+- o dano pode vir de arma à distância (besta com virotes de madeira) ou de corpo a corpo
+  (Força + Armas Brancas com a estaca);
+- **a estaca sempre tem modificador de dano +0**, não importa como é aplicada.
+
+Contra vampiro **incapacitado ou adormecido**, e sem pressa ou distração, **nenhuma rolagem
+é exigida**, a critério do Narrador.
+
+**O estado de estacado** *(pág. 223)*:
+
+- **Paralisa, e não mata.** O vampiro inicialmente **permanece consciente**.
+- Gastando **1 ponto de Força de Vontade**, faz movimentos mínimos — contrair um dedo, abrir
+  os olhos — e **nada além disso**.
+- Pode usar **Disciplinas mentais** (Auspícios, Presença, Dominação), mas **não pode dar
+  ordens**, a menos que consiga se comunicar telepaticamente.
+- Continua fazendo **uma Checagem de Sangue a cada pôr do sol** para despertar. Mais cedo ou
+  mais tarde, a Fome crescente o leva ao **Torpor**.
+
+### 18.6 Torpor
+
+Hibernação entre a não-vida e a Morte Final. Nela o vampiro **jaz completamente morto para
+os arredores**, reduzido à aparência de um cadáver enrugado: **não usa Disciplina nem reage
+a estímulo comum**.
+
+**As três portas de entrada** *(pág. 223)*:
+
+1. Tentar despertar à noite com **Fome 5** e **falhar** na Checagem de Sangue.
+2. Sofrer **Agravado suficiente para completar a trilha de Vitalidade** — Torpor automático.
+3. **Voluntariamente** — e ainda assim a Fome sobe a cada noite até cair no caso 1.
+
+**Duração:** determinada pela **Humanidade** (Tabela de Humanidade, pág. 241). **Estacado, o
+vampiro continua em Torpor além do período** até alguém remover a estaca; removida depois do
+fim do período, ele **desperta imediatamente**, ou na mesma noite.
+
+**Enquanto dorme por dano:** tenta inconscientemente recuperar, **1 ponto de Vitalidade por
+noite**. Recuperando-se totalmente — todo o dano e todos os impedimentos —, pode despertar.
+Se Checagens fracassadas levarem a Fome **acima de 5**, cai no Torpor do caso 1.
+
+**Ao fim do período**, se não estiver estacado, rola **Determinação + Percepção, Dificuldade
+2**, toda vez que uma vítima em potencial se aproxima. Sucesso: desperta o bastante para se
+alimentar — **provavelmente entrando em frenesi de fome**. Quando a **Fome cai para 4 ou
+menos**, ergue-se plenamente recuperado.
+
+> **Vampiros despertam do Torpor com Fome 5.** É a regra que decide o que acontece na cena
+> seguinte, e a que mais vale ter à mão.
+
+**Interromper o Torpor:** alimentar o adormecido com sangue vampírico de **Potência de
+Sangue maior que a dele**, em quantidade suficiente para saciar **1 de Fome**.
+
+### 18.7 Morte Final
+
+O que mata *(pág. 223)*: **fogo**, **luz solar**, **decapitação**, **ácido que dissolva por
+completo o corpo**, **explosões de alta pressão que o desmembrem**, e **pressão** como a das
+profundezas submarinas. O Narrador pode conhecer doenças vampíricas que matem por dentro.
+
+**A regra mecânica, e é a que o motor implementa:**
+
+> Quando toda a trilha de Vitalidade está preenchida com dano Agravado, o vampiro entra em
+> **Torpor**. **Qualquer dano Agravado adicional oriundo de fogo ou luz solar** sofrido
+> nesse estado causa a **Morte Final** — assim como a decapitação ou a destruição total do
+> corpo.
+
+Isto confirma a correção da §49.1 do README (item A5): **trilha cheia de Agravado é torpor,
+não morte**; quem mata é a fonte. `motor-estado.js` faz exatamente isso.
+
+Balas em quantidade suficiente levam ao **Torpor** — e ali o vampiro vira alvo indefeso.
+
+### 18.8 Fé Verdadeira
+
+*(básico, pág. 222)* — **faltava inteira nesta seção**, e é o perigo que mais muda uma cena
+com mortais.
+
+Característica de 1 a 5, que **não se compra com experiência** (embora experiências
+aterrorizantes possam alterá-la). Não se concentra em clérigos, e se manifesta em qualquer
+religião — o símbolo funciona pelo ardor de quem o segura, não pelo cargo.
+
+| Nível | O que o mortal consegue |
+|---|---|
+| **1** | Brandindo símbolo e orando, rola **Determinação + Fé Verdadeira** em disputa contra a **parada de Força de Vontade** do vampiro. **Cada sucesso do fiel** obriga o vampiro a recuar um passo e evitar seus olhos. Tocá-lo com o símbolo causa **1 Agravado por sucesso**. **Um crítico** força fuga e dispara **frenesi de terror com Dificuldade igual à Fé Verdadeira** |
+| **2** | Resiste a **Dominação** e outros controles de mente gastando Força de Vontade — 1 ponto protege por **tantos turnos quanto o valor de Fé** |
+| **3** | **Sente a presença** de um vampiro. Não é radar: o mortal só sabe que algo impuro espreita |
+| **4** | **Não pode ser transformado em carniçal**, e **nunca sucumbe** a Disciplina que afete a mente |
+| **5** | Brandindo o símbolo ou orando em voz alta, **força o vampiro a um teste de Remorso**. Mesmo vencendo, ele sucumbe à repulsa por si mesmo e só age em autodefesa por **tantos turnos quanto suas Máculas atuais** (mínimo 1); depois, **remove todas as Máculas**. Sem nenhum sucesso, **perde permanentemente 1 de Determinação**, não remove Mácula nenhuma e foge em frenesi de terror — e, se não puder fugir, **sofre dano como se o símbolo fosse luz solar direta** |
+
+### 18.9 Os que o livro não trata aqui
+
+Continuam valendo, e vêm de outras seções:
+
+| Perigo | Onde está |
+|---|---|
+| **Diablerie** | Reduz a geração, mancha a aura por anos, crime capital em toda seita. §9 e Parte IV |
+| **Vínculo de Sangue** | Três goles do mesmo vampiro em noites separadas; amor imposto, enfraquece se não for renovado |
+| **Segunda Inquisição** | Vigilância eletrônica e força letal. No Brasil, o BOES — ver `data-brasil.js` |
 
 ---
 
@@ -713,7 +1422,7 @@ A idade define Potência de Sangue inicial e experiência de partida:
 > Era o arquivo `docs/escudo-do-mestre.md`. Referência de **valores**: existe para o
 > Mestre — humano ou IA — não precisar inventar número nenhum ao montar uma situação.
 
-Toda tabela desta parte está implementada em `app/js/data/data-escudo.js` e é consultável
+Toda tabela desta parte está implementada em `comum/dados/data-escudo.js` e é consultável
 pelo Árbitro. **Fonte:** `Livros/Escudo-Do-Mestre.pdf`, págs. 124–127 — onde ele diverge do
 que estava documentado antes, **ele venceu**; ver §12 desta parte.
 
@@ -785,7 +1494,7 @@ desaparecidos.** Vale a pena deixar isso explícito na mesa.
 > A versão anterior vinha do Escudo do Mestre e tinha **duas colunas inteiras deslocadas em
 > um**: todo o **Surto de Sangue** e, do PS 1 para cima, toda a **Gravidade da Perdição**.
 > Mais o Bônus de Disciplina do PS 2 e a penalidade de alimentação do PS 3.
-> `app/js/data/data-escudo.js` ainda carrega os valores antigos — ver §14.1 do README.
+> `comum/dados/data-escudo.js` ainda carrega os valores antigos — ver §14.1 do README.
 
 | PS | Surto | Recuperada | Bônus Disc. | Rerrolagem | Perdição | Penalidade de alimentação |
 |---|---|---|---|---|---|---|
@@ -795,13 +1504,18 @@ desaparecidos.** Vale a pena deixar isso explícito na mesa.
 | 3 | **+3** | 2 sup. | +1 | Até Nível 2 | **3** | Animal e bolsa **não saciam nada** |
 | 4 | **+3** | 3 sup. | +2 | Até Nível 2 | **3** | Não saciam; 1 a menos por humano |
 | 5 | **+4** | 3 sup. | +2 | Até Nível 3 | **4** | Não saciam; 1 a menos; matar para descer abaixo de 2 |
-| 6 | **+4** | 3 sup. | +3 | Até Nível 3 | **4** | Não saciam; 1 a menos; matar para descer abaixo de 2 |
+| 6 | **+4** | 3 sup. | +3 | Até Nível 3 | **4** | Não saciam; **2** a menos; matar para descer abaixo de 2 |
 | 7 | **+5** | 3 sup. | +3 | Até Nível 4 | **5** | Não saciam; 2 a menos; matar para descer abaixo de 2 |
-| 8 | **+5** | 4 sup. | +4 | Até Nível 4 | **5** | Não saciam; 2 a menos; matar para descer abaixo de 2 |
+| 8 | **+5** | 4 sup. | +4 | Até Nível 4 | **5** | Não saciam; 2 a menos; matar para descer abaixo de **3** |
 | 9 | **+6** | 4 sup. | +4 | Até Nível 5 | **6** | Não saciam; 2 a menos; matar para descer abaixo de 3 |
 | 10 | **+6** | 5 sup. | +5 | Até Nível 5 | **6** | Não saciam; 3 a menos; matar para descer abaixo de 3 |
 
 **Recuperada** e **Rerrolagem** estavam corretas e não mudaram.
+
+> **Segunda correção, na §59:** duas células da coluna de alimentação estavam erradas — PS 6
+> ("1 a menos", é 2) e PS 8 ("abaixo de 2", é 3). As duas vieram do mesmo engano, e ele vale
+> registrar: **a célula do livro é mesclada entre duas linhas**, e foi lida na altura da linha
+> de baixo. O bloco 6–7 é um só, e o 8–9 também. `data-escudo.js` foi corrigido junto.
 
 ### Surto de Sangue — as travas
 
@@ -809,14 +1523,14 @@ desaparecidos.** Vale a pena deixar isso explícito na mesa.
 
 - Custa **uma Checagem de Sangue**, e vale para **uma única rolagem**.
 - **Uma por rolagem.** Não se acumulam.
-- Só entra em parada que **use um Atributo**.
+- Só entra em parada que **use um Atributo** — Físico, Social **ou** Mental.
 - **Proibido** em rolagem de **Força de Vontade** ou **Humanidade**, em rolagem que valha
   para mais de uma cena, e em Combate de Rolagem Única.
 - **Não** se aplica vitória automática nem "Pegar Metade" a uma rolagem aumentada por Surto.
 - Os dados do Surto **permanecem** numa rerrolagem paga com Força de Vontade.
 
-> E a regra que mais muda o jogo, da mesma página: **falhar numa Checagem de Sangue não faz
-> o dom falhar — só aumenta a Fome em 1.**
+> E a regra que mais muda o jogo — que é da pág. **217**, e não da 218 como estava escrito:
+> **falhar numa Checagem de Sangue não faz o dom falhar; só aumenta a Fome em 1.**
 
 ### Geração → Potência de Sangue
 
@@ -973,25 +1687,94 @@ Socialite · Veterano. As perícias de cada uma estão em `Escudo.PROFISSOES`.
 
 ## 11. Ressonância, temperamento e sangue contaminado
 
-| Humor | Elemento | Emoção | Disciplinas que alimenta |
-|---|---|---|---|
-| Colérico | Fogo | raiva, violência, bullying, paixão, inveja | Celeridade, Potência |
-| Melancólico | Terra | triste, assustado, intelectual, depressivo | Fortitude, **Ofuscação** |
-| Fleumático | Água | preguiça, apatia, calma, controle, sentimento | Auspícios, Dominação |
-| Sanguíneo | Ar | excitado, feliz, viciado, ativo, entusiasta | Feitiçaria de Sangue, Presença |
-| Sangue animal | — | — | Animalismo, Metamorfose |
+*(básico, "O Sangue é a Vida" e "Ressonância", págs. 225–231)*
 
-**Temperamento aleatório (1d10):** 1–5 Balanceado · 6–8 Fugaz · 9–10 Intensa (role de
-novo: 1–8 Intensa, 9–10 Apurada).
-**Ressonância aleatória (1d10):** 1–3 Fleumático · 4–6 Melancólico · 7–8 Colérico ·
-9–10 Sanguíneo.
+### 11.1 Os quatro humores *(pág. 226)*
 
-**Sangue contaminado**, dura uma ou duas cenas: Álcool −1 Destreza e Inteligência ·
-Cocaína e derivados −1 na dificuldade de resistir ao frenesi, e 2 de Vontade para
-rerrolar em Sucesso em Perigo ou Falha Bestial · Alucinógenos −2 Raciocínio,
-Determinação e Manipulação · Opiáceos −2 físicos e −1 para resistir ao frenesi ·
-Maconha −1 Raciocínio e −1 para resistir ao frenesi · Veneno −1 em tudo e 1–3
-Superficial por cena.
+| Humor | Elemento | Função junguiana | Hormônio | Emoções e condições |
+|---|---|---|---|---|
+| Colérico | Fogo | Emoção | Adrenalina | irado, violento, provocador, passional, invejoso |
+| Melancólico | Terra | Pensamento | Tireoide | triste, assustado, intelectual, deprimido, equilibrado |
+| Fleumático | Água | Intuição | Pituitária | preguiçoso, apático, calmo, controlador, sentimental |
+| Sanguíneo | Ar | Sensação | Testosterona/estrogênio | excitado, feliz, viciado, ativo, volúvel, entusiasmado |
+
+### 11.2 Ressonância e Disciplinas *(pág. 227)*
+
+| Ressonância | Disciplinas |
+|---|---|
+| Colérica | Celeridade, Potência |
+| Melancólica | Fortitude, Ofuscação |
+| Fleumática | Auspícios, Dominação |
+| Sanguínea | Feitiçaria de Sangue, Presença |
+| Sangue animal | Animalismo, Proteanismo |
+
+**São cinco.** O projeto trazia uma sexta, "Vazio", que não aparece em nenhum dos dez livros de
+`Livros/Regras`; saiu na §67. E o texto "Alimenta:" que o criador mostra é **derivado dos ids das
+Disciplinas**, não uma segunda lista — foi assim que "Metamorfose" e "Feitiçaria do Sangue"
+envelheceram sem ninguém notar.
+
+### 11.3 Temperamento — é ele que vale dado *(págs. 227–228)*
+
+| Temperamento | O que é | No dado |
+|---|---|---|
+| **Efêmero** | no instante, por estímulo momentâneo | **nada** — só sabor, e ingrediente da Alquimia Sangue-Ralo |
+| **Intenso** | tendência muito forte para uma Ressonância | **+1 dado** nas paradas das duas Disciplinas daquela Ressonância |
+| **Agudo** | tão intenso que cria reação autossustentável | o **mesmo +1**, mais uma **Discrasia** |
+
+O bônus dura **até a próxima dose diluir** o sangue **ou até chegar a Fome 5**.
+
+> **Cuidado com os nomes.** A tabela do Escudo do Mestre traduz *Efêmero* como "Fugaz" e *Agudo*
+> como "Apurada" — e, na mesma página, *Celeridade* como "Rapiz", *Feitiçaria de Sangue* como
+> "Magia do sangue" e *Proteanismo* como "Metamorfose". O projeto tinha copiado o Escudo. Onde os
+> dois discordam, **vale o básico**.
+
+### 11.4 Rolando a bolsa *(pág. 228)*
+
+Role 1d10 para o temperamento. **Se der 6 ou mais**, role de novo para a Ressonância.
+
+| Temperamento aleatório | Ressonância aleatória |
+|---|---|
+| 1–5 Ressonância equilibrada, insignificante | 1–3 Fleumática |
+| 6–8 Efêmero | 4–6 Melancólica |
+| 9–0 Intenso, potencialmente agudo — role de novo abaixo | 7–8 Colérica |
+| 1–8 Intenso · 9–0 **Agudo** | 9–0 Sanguínea |
+
+O Narrador pode alterar a ordem conforme o ambiente: casas noturnas encorajam o Sanguíneo e não
+atraem o Fleumático.
+
+Para **descobrir** a Ressonância de uma vítima sem provar o sangue: perseguir ou conversar por uma
+cena e rolar **Determinação + Sagacidade**. Provar resolve todas as dúvidas.
+
+### 11.5 Discrasia *(págs. 228, 230–231)*
+
+Temperamento agudo carrega uma **Discrasia** — "mistura ruim", no termo de Hipócrates; "coágulo",
+para os lambedores mais novos. Para usá-la, salvo indicação em contrário, é preciso **matar e drenar
+a bolsa** ou **alimentar-se dela por três noites**. O efeito dura até se alimentar de novo ou chegar
+a Fome 5.
+
+São **26 exemplos** no livro, e eles moram em `data-ressonancia.js` — não são repetidos aqui, pela
+mesma razão da §14.8 e da §16: duas listas para o mesmo fato divergem em silêncio.
+
+> **Animais não fornecem Discrasias** (pág. 227), exceto certas feras das profecias Gangrel. Sangue
+> de bolsa não fornece nem Ressonância intensa.
+
+### 11.6 Ressonância e experiência *(pág. 231)*
+
+Para justificar gasto de experiência em uma Disciplina, o personagem **deve se alimentar de sangue
+com a Ressonância correspondente**. A quantidade cresce com a pontuação buscada, e o Narrador pode
+exigir Ressonâncias cada vez mais potentes, até Discrasias. Aprender Disciplina de fora do clã ainda
+exige provar o Sangue de alguém que a possua.
+
+> **Esta é a única parte do capítulo que o motor ainda não cobra.** O gasto de experiência não passa
+> pela Ressonância — está registrado como pendência, e não como regra cumprida.
+
+### 11.7 Sangue contaminado
+
+Dura uma ou duas cenas: Álcool −1 Destreza e Inteligência · Cocaína e derivados −1 na dificuldade de
+resistir ao frenesi, e 2 de Vontade para rerrolar em Sucesso em Perigo ou Falha Bestial ·
+Alucinógenos −2 Raciocínio, Determinação e Manipulação · Opiáceos −2 físicos e −1 para resistir ao
+frenesi · Maconha −1 Raciocínio e −1 para resistir ao frenesi · Veneno −1 em tudo e 1–3 Superficial
+por cena.
 
 ## 12. Correções que este livro impôs
 
@@ -1047,6 +1830,252 @@ quando a intenção é caçar e o alvo traz `zona`; **cobertura** ajusta a dific
 tiro; e **oposição** substitui a dificuldade quando o alvo traz `oposicao`.
 
 ---
+
+## 15. Ações padrão — a parada de cada uma
+
+*(conferido no básico, págs. 407–410 — o Apêndice I)*
+
+O Apêndice I é o catálogo de ações comuns **com a parada de dados de cada uma**. É a fonte
+que faltava para `arbitro-lexico.js` → `ACOES`, que tem exatamente essa forma: verbo →
+atributo + perícia.
+
+> **O livro autoriza o desenho do projeto.** A abertura do Apêndice é explícita:
+>
+> *"As paradas de dados e regras fornecidas aqui existem somente para orientar o Narrador.
+> Sempre é ele quem determina qual parada de dados um jogador deve montar [...] e ele sempre
+> pode mudar a parada no melhor interesse da narrativa."* *(pág. 407)*
+>
+> Ou seja: as **rotas alternativas** que cada ação do léxico oferece não são invenção contra
+> o livro — são o que ele manda o Narrador fazer. O que a tabela abaixo cobra é outra coisa:
+> quando o livro **nomeia** uma parada, a rota deve ser aquela.
+
+### 15.1 Ações mentais
+
+| Ação | Parada | Notas do livro |
+|---|---|---|
+| **Percepção** | Atributo **varia** + Percepção | Raciocínio para notar no momento; **Inteligência** para reconhecer; **Determinação** para pescar algo em meio a distração. "Você ouve um som" é Raciocínio; "você ouve o guarda chegando" é Inteligência |
+| Perceber alvo vivo | idem | **Dificuldade base = a Furtividade do alvo** |
+| Examinar cena de crime | **Inteligência + Investigação** | |
+| Detectar sinal sobrenatural, ou qualidade no sangue apesar da Fome | **Determinação** + Percepção | |
+| **Pesquisa** | **Inteligência + a Habilidade relevante** | Não só Erudição ou Ciência: de Finanças a Ocultismo. **Dificuldade 3 para quase tudo, no máximo 4.** Informação obscura sobe. Costuma pedir **teste estendido** |
+| **Preparação** | **Inteligência + Habilidade ligada ao item** | Teste no meio da sessão para saber se o personagem trouxe algo. **Não se rola para item "assinatura"** — o Brujah trouxe a pistola, o Nosferatu trouxe as gazuas. Quanto mais incomum, maior a Dificuldade |
+| **Rastreamento** | **Raciocínio + Sobrevivência** | **Dificuldade base = a Sobrevivência do alvo.** Clima ruim e tempo decorrido aumentam. Sucessos extras dão velocidade, peso, número de pessoas |
+| **Hackear** | **Inteligência + Tecnologia** | Dificuldade **4** para segurança corporativa, **6** para bases de dados seguras, **8+** para a NSA. **Falha total alerta a segurança** |
+| Engenharia social | **Manipulação + Subterfúgio** ou **Inteligência + Manha** | O livro diz que é assim que a maior parte do hackeamento real acontece |
+| **Criação artística** | Atributo varia + **Ofícios** (plásticas), **Performance** (performáticas) ou **Erudição** (arquitetura, literatura) | Arte com mensagem secreta usa a Habilidade "codificada" e **exige valor mais alto na Habilidade aparente** |
+| **Explosivos** | criar: **Inteligência + Ciência**; montar: **Inteligência + Tecnologia**; usar: **Inteligência + Ladroagem** (cofre, parede) | Arremessar granada é **ação de arremesso comum** |
+| **Ocultamento** | esconder-se na natureza: **Inteligência + Sobrevivência**; urbana: **Inteligência + Manha**; limpar cena: **Determinação + Ladroagem** | **O resultado vira a Dificuldade de quem procurar** |
+
+### 15.2 Ações físicas
+
+| Ação | Parada | Notas do livro |
+|---|---|---|
+| **Ações de força** | levantar/esmagar: **Força + Atletismo**; arremessar coisa pesada: **o MENOR entre Força e Destreza, + Atletismo** | **Poderio (Potência 2) soma às ações de força.** Levantar é **tudo ou nada**. Arrastar pode valer **+1 de Força efetiva** |
+| **Condução** | alta velocidade, manobra, trânsito: **Destreza + Condução**; clima ruim: **Raciocínio + Condução** | **Não se rola para dirigir normalmente.** Cada complicação **+1** sobre Dificuldade 3 (ou 4 com veículo pesado); versão extrema, **+2**. Falha desacelera ou para; falha total pode ser batida |
+| **Escalada** | **Destreza + Atletismo** | **Falha total** = emaranhado e preso, ou cai. Corda e equipamento **−2 ou mais**. Pegada Sobrenatural dispensa o teste |
+| **Dano por queda** | — | **1 nível de Superficial por metro** de queda livre. Cair em pé e **neutralizar o dano** exige **Destreza + Atletismo com Dificuldade igual aos metros** |
+| **Esgueirar-se** | **Destreza + Furtividade** vs. **Raciocínio + Percepção** | Escuridão, barulho ambiente, vento a favor: **+1 dado ao que se esgueira**. Scanner, dispositivo de segurança, posição elevada: **+1 ao observador**. Ofuscação pode dispensar o teste |
+| **Espreitamento** (seguir alguém) | sem ser notado: **Raciocínio + Percepção** vs. **Determinação + Manha** do alvo | Descoberto sem saber: **Raciocínio + Furtividade ou Manha** vs. Raciocínio + Percepção. **+1** em área agitada, **+2** em área abarrotada ou com muitas saídas. Trabalho em equipe **só ajuda quem espreita**. Se todos souberem, virou perseguição |
+| **Invasão** | **sempre Ladroagem** como Habilidade; o Atributo varia | fechadura ou sensor laser: **Destreza**; cofre ou circuito de alarme: **Inteligência**; perceber câmera: **Raciocínio**; arrombar sem estragos: **Força** (e talvez Potência); instalar sistema: **Inteligência** |
+
+**Invasão, as três regras que a parada não mostra** *(pág. 410)*:
+
+- **Precisa acertar na primeira tentativa** contra segurança ativa, ou o intruso **dispara o
+  alarme**.
+- **Ladroagem baixa não abre tudo:** Ladroagem 1 abre uma fechadura Yale, **não um cofre**.
+- **Ferramentas** adequadas são o padrão; improvisadas custam **+1 de Dificuldade**, e cartão
+  de crédito com grampo de cabelo, **+2**. Sistema **puramente eletrônico** pode ser
+  penetrado com **Inteligência + Tecnologia, com +1 de Dificuldade**.
+
+**Dificuldades de invasão que o livro dá:** edifício comercial ou museu **4 a 5**; cofre de
+banco e instalação segura, mais; instalação do governo **4** na entrada, **6** na ala segura,
+**8** no cofre com material perigoso.
+
+### 15.3 A tabela de Força
+
+*(básico, pág. 409)* — **o que se faz sem rolar nada**, pelo valor de Força. O livro a
+apresenta para Narradores que preferem número a impressão.
+
+| Força | Ação | Peso |
+|---|---|---|
+| 1 | Esmagar uma lata de cerveja | 20 kg — árvore de Natal, placa de trânsito |
+| 2 | Quebrar uma cadeira de madeira | 45 kg — vaso sanitário |
+| 3 | **Derrubar uma porta de madeira** | 115 kg — tampa de bueiro, geladeira |
+| 4 | Quebrar uma tábua de madeira | 180 kg — caixão cheio |
+| 5 | Quebrar uma porta corta-fogo; rasgar cerca de arame | 250 kg — motocicleta |
+| 6 | Arremessar uma motocicleta; partir algemas | 360 kg — poste de aço alto |
+| 7 | Virar de ponta-cabeça um carro pequeno; abrir um cadeado | 410 kg — cavalo |
+| 8 | Quebrar cano de chumbo; atravessar parede de tijolos com um soco | 455 kg — poste telefônico, piano de cauda |
+| 9 | Atravessar concreto com um soco; partir correntes; arrancar porta de carro | 545 kg — tronco de árvore, avião pequeno |
+| 10 | Quebrar cano de aço; entortar viga de aço laminado | 680 kg — lancha |
+| 11 | Virar carro médio; atravessar placa de metal de 2,5 cm | 910 kg — drone Predator |
+| 12 | Quebrar poste de iluminação de metal; arremessar bola de demolição | 1,3 t — helicóptero, carro esportivo |
+| 13 | Virar um utilitário; arremessar um carro esportivo | 1,8 t — carro da polícia |
+| 14 | Virar um ônibus; arrancar a porta de um cofre | 2,25 t — contêiner vazio, caminhonete |
+| 15 | Virar um caminhão; arremessar um utilitário | 2,75 t — Humvee |
+
+Personagens com Força menor **podem tentar Força + Atletismo** para mover carga acima do que
+o valor permite.
+
+> **Derrubar uma porta de madeira é Força 3, sem teste.** O léxico hoje transforma isso numa
+> rolagem — ver §62 do README.
+
+---
+
+## 16. Itens — o que existe para carregar
+
+*(básico, "Itens", págs. 378–381)* — o capítulo tem três blocos, e o motor lê os três a
+partir de `comum/dados/data-itens.js`. **Cada item traz a página de onde veio.** Como nas
+Disciplinas (§14.8), a lista não é repetida aqui: duas listas para o mesmo fato divergem em
+silêncio, e este documento já pagou esse preço uma vez.
+
+O que **muda o dado** está abaixo. O resto — Saco Antissol, urna ancestral, pedras
+entalhadas, terra da sepultura, dinheiro velho, sangue preservado — o livro entrega "a cargo
+do Narrador", e o arquivo guarda o texto sem inventar número.
+
+### 16.1 Armas convencionais
+
+| Arma | Pág. | Dano | Natureza | O que mais |
+|---|---|---|---|---|
+| Arma camuflada | 379 | — | — | **−1 dado no ataque**, salvo vitória crítica na fabricação |
+| Arma incendiária caseira | 379 | **−1** | Agravado | falha total incendeia as mãos e o rosto do atirador: **3 de Agravado** |
+| Munição sopro de dragão | 380 | +0 | Agravado **contra vampiro** | alcance **15 m**; queima **1 por turno** até apagar |
+| Raufoss | 380 | **+5** | Agravado | **ignora qualquer armadura pessoal** |
+| Hafla | 380 | +0 | Agravado | alcance **80 m**; Dificuldade mínima **3**; **3 níveis no ato** e **3 por turno** |
+| Lança-chamas | 380 | +0 | Agravado | queima o alvo **e o ambiente** a cada turno |
+| Coquetel Molotov | 380 | +0 | Agravado | Dificuldade **4**; **2 por turno**; apaga com Autocontrole + Sobrevivência (Dif. 3) |
+| Lançador de redes | 380 | +0 | — | o dano sai da **Destreza**, não da Vitalidade; Destreza 0 = enredado, não ataca |
+| Lançador de estacas | 381 | +0 | — | dano de estaca comum; a regra da estaca no coração vale (pág. 221) |
+
+> **O lança-chamas causa +0 por turno, e isso não é erro de leitura.** O livro escreve
+> "+0 dano Agravado ao atingir o alvo e a cada turno depois disso" (pág. 380): o dano vem da
+> margem do ataque, e a queima repete a margem, não um valor próprio. `Combate.queimar` diz
+> isso em voz alta em vez de inventar um número.
+
+### 16.2 Como a queima chega ao turno
+
+`Combate.resolver` **devolve** a queima em `queima`; ele não roda o relógio da cena. Quem
+toca o turno — a mesa, em `avancarVez` — chama `Combate.queimar(ficha, queimas)` uma vez por
+volta. Quem apaga é o jogador, pelo botão da doca de Estado, e cada item diz **com o quê**
+se apaga.
+
+Fogo exposto é gatilho de **frenesi de Terror** (pág. 220, §11 desta parte). O motor anuncia;
+o teste continua sendo do jogador.
+
+### 16.3 Equipamento de caçador
+
+| Item | Pág. | Teste |
+|---|---|---|
+| MiraX | 378 | a básica cai com Rubor de Vida. Contra a de segunda geração: Rubor de Vida **e** Autocontrole + Vigor contra Dificuldade 5 + a Determinação do operador |
+| Caoscópio | 378 | Inteligência + Percepção, Dificuldade **6**. **−1** por quesito já visto com segurança (geração e clã). Rubor de Vida não afeta |
+| Saco Antissol | 378 | sem número: cobre o corpo inteiro, e dormir só com ele é coragem, não garantia |
+
+> A frase da MiraX está transcrita como está impressa: *"Dificuldade 5 + a Determinação do
+> operador"*. É uma dificuldade alta para o padrão do sistema, e o livro não a explica. Fica
+> registrada como está, e não corrigida por conta própria.
+
+---
+
+---
+
+## 17. Habilidades — as 27, e a regra da especialização
+
+*(básico, "Habilidades", págs. 159–171)*
+
+As 27 Habilidades, com a descrição de cada uma e a página de onde veio, moram em
+`comum/dados/data-traits.js` e aparecem no **hover de cada linha** do passo do Ofício
+(§71.2 do README). Como nas Disciplinas (§14.8) e nos Itens (§16), a lista **não é repetida
+aqui**: duas listas para o mesmo fato divergem em silêncio, e este documento já pagou esse
+preço três vezes.
+
+O que fica aqui é o que é **regra**, e não catálogo.
+
+### 17.1 Os três grupos *(págs. 159, 164 e 168)*
+
+| Grupo | Do que dependem |
+|---|---|
+| **Físicas** | inteiramente, ou em grande parte, de controle, aptidão ou esforço físico |
+| **Sociais** | do espaço entre as pessoas — do seu talento e da sua personalidade, mas a resposta da outra parte também conta |
+| **Mentais** | quase que inteiramente de conhecimento especializado e dos dons intelectuais |
+
+Nove em cada grupo. A ficha oficial usa **Ladroagem**, **Sagacidade**, **Subterfúgio**,
+**Erudição**, **Percepção** e **Ciência** — os ids internos correspondentes são `furto`,
+`intuicao`, `labia`, `academicos`, `consciencia` e `ciencias`, e essa diferença já custou um
+defeito (README §72.2).
+
+### 17.2 Especializações — a regra inteira *(pág. 159)*
+
+Uma especialização é competência particular num aspecto de uma Habilidade: campo estudado a
+fundo, praticado com intensidade, ou para o qual há aptidão especial.
+
+| A regra | O texto do livro |
+|---|---|
+| **Vale +1 dado** | *"o jogador ganha um dado extra em sua parada de dados"* |
+| **Só quando a tarefa se enquadra** | *"Se o Narrador decidir que um personagem está tentando realizar uma tarefa que se enquadra em sua especialização"* |
+| **Uma por rolagem** | *"Um personagem pode aplicar apenas uma de suas especializações a uma rolagem"* |
+| **Quantas você pode ter** | para a maioria das Habilidades, **tantas quanto o seu valor** nela |
+| **Ofícios é exceção** | *"você pode ter mais especializações em Ofícios do que pontos"* (pág. 164) |
+| **Quatro vêm com uma de graça** | **Ofícios, Erudição, Ciência e Performance**, ao serem adquiridas |
+
+E a trava que o livro pede ao Narrador: **não permita especialização tão abrangente que se
+aplique a quase todo uso da Habilidade.** O exemplo é explícito — nada de "Muay Thai" como
+especialização de Briga, porque qualquer briga poderia ser um ataque de Muay Thai, e isso é
+um dado extra grátis em todo teste de Briga.
+
+> **A condição é a regra, e o motor não a cobrava.** Até a §73 do README o dado da
+> especialização era **incondicional**: quem tivesse *"Lobisomens"* em Briga ganhava o dado
+> ao socar um segurança. Medido: sete dados nas duas ações.
+>
+> Agora quem decide é o texto da ação — `Arbitro.casadorDeEspecializacao`. Casa por palavra
+> e não por pedaço de palavra ("Facas" não casa "fachada"), dobra singular e plural
+> ("Lobisomens" casa "lobisomem"), e exige a expressão inteira quando todas as palavras são
+> curtas ("Um Por Cento", "GTA"). **No combate, quem enquadra é a arma:** *Facas* vale com
+> uma faca na mão, e não com um taco.
+>
+> Onde **não há texto** — a ficha impressa desenhando a parada — não há tarefa a enquadrar, e
+> o dado entra. É o que a folha deve mostrar: a parada de quando a especialização vale.
+
+### 17.3 Atletismo no lugar da perícia de combate *(pág. 160)*
+
+> *"Um personagem pode usar Atletismo no lugar de qualquer Habilidade Física de combate em uma
+> rolagem de conflito, mas, nesse caso, ele nunca acerta seu oponente, não importa quantos
+> sucessos obtenha."*
+
+É a mesma regra da pág. 125, e o motor a cumpre desde a §63.3 do README: `esquivar` é escolha
+do defensor, e defesa com Atletismo **não revida**. O capítulo das Habilidades a repete, o que
+confirma que ela vale para qualquer conflito, e não só para Briga e Armas Brancas.
+
+### 17.4 Onde uma Habilidade puxa outra
+
+O livro cruza perícias em dois pontos que o motor já respeita:
+
+- **Ladroagem e Tecnologia** *(pág. 163)*: sistemas de ponta são controlados por computador,
+  *"portanto podem envolver a Habilidade Tecnologia para serem desativados"*. É por isso que
+  `arrombar` tem uma rota eletrônica com Inteligência + Tecnologia e **+1 de Dificuldade**
+  (§15 e README §63.4).
+- **Medicina cura Agravado em mortais** *(pág. 170)*: *"Personagens usam Medicina para curar
+  dano Agravado à Vitalidade em mortais"*. O motor cura o **vampiro** pela Potência de Sangue
+  (§10) e **não modela cura de mortal por Medicina** — é lacuna conhecida, não regra
+  cumprida.
+
+### 17.5 Acrescentar Habilidade nova *(pág. 162)*
+
+O livro permite, e manda pensar antes: a nova Habilidade não caberia melhor como
+**especialização** de uma existente? Pilotar Helicóptero funciona como especialização de
+Condução; Pilotar Jato, de Tecnologia; Paraquedismo, de Atletismo.
+
+Este projeto **não acrescenta Habilidade**: as 27 são a ficha oficial, e `data-traits.js` é
+conferido contra ela por teste. Fica registrado porque a pergunta vai aparecer.
+
+### 17.6 O que ainda não é cobrado
+
+**Uma especialização por perícia é tudo o que a ficha guarda.** `f.especializacoes` é
+`{ periciaId: 'nome' }` — um nome só. O livro permite **tantas quanto o valor na Habilidade**,
+e mais que isso em Ofícios. Quem tem Briga 3 poderia ter três, e aqui tem uma.
+
+Isso não dá dado a mais nem a menos numa rolagem — a regra de **uma por rolagem** continua
+valendo de qualquer jeito —, mas empobrece o personagem e obriga a escolher no lugar errado.
+Está no README §14.1 como **H2**, e é pendência declarada, não regra cumprida.
 
 # Parte III — Fichas por seita
 

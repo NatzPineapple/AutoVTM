@@ -12,7 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { carregar, fichaDeTeste, comDadosViciados, executar, instantaneo, RAIZ } from './carregar.mjs';
+import { carregar, fichaDeTeste, comDadosViciados, executar, instantaneo, RAIZ, AREAS, caminhoDe } from './carregar.mjs';
 
 /* Mesma dívida da §45.2: `nomeAtributo()` vive em front/mesa-render.js e
    é chamada por motor-combate.js e por Arbitro.piscinaFinal(). Enquanto
@@ -2609,5 +2609,290 @@ test('Crenças — Mácula a serviço de Convicção é reduzida (§69, A9)', as
     const f = cobaia();
     Estado.ganharMacula(f, 3, 'ato', { porConviccao: 'X', reducao: 0 });
     assert.equal(f.maculas, 2);
+  });
+});
+
+/* ============================================================
+   §73 — HABILIDADES (básico, págs. 159–171)
+
+   A §71 leu o capítulo para escrever o hover do criador, e parou
+   aí. Lendo o resto — a caixa de Especializações da pág. 159 —
+   apareceu H1: o dado extra da especialização era INCONDICIONAL.
+
+   Medido antes: "Lobisomens" em Briga dava sete dados tanto em
+   "ataco o lobisomem" quanto em "dou um soco no segurança".
+   ============================================================ */
+
+test('Habilidades — a especialização só vale na tarefa certa (§73, H1)', async (t) => {
+
+  const comEsp = (pericia, nome, extra = {}) => {
+    const f = fichaDeTeste(g);
+    f.habilidades[pericia] = 3;
+    f.especializacoes = { [pericia]: nome };
+    Object.assign(f.atributos, extra);
+    return f;
+  };
+
+  await t.test('a tarefa que se enquadra ganha o dado; a que não, não', (t2) => {
+    /* "Se o Narrador decidir que um personagem está tentando
+       realizar uma tarefa QUE SE ENQUADRA em sua especialização, o
+       jogador ganha um dado extra." (pág. 159) */
+    const f = comEsp('briga', 'Lobisomens', { forca: 3 });
+    const rota = (texto) => (Arbitro.avaliar({ ficha: f, texto, estados: [] }).rotas || [])[0];
+    const dentro = rota('ataco o lobisomem');
+    const fora   = rota('dou um soco no segurança');
+    t2.diagnostic(`lobisomem: ${dentro.piscina} dados (esp ${dentro.especializacao}) · ` +
+                  `segurança: ${fora.piscina} dados (esp ${fora.especializacao})`);
+    assert.equal(dentro.especializacao, 1, 'a especialização não valeu na tarefa dela');
+    assert.equal(fora.especializacao, 0, 'a especialização deu dado de graça');
+    assert.equal(dentro.piscina, fora.piscina + 1);
+  });
+
+  await t.test('singular e plural contam igual', () => {
+    /* O caso que obrigou a tratar `ns` antes de `s`: "Lobisomens"
+       e "lobisomem". */
+    const f = comEsp('briga', 'Lobisomens', { forca: 3 });
+    for (const texto of ['ataco o lobisomem', 'ataco os lobisomens']) {
+      const r = (Arbitro.avaliar({ ficha: f, texto, estados: [] }).rotas || [])[0];
+      assert.equal(r.especializacao, 1, texto);
+    }
+  });
+
+  await t.test('casa por PALAVRA, e não por pedaço de palavra', (t2) => {
+    const casa = Arbitro.casadorDeEspecializacao('subo pela fachada do prédio');
+    t2.diagnostic(`Facas: ${casa('Facas')} · Fachada: ${casa('Fachada')}`);
+    assert.equal(casa('Facas'), false, '"Facas" casou dentro de "fachada"');
+    assert.equal(casa('Fachada'), true);
+  });
+
+  await t.test('palavra curta não decide sozinha: exige a expressão inteira', (t2) => {
+    /* "Um Por Cento" e "GTA" são especializações do livro (págs.
+       165 e 164). Deixar "um" ou "por" decidirem casaria quase
+       qualquer frase. */
+    const casa = Arbitro.casadorDeEspecializacao('eu falo por um minuto com o cara');
+    t2.diagnostic(`"Um Por Cento" em "eu falo por um minuto": ${casa('Um Por Cento')}`);
+    assert.equal(casa('Um Por Cento'), false);
+    assert.equal(Arbitro.casadorDeEspecializacao('sou do um por cento')('Um Por Cento'), true,
+      'a expressão inteira devia casar');
+  });
+
+  await t.test('sem texto não há tarefa a enquadrar, e a folha segue mostrando o dado', (t2) => {
+    /* A ficha impressa mostra a parada de QUANDO a especialização
+       vale. Só o Árbitro, que sabe o que o jogador escreveu, tem
+       como cobrar a condição. */
+    const f = comEsp('armas_brancas', 'Facas', { destreza: 3 });
+    const p = Dados.piscinaDe(f, 'destreza', 'armas_brancas');
+    t2.diagnostic(`${p.total} dados · aplicada ${p.especializacaoAplicada} · ` +
+                  `disponível ${p.especializacaoDisponivel}`);
+    assert.equal(p.especializacao, 1);
+    assert.equal(p.especializacaoDisponivel, true);
+  });
+
+  await t.test('no combate, quem enquadra é a ARMA', (t2) => {
+    const f = comEsp('armas_brancas', 'Facas', { destreza: 3 });
+    const golpe = (arma) => Combate.resolver({ atacante: f, defensor: fichaDeTeste(g),
+      tipo: 'branca', arma, estacionario: true }).rolAtq.piscina;
+    const comFaca = golpe('Faca'), comTaco = golpe('Taco de beisebol');
+    t2.diagnostic(`faca ${comFaca} dados · taco ${comTaco} dados`);
+    assert.equal(comFaca, comTaco + 1, 'a especialização não distinguiu a arma');
+  });
+
+  await t.test('e uma especialização de outra perícia não vaza', () => {
+    const f = fichaDeTeste(g);
+    f.habilidades.briga = 3; f.atributos.forca = 3;
+    f.especializacoes = { armas_brancas: 'Facas' };
+    const r = (Arbitro.avaliar({ ficha: f, texto: 'saco a faca e dou um soco', estados: [] }).rotas || [])
+      .find(x => x.pericia === 'briga');
+    if (r) assert.equal(r.especializacao, 0, 'a especialização de Armas Brancas entrou na parada de Briga');
+  });
+});
+
+test('Habilidades — as quatro que exigem especialização (§73)', async (t) => {
+
+  await t.test('são exatamente as quatro do livro', (t2) => {
+    /* "Quatro Habilidades vêm com uma especialização automática
+       quando adquiridas: Ofícios, Erudição, Ciência e Performance."
+       (pág. 159) */
+    const nomes = g.ESPECIALIZACAO_OBRIGATORIA.map(id => g.nomeHabilidade(id)).sort();
+    t2.diagnostic(nomes.join(', '));
+    assert.equal(nomes.join(', '), 'Ciência, Erudição, Ofícios, Performance');
+  });
+
+  await t.test('e todas as quatro existem como Habilidade', () => {
+    const ids = Object.values(g.HABILIDADES).flatMap(x => x.lista).map(h => h.id);
+    for (const id of g.ESPECIALIZACAO_OBRIGATORIA)
+      assert.ok(ids.includes(id), `${id} não é uma Habilidade`);
+  });
+});
+
+test('Habilidades — o dado e o documento não podem divergir (§73)', async (t) => {
+
+  /* Quarta aplicação da técnica da §65.3. Desta vez a tabela lida é a
+     da §17.2, e o que ela afirma é a lista de quatro perícias que vêm
+     com especialização automática. */
+  const md = fs.readFileSync(path.join(RAIZ, 'docs', 'regras.md'), 'utf8');
+  const bloco = md.split('## 17. Habilidades')[1] || '';
+
+  await t.test('a §17 existe e cita o capítulo certo', (t2) => {
+    t2.diagnostic(bloco.slice(0, 90).replace(/\s+/g, ' '));
+    assert.ok(bloco.includes('págs. 159–171'), 'a §17 não cita as páginas do capítulo');
+  });
+
+  await t.test('as quatro perícias com especialização automática batem com o dado', (t2) => {
+    const linha = bloco.split('\n').find(l => /vêm com uma de graça/.test(l)) || '';
+    t2.diagnostic(linha.replace(/\s+/g, ' ').slice(0, 120));
+    for (const id of g.ESPECIALIZACAO_OBRIGATORIA) {
+      const nome = g.nomeHabilidade(id);
+      assert.ok(linha.includes(nome),
+        `"${nome}" está em ESPECIALIZACAO_OBRIGATORIA e não aparece na §17.2 do regras.md`);
+    }
+  });
+
+  await t.test('e o documento não lista nenhuma a mais', (t2) => {
+    const linha = bloco.split('\n').find(l => /vêm com uma de graça/.test(l)) || '';
+    const nomes = g.ESPECIALIZACAO_OBRIGATORIA.map(id => g.nomeHabilidade(id));
+    const todas = Object.values(g.HABILIDADES).flatMap(x => x.lista);
+    const intrusas = todas.filter(h => !nomes.includes(h.nome) && linha.includes(h.nome));
+    t2.diagnostic(intrusas.length ? intrusas.map(h => h.nome).join(', ') : 'nenhuma intrusa');
+    assert.equal(intrusas.length, 0,
+      `a §17.2 cita ${intrusas.map(h => h.nome).join(', ')}, que não está no dado`);
+  });
+});
+
+/* ============================================================
+   QUEM ROLA É A MESA  (§82)
+
+   A regra do usuário: **o Árbitro diz quais dados; a Mesa roda; o
+   Árbitro pega o resultado.** O que estes testes trancam é a
+   metade que some sozinha — a de que o Árbitro NÃO sorteia.
+   ============================================================ */
+
+test('Dados — o Árbitro diz quais, a Mesa roda, o Árbitro apura (§82)', async (t) => {
+  const g = carregar(['data', 'ficha', 'arbitro']);
+
+  await t.test('o Árbitro não tem `Math.random` em lugar nenhum', (t2) => {
+    /* É a trava principal. Um serviço que decide regra E sorteia não é
+       determinístico nem auditável: não dá para repetir uma noite, nem
+       para conferir o que o cliente diz que rolou. */
+    const sujos = [];
+    for (const nome of AREAS.arbitro) {
+      const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', nome)), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+      if (/Math\.random/.test(fonte)) sujos.push(`arbitro/${nome}.js`);
+    }
+    t2.diagnostic(sujos.length ? sujos.join(', ') : 'nenhum');
+    assert.deepEqual(sujos, [], 'o Árbitro voltou a sortear sozinho');
+  });
+
+  await t.test('sem fonte instalada, rolar ESTOURA em vez de inventar', (t2) => {
+    /* Sem isto, tirar o `Math.random` do Árbitro seria decorativo: um
+       valor padrão de reserva devolveria o sorteio para cá sem ninguém
+       notar. */
+    const antes = g.Dados.usarFonte(null);
+    try {
+      assert.equal(g.Dados.temFonte(), false);
+      assert.throws(() => g.Dados.d10(), /fonte de acaso/i);
+      assert.throws(() => g.Dados.rolar({ piscina: 5 }), /fonte de acaso/i);
+      t2.diagnostic('d10() sem fonte estoura, e diz por quê');
+    } finally {
+      g.Dados.usarFonte(antes);
+    }
+  });
+
+  await t.test('a fonte que devolve lixo é recusada', () => {
+    const antes = g.Dados.usarFonte(() => 42);
+    try { assert.throws(() => g.Dados.d10(), /não é um d10/); }
+    finally { g.Dados.usarFonte(antes); }
+  });
+
+  await t.test('PASSO 1 — `pedir` é puro e não consome a fonte', (t2) => {
+    let chamadas = 0;
+    const antes = g.Dados.usarFonte(() => { chamadas++; return 7; });
+    try {
+      const p = g.Dados.pedir({ piscina: 6, fome: 2, dificuldade: 3, rotulo: 'Arrombar' });
+      t2.diagnostic(JSON.stringify(p));
+      assert.equal(chamadas, 0, '`pedir` rolou dado');
+      /* `assert.deepEqual` compara protótipo, e este objeto veio de
+         outro realm do `vm` — a armadilha que o arreio já documenta.
+         Compara-se o JSON. */
+      assert.equal(JSON.stringify(p),
+        JSON.stringify({ normais: 4, fome: 2, dificuldade: 3, rotulo: 'Arrombar', piscina: 6 }));
+      /* Duas vezes a mesma situação, o mesmo pedido. */
+      assert.equal(JSON.stringify(g.Dados.pedir({ piscina: 6, fome: 2, dificuldade: 3, rotulo: 'Arrombar' })),
+        JSON.stringify(p));
+    } finally { g.Dados.usarFonte(antes); }
+  });
+
+  await t.test('a parada mínima de 1 continua sendo do passo 1', () => {
+    /* Regra do livro (A1, §63): parada vazia ainda rola um dado. Ela
+       tem de morar no PEDIDO, não em quem roda — senão a Mesa
+       precisaria conhecer a regra. */
+    assert.equal(g.Dados.pedir({ piscina: 0 }).normais, 1);
+    assert.equal(g.Dados.pedir({ piscina: -5 }).piscina, 1);
+    /* E a Fome nunca passa da parada. */
+    const p = g.Dados.pedir({ piscina: 2, fome: 5 });
+    assert.equal(p.fome, 2);
+    assert.equal(p.normais, 0);
+  });
+
+  await t.test('PASSO 2 — `rodar` consome a fonte, e só ela', (t2) => {
+    const fila = [10, 10, 6, 2, 1, 1];
+    let i = 0;
+    const antes = g.Dados.usarFonte(() => fila[i++]);
+    try {
+      const p = g.Dados.pedir({ piscina: 6, fome: 2, dificuldade: 2 });
+      const v = g.Dados.rodar(p);
+      t2.diagnostic(`normais ${v.normais.join(',')} · fome ${v.dadosFome.join(',')}`);
+      assert.equal(v.normais.join(','), '10,10,6,2');
+      assert.equal(v.dadosFome.join(','), '1,1');
+      assert.equal(i, 6, 'consumiu um número de dados diferente do pedido');
+    } finally { g.Dados.usarFonte(antes); }
+  });
+
+  await t.test('PASSO 3 — `apurar` é puro: os mesmos valores, o mesmo veredito', (t2) => {
+    const antes = g.Dados.usarFonte(() => { throw new Error('apurar não pode rolar'); });
+    try {
+      const p = g.Dados.pedir({ piscina: 6, fome: 2, dificuldade: 2, rotulo: 'Arrombar' });
+      const v = { normais: [10, 10, 6, 2], dadosFome: [1, 1] };
+      const a = g.Dados.apurar(p, v);
+      const b = g.Dados.apurar(p, v);
+      t2.diagnostic(`${a.tipo} · ${a.sucessos} sucesso(s) · ${g.Dados.descrever(a)}`);
+      assert.equal(a.tipo, b.tipo);
+      assert.equal(a.sucessos, b.sucessos);
+      /* 10,10 → par: 2 básicos + 2 do par; o 6 conta; o 2 e os dois 1
+         de Fome não. Passou a dificuldade 2, com crítico e sem dez na
+         Fome: Sucesso Crítico. */
+      assert.equal(a.sucessos, 5);
+      assert.equal(a.tipo, 'critico');
+      assert.equal(a.rotulo, 'Arrombar');
+    } finally { g.Dados.usarFonte(antes); }
+  });
+
+  await t.test('os três passos dão o mesmo que `rolar` de uma vez', () => {
+    const fila = [9, 3, 7, 10];
+    let i = 0;
+    const antes = g.Dados.usarFonte(() => fila[i % fila.length] * 0 + fila[i++ % fila.length]);
+    try {
+      i = 0;
+      const p = g.Dados.pedir({ piscina: 4, fome: 1, dificuldade: 2, rotulo: 'x' });
+      const passoAPasso = g.Dados.apurar(p, g.Dados.rodar(p));
+      i = 0;
+      const deUmaVez = g.Dados.rolar({ piscina: 4, fome: 1, dificuldade: 2, rotulo: 'x' });
+      assert.equal(passoAPasso.tipo, deUmaVez.tipo);
+      assert.equal(passoAPasso.sucessos, deUmaVez.sucessos);
+      assert.equal(passoAPasso.normais.join(','), deUmaVez.normais.join(','));
+    } finally { g.Dados.usarFonte(antes); }
+  });
+
+  await t.test('o pedido atravessa JSON sem perder nada', (t2) => {
+    /* É o que acontece quando a Mesa é outro processo: o pedido vai
+       por HTTP e volta como valores. Se ele carregasse função ou
+       referência, isso quebraria calado. */
+    const p = g.Dados.pedir({ piscina: 7, fome: 3, dificuldade: 4, rotulo: 'Caçar' });
+    const ida = JSON.parse(JSON.stringify(p));
+    t2.diagnostic(JSON.stringify(ida));
+    assert.equal(JSON.stringify(ida), JSON.stringify(p));
+    const v = { normais: [6, 6, 2, 2], dadosFome: [10, 10, 5] };
+    assert.equal(g.Dados.apurar(ida, v).tipo, g.Dados.apurar(p, v).tipo);
   });
 });

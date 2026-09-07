@@ -419,3 +419,150 @@ Registrados na ordem em que apareceram nos `.md` de campanha.
 | Standard Dice Pools | Paradas de Dados Padrão |
 | Test Series | Série de Testes |
 | Three Turns and Out | Três Turnos e Pronto |
+
+### 8.9 Itens e equipamento *(básico, "Itens", págs. 378–381 — §66)*
+
+O capítulo se chama **Itens**, e não "Itens e armas": a §61.2 o listava pelo nome errado.
+Entraram em `data-itens.js`, cada um com a página.
+
+| Inglês | PT-BR | Observação |
+|---|---|---|
+| Anti-Sun Bag | Saco Antissol | |
+| Camouflaged Weapon | Arma camuflada | −1 dado no ataque, pág. 379 |
+| Chaoscope | Caoscópio | Leitor Analítico Osciloscópico Eletromagnético Diferencial/Halo Coronal |
+| Dragon's Breath Round | Munição sopro de dragão | |
+| Flamethrower | Lança-chamas | |
+| *handflammpatrone* | **hafla** | o livro grafa "hafla"; anotação antiga trazia "haft" |
+| Incendiary Weapon | Arma incendiária | a caseira causa 1 a menos e queima o usuário na falha total |
+| Molotov Cocktail | Coquetel Molotov | |
+| Net Launcher | Lançador de redes | o dano sai da **Destreza**, e não da Vitalidade |
+| Raufoss | Raufoss *(não se traduz)* | ignora armadura pessoal; Agravado +5 |
+| Stake Launcher | Lançador de estacas | |
+| XRay / MiraX | **MiraX** | nome usado no livro em PT-BR |
+| Ancestral Urn | Urna ancestral | |
+| Carved Stones | Pedras entalhadas | |
+| Grave Dirt | Terra da sepultura | |
+| Old Money | Dinheiro velho | |
+| Preserved Blood | Sangue preservado | |
+| Supernatural Equipment | Equipamento Sobrenatural | seção da pág. 381 |
+
+### 8.10 Ressonância, temperamento e Discrasia *(básico, págs. 225–231 — §67)*
+
+**Cuidado com a tabela do Escudo do Mestre aqui**: ela traz outra tradução dos mesmos termos, e
+perde. Detalhe em `narracao-ia.md` §4.7.
+
+| Inglês | PT-BR (usado no projeto) | Não use, mas reconheça |
+|---|---|---|
+| Resonance | Ressonância | |
+| Temperament | Temperamento | |
+| Ephemeral | **Efêmero** | Fugaz *(Escudo)* |
+| Intense | **Intenso** | Intensa |
+| Acute | **Agudo** | Apurada *(Escudo)* |
+| Dyscrasia | **Discrasia** | coágulo *(gíria, e o livro registra como gíria)* |
+| Choleric / Melancholic / Phlegmatic / Sanguine | Colérico · Melancólico · Fleumático · Sanguíneo | |
+| Animal Blood | Sangue animal | não fornece Discrasia, pág. 227 |
+| Blood Sorcery | **Feitiçaria de Sangue** | Feitiçaria do Sangue · Magia do sangue *(Escudo)* |
+| Protean | **Proteanismo** | Metamorfose *(Escudo)* |
+| Celerity | **Celeridade** | Rapiz *(Escudo — não é palavra)* |
+| The Four Humors | Os quatro humores | |
+| Crucible of Alchemy | Cadinho da Alquimia | |
+
+**As 26 Discrasias** (págs. 230–231) estão em `data-ressonancia.js` com o texto de cada uma. Os
+nomes, para reconhecimento: *Agressivo · Ciclo de Violência · Energético · Escrupuloso · Inveja ·
+Valentão · Vingativo* (coléricas); *Amor Perdido · Em Luto · Evocador · Falha Épica · Nostálgico ·
+Parente Perdido* (melancólicas); *Anestesiado · Comendo Suas Emoções · Dado por Vencido ·
+Indiferente · Lobo Solitário · Procrastinar · Reflexão* (fleumáticas); *Amor Verdadeiro ·
+Arrebatamento Maníaco · Buliçoso · Entusiasmo Constante · Entusiasmo pela Vida · Jogo do Olfato*
+(sanguíneas).
+
+### 8.11 Projetos e Jogo Ponderado *(Apêndices II e III — §70)*
+
+Ainda **não implementados** (G8 e G9 no README §14.1). Os termos estão aqui para que a conversão,
+quando vier, não invente sinônimo.
+
+| Inglês | PT-BR | Observação |
+|---|---|---|
+| Project | Projeto | Apêndice II, págs. 415–417 |
+| Scope | Escopo | quantos pontos o projeto entrega |
+| Increment | Incremento | duração provável ÷ 10 |
+| Project Die | Dado do Projeto | começa em 10, cai 1 por incremento |
+| Launch Roll | Rolagem de Lançamento | Habilidade + Antecedente |
+| Objective Roll | Rolagem de Objetivo | sem Vontade, sem Surto, sem Disciplinas, sem críticos |
+| committed points | pontos comprometidos | ficam congelados até o projeto acabar |
+| *Longue Durée* | *Longue Durée* *(não se traduz)* | lançada em Memoriam |
+| Considerate Play | Jogo Ponderado | Apêndice III, págs. 419–423 |
+| Lines and Veils | Linhas e Véus | de Ron Edwards, *Sex and Sorcery* |
+| X-Card | Carta X | de John Stavropoulos |
+| Fade / fade to black | *Fade* · desvanecer | o livro usa os dois |
+| Luxton Technique / Script Change | Sistema Refletores | |
+| Check-In | Verificação de Bem-Estar | por sinal de mão |
+| Open Door | A Porta Está Sempre Aberta | |
+| Debriefing | Descompressão | técnica pós-jogo de LARP |
+
+### 8.12 Termos de *A Sarjeta Carmesim* (Crimson Gutter)
+
+**Aviso de divergência.** A §1 deste arquivo traz `Rouse Check → Provocação` e
+`Messy Critical → Sucesso em Perigo`. A §4.7 de [`narracao-ia.md`](narracao-ia.md) **corrige as
+duas** com base no manual básico: **Checagem de Sangue** e **Crítico Bestial**. Onde os dois
+divergirem, **vale a §4.7**. O mesmo vale para `Celerity`, que é **Celeridade** (§8.10), e não
+"Velocidade".
+
+| Inglês | PT-BR | Observação |
+|---|---|---|
+| The Crimson Gutter | **A Sarjeta Carmesim** | título |
+| the Unchained | **os Desacorrentados** | como os Anarquistas se chamam |
+| Church of Caine | **Igreja de Caim** | |
+| Gnostic | **Gnóstico** | membro da Igreja de Caim |
+| Cainite Heresy | **Heresia Cainita** | |
+| Book of Nod | **Livro de Nod** | |
+| Land of Nod | **Terra de Nod** | |
+| Dark Father | **Pai Sombrio** | Caim |
+| Demiurge | **Demiurgo** | |
+| Noddist bishop | **bispo noddista** | bloco de antagonista do básico |
+| Doorkeeper | **Guardião da Porta** | papel da Igreja de Caim |
+| Acolyte / Priest / Deacon | **Acólito / Sacerdote / Diácono** | |
+| Sacrament of Firewalking | **Sacramento da Caminhada sobre o Fogo** | |
+| Sacrament of Valediction | **Sacramento da Despedida** | |
+| Lure of Flames | **Lure of Flames** *(não se traduz)* | série de Rituais Tremere |
+| wight | **wight** *(não se traduz)* | já usado em *In Memoriam* |
+| Blood Hunt | **Caçada de Sangue** | |
+| Blood doll | **boneca de sangue** | |
+| Chantry | **Capela** | Tremere |
+| Warlocks | **Bruxos** | apelido dos Tremere |
+| Pyramid | **Pirâmide** | hierarquia Tremere |
+| Beckoning | **Chamado** | |
+| Society of Leopold | **Sociedade de Leopoldo** | |
+| Lupines | **lupinos** | |
+| Shadow *(papel da Camarilla)* | **Sombra** | mentor de Membros novos num domínio |
+| black mark | **marca negra** | contador social de *Apresentações Formais* |
+| Simple Antagonist block | **bloco de Antagonista Simples** | ver §8.8 |
+| Standard / Exceptional Dice Pools | **Paradas de Dados Padrão / Excepcionais** | ver §8.8 |
+| Grim Reaper *(Predador)* | **Ceifador** | *Guia do Jogador* |
+| Montero *(Predador)* | **Montero** *(não se traduz)* | *Guia do Jogador* |
+| Trapdoor *(Predador)* | **Alçapão** | *Guia do Jogador* |
+| Uncanny Grip | **Aderência Sobrenatural** | Potência 3 — sem tradução consagrada |
+| Shadow Cloak *(Oblívio 1)* | **Capa de Sombras** | distinguir de *Cloak of Shadows* = **Manto de Sombras** (Ofuscação) |
+| Arms of Ahriman | **Braços de Ahriman** | |
+| Shadow Perspective | **Perspectiva das Sombras** | |
+| Fatal Precognition | **Precognição Fatal** | |
+| Passion Feast | **Banquete de Paixão** | |
+| Animal Succulence | **Suculência Animal** | |
+| Flesh of Marble | **Carne de Mármore** | |
+| Defy Bane | **Desafiar a Perdição** | |
+| Earth Meld | **Fusão com a Terra** | |
+| Fleshcrafting | **Modelagem de Carne** | Tzimisce |
+| Vicissitude | **Vicissitude** | Tzimisce |
+| Chimerstry | **Quimerismo** | Ravnos |
+| Eyes of the Serpent | **Olhos da Serpente** | Ministry |
+| Irresistible Voice | **Voz Irresistível** | Presença 4 |
+| Summon | **Convocar** | Presença 4 |
+| Spirit's Touch | **Toque do Espírito** | Auspícios 5 |
+| Possession | **Possessão** | Auspícios 5 |
+| Mask of a Thousand Faces | **Máscara de Mil Faces** | |
+| Feral Whispers | **Sussurros Ferais** | |
+| Quell the Beast | **Aplacar a Besta** | |
+| Far Reach / Haze | **Alcance Distante / Névoa** | Alquimia de Sangue Ralo |
+| Blood Walk *(Ritual)* | **Caminho do Sangue** | já em §8.7 |
+| pursuit *(regra)* | **perseguição** | básico, pág. 412 |
+| preparedness test | **teste de preparação** | básico, pág. 410 |
+| series test / extended test | **série de testes / teste prolongado** | básico, págs. 293–294 |

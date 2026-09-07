@@ -1,20 +1,202 @@
-1- ReLer arquivos de livros/regras e livros/Adição-Narrativa, e Atualizar arquivos
+PENDÊNCIAS — VITÆ
+Atualizado em 07/09/2026, depois da §86.
 
-2- Terminar de ler as camanhas
+ESTE ARQUIVO É SÓ A LISTA DE PENDÊNCIAS. Nada mais.
+Nada de relato do que foi feito, nada de explicação de defeito, nada de
+número de teste. Isso tudo mora no README, e ficar em dois lugares foi
+exatamente o que fez este arquivo inchar de 90 para 756 linhas entre a
+§55 e a §69 — duas listas para o mesmo fato divergem em silêncio, que é
+a lição que o próprio projeto já aprendeu três vezes (§64, §65, §67).
 
-3- Um erro conhecido no extrator: "jogo o cinzeiro na cabeça dela" vira melee_attack. Consistente nas duas repetições, e defensável.
+  . o detalhe de cada item .................. README §14.1
+  . a mesma lista por peso ................. README §14.1.2
+  . o que saiu da lista, e por quê ......... README §14.1.3
+  . o registro do que já foi pago .......... README §14.1.4
+  . onde mexer, por arquivo ................ README §45
+  . onde mexer nos módulos ................. README §45.7
 
-4- Testes apresentarem o Resultado, exemplo: testes de dados, mostrar quais foram os valores que sairam, não somente se passou ou não
-
-5. Combate.resolver() aplica dano na ficha — nada a fazer. É contrato, e está trancado em teste.
-
-7. O degrau 3 aceita ou recusa por sorteio	baixo
-
-8. Combate.resolver() aplica dano na ficha — contrato, não defeito	—
-
-9. Nove funções sem teste direto	baixo
-
-10. Framework no navegador — destrava N5/N6	decisão sua
+A ordem das áreas é a ordem de carga: Front, Árbitro, Ficha, Cronista,
+Geral. Antes de montar qualquer lista, releia a tabela da Parte A →
+Estrutura: é ela que diz quem é dono de quê. "Geral" é o que atravessa
+áreas, mais modulos/, comum/, ferramentas/, testes/, campanhas/, docs/ e as
+decisões que estão na sua mesa. Desde a §79 a PASTA é o módulo: modulos/
+ficha, arbitro, cronista, mesa, gateway e cliente; comum/dados não é área.
 
 
+================================================================
+== ABERTO ==
+================================================================
 
+FRONT
+  Nada aberto.
+
+ÁRBITRO
+  Nada aberto.
+
+FICHA
+  Nada aberto.
+
+CRONISTA
+
+  C1. O degrau 3 aceita ou recusa por sorteio ................. baixo
+      Cena vazia ainda é aceita em 96%. ~5% dos turnos vão ao Narrador
+      sem motivo, e dois turnos idênticos podem cair em degraus
+      diferentes.
+
+GERAL
+
+  G2. Reler Livros/Regras e Livros/Adição-Narrativa ........... médio
+      EM ANDAMENTO, E É O QUE MAIS ESTÁ RENDENDO.
+      Fila do que ainda não foi aberto, por peso (mapa em README §61.2):
+        1. Clãs (63-114) -> data-clans.js ..................... alto
+        3. Combate avançado (295-305) ........................ médio
+        4. Laço de Sangue e Diablerie (233-235) .............. médio
+        5. Criação e Experiência (135-154) ................... médio
+      Faltam ainda as Partes III e IV do meu documento e os 12 outros
+      livros.
+
+  G4. O extrator erra o arremesso ............................. baixo
+      "jogo o cinzeiro na cabeça dela" vira melee_attack.
+      MITIGADO, NÃO MEDIDO DE NOVO. O ollama agora sobe pelo botão da
+      capa (§75), então a medição virou barata: falta fazê-la.
+
+  G6. A leitura de fala pelo modelo não foi medida ............ baixo
+      speech e speech_volume têm esquema e normalizar em teste, mas
+      nenhuma medição com modelo de verdade. O caminho determinístico
+      (pontuação) é o padrão e está verificado.
+
+  G7. O gasto de experiência não exige a Ressonância .......... médio
+      Básico, pág. 231: para gastar XP numa Disciplina o personagem
+      deve ter se alimentado da Ressonância correspondente. O motor não
+      cobra. Declarado como pendência em regras.md §11.6.
+
+  G8. O Apêndice II (Projetos) não existe no motor ............ médio
+      Básico, págs. 415-417. Subsistema de planos de longo prazo:
+      Escopo, Incremento, Dado do Projeto, rolagem de Lançamento e de
+      Objetivo, pontos comprometidos como risco, Longue Durée em
+      Memoriam. Cabe bem numa mesa solo porque corre ENTRE sessões —
+      hoje a mesa só tem a noite atual. Traz também o preço mecânico de
+      mudar a Ressonância de uma bolsa, que a §67 deixou como
+      julgamento do Narrador.
+
+  H2. Uma especialização por perícia ......................... baixo
+      `f.especializacoes` guarda um nome só por perícia. O livro
+      (pág. 159) permite tantas quanto o valor na Habilidade, e mais
+      que isso em Ofícios (pág. 164). Não muda dado numa rolagem —
+      muda o modelo de dado, e atravessa criador, ficha impressa e
+      fichas salvas. Declarada em regras.md §17.6.
+
+  G10. Os seis Predadores do Guia do Jogador ................. médio
+      Extorsionista, Ladrão de Túmulos, Montero, Perseguidor,
+      Assassino de Estrada e Alçapão vêm do Guia (págs. 107-111) e
+      NÃO foram conferidos. O Guia dá parada de dados para todos, e
+      traduz mal (Oblívio vira "Esquecimento"). Há ainda um sétimo,
+      o Ceifador, que o projeto não tem. §77.7
+
+  G9. O Apêndice III (Jogo Ponderado) não tem contraparte ..... médio
+      Básico, págs. 419-423. Quase tudo é de mesa física, mas dois
+      itens traduzem direto:
+        . Carta X — num aplicativo é literalmente um botão, e é o item
+          mais barato e mais valioso do apêndice;
+        . Linhas e Véus DECLARADAS PELO JOGADOR, por crônica, injetadas
+          no prefixo do Narrador. Isto corrige cenario.md §9.1, que hoje
+          trata a trava de assunto sensível como obrigação do autor
+          quando o livro manda a lista ser do jogador e editável a
+          qualquer momento.
+
+  ---- ARQUITETURA MODULAR (§78-§86) ----
+  Cinco módulos, cada um em sua PASTA (§79), em seu processo e em sua porta
+  (comum/portas.mjs).
+  OS CINCO MÓDULOS EXISTEM. Mesa na §78, as pastas na §79, ligar e
+  desligar na §80, a rolagem virou da Mesa na §82, e Ficha, Árbitro e
+  Cronista viraram processos na §83 e na §84.
+  E O CLIENTE JÁ USA (§85): guarda ficha no Módulo 2, faz checkout e
+  checkin no Módulo 3, rola pela Mesa e ouve o canal. Com os módulos
+  fora, o jogo continua local e a tela diz por quê.
+  O QUE FALTA é levar o desenho ao fim: M4, M8, M9 e M10. Nada disso
+  bloqueia jogar.
+
+  M8. O ArbitroServer está de pé e ninguém o consulta ........ médio
+      O Árbitro que decide o turno é o do navegador. É o MESMO código
+      do módulo (a §84 carrega os mesmos arquivos num vm), então não há
+      divergência de regra — o que há é um processo que existe e não é
+      usado. Nasceu na §85.
+
+  M9. A sessão é espelhada, não autoritativa ................. médio
+      O localStorage continua sendo a fonte imediata; o Módulo 3 tem a
+      cópia durável, a pasta, o autosave e o checkin. Inverter — o
+      servidor mandando, o navegador só desenhando — é o desenho do
+      usuário levado ao fim, e é trabalho grande. Nasceu na §85.
+
+  M10. Só a rolagem de AÇÃO passa pela Mesa .................. baixo
+      Frenesi, Remorso e o combate rolam por dentro do motor, em
+      caminho síncrono, e usam a fonte local da §82. Separá-los exige
+      tornar assíncrono o miolo do Árbitro. Nasceu na §85.
+
+  M4. O Árbitro não manda salvar na memória da mesa ........... médio
+      Do desenho do Módulo 4: pegar uma carta, conhecer alguém — o
+      veredito tem de trazer o que a mesa deve gravar. Hoje ele devolve
+      só o resultado mecânico, e mundo.objetos / mundo.pessoas ficam
+      vazios a menos que alguém preencha à mão.
+
+
+================================================================
+== FECHADO ==
+================================================================
+
+Uma linha por item. O relato está no README, na seção citada.
+
+ARQUITETURA MODULAR
+  M1 ..... o FichaServer (Módulo 2) ............... §83
+  M6 ..... a regra de origem, num lugar só ....... §86
+  M7 ..... o aviso de sessão viva ao desligar .... §86
+  M2 ..... o Cliente passou a usar os módulos .... §85
+  M3 ..... Árbitro e Cronista viraram processos ... §84
+  M5 ..... ligar/desligar não conhecia os módulos . §80
+
+FICHA
+  F1-F5 .. os cinco itens da área ................ §47
+
+ÁRBITRO
+  A1 ..... parada de dados podia chegar a zero ... §63.1
+  A2 ..... reteste de Vontade só aceitava falha .. §63.2
+  A3 ..... empate em combate e a esquiva ......... §63.3
+  A4 ..... cinco ações do Apêndice I faltando .... §63.4
+  A5 ..... trilha cheia de Agravado é torpor ..... §45.2
+  A6 ..... dano Superficial arredondado para baixo §63.5
+  A7 ..... o Desejo só pagava no fim da sessão ... §69.1
+  A8 ..... Pilar perdido não derrubava a Convicção §69.2
+  A9 ..... Mácula a serviço de Convicção .......... §69.3
+  H1 ..... especialização dava +1 dado sempre .... §73.1
+
+FRONT
+  N1-N4 .. os itens de front .................. §47, §50, §54
+  N5, N6 . tamanho dos arquivos de front ...... decisão sua: não entra
+  N7 ..... o item restante .................... §54
+  N8 ..... nove funções sem teste direto ...... §54.3
+  ....... faixa dizia "simulado" com a IA ligada §75.2
+  ....... ids de sessão colidiam sozinhos ..... §75.5
+
+CRONISTA
+  ....... teto de tamanho no Cronista ......... §55, removido
+  ....... teto de tamanho no Narrador ......... §56, removido
+
+GERAL
+  ....... testes mostrarem os valores .......... §54.1
+  ....... entrada única do jogador ............. §57
+  ....... Parte I de regras.md contra o livro .. §58, §59, §60
+  ....... Apêndice I: Ações Padrão ............. §62
+  ....... Disciplinas reescritas pelo livro .... §64
+  ....... regras.md conferido contra o dado .... §65
+  ....... Itens e armas (378-381) .............. §66
+  ....... Ressonância (225-231) ................ §67
+  ....... cenario.md em dia + Crenças .......... §68
+  ....... Habilidades (159-171) ................ §71.2
+  ....... primeira campanha jogável ............ §72
+  ....... Habilidades em regras.md §17 ......... §73
+  ....... painel de sistemas e iniciar.cmd ..... §75
+  ....... botões de desligar ................... §76
+  ....... Tipos de Predador (175-178) .......... §77
+  ....... Combate.resolver aplica dano na ficha  contrato, não defeito
+  ....... framework no navegador ............... decisão sua: não entra
+  ....... provedor pago ........................ não existe, e não volta

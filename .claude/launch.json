@@ -4,7 +4,7 @@
     {
       "name": "vitae",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["servidor/proxy.mjs"],
+      "runtimeArgs": ["modulos/gateway/proxy.mjs"],
       "port": 5173
     }
   ]

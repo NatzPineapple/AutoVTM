@@ -9,9 +9,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { RAIZ, ORDEM, AREAS, memoriaLocal } from './carregar.mjs';
+import { RAIZ, ORDEM, AREAS, ARQUIVOS, PASTA_DA_AREA, memoriaLocal } from './carregar.mjs';
 
-const html = fs.readFileSync(path.join(RAIZ, 'app', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(RAIZ, 'modulos', 'cliente', 'index.html'), 'utf8');
 const naPagina = [...html.matchAll(/<script\s+src="([^"]+\.js)"/g)].map(m => m[1]);
 
 test('arreio — a ordem de carga', async (t) => {
@@ -19,7 +19,11 @@ test('arreio — a ordem de carga', async (t) => {
     /* A ordem não é decorativa: const lido antes do arquivo rodar é TDZ
        (§43). Se alguém acrescentar script na página e esquecer daqui, o
        teste cai — que é o ponto. */
-    assert.deepEqual(ORDEM, naPagina.filter(s => s.startsWith('js/')).map(s => 'app/' + s));
+    /* §79: a URL é o caminho no repositório, então a comparação é
+       direta — tirar a barra da frente é toda a tradução que existe.
+       Antes havia um `'app/' +` aqui, e ele era a prova de que a URL
+       e o disco não conversavam. */
+    assert.deepEqual(ORDEM, naPagina.map(s => s.replace(/^\//, '')));
   });
 
   await t.test('todo arquivo listado existe no disco', () => {
@@ -32,10 +36,10 @@ test('arreio — a ordem de carga', async (t) => {
        index.html carrega nunca, e o app abre mudo (§36). */
     const esquecidos = [];
     for (const area of Object.keys(AREAS)) {
-      const pasta = path.join(RAIZ, 'app', 'js', area);
+      const pasta = path.join(RAIZ, PASTA_DA_AREA[area]);
       for (const arq of fs.readdirSync(pasta)) {
         if (!arq.endsWith('.js')) continue;
-        const rel = `app/js/${area}/${arq}`;
+        const rel = `${PASTA_DA_AREA[area]}/${arq}`;
         if (!ORDEM.includes(rel)) esquecidos.push(rel);
       }
     }

@@ -7,10 +7,10 @@
   "scripts": {
     "test": "node --test --test-reporter=./testes/relator.mjs --test-reporter-destination=stdout \"testes/*.test.mjs\"",
     "test:ficha": "node --test testes/ficha.test.mjs",
-    "dev": "node servidor/dev.mjs",
-    "proxy": "node servidor/proxy.mjs",
-    "diagnostico": "node -e \"import('./servidor/cronista.mjs').then(async m=>console.log(JSON.stringify(await m.diagnostico(),null,2)))\"",
-    "comparar": "node servidor/comparador.mjs",
+    "dev": "node ferramentas/dev.mjs",
+    "proxy": "node modulos/gateway/proxy.mjs",
+    "diagnostico": "node -e \"import('./modulos/cronista/cronista.mjs').then(async m=>console.log(JSON.stringify(await m.diagnostico(),null,2)))\"",
+    "comparar": "node ferramentas/comparador.mjs",
     "test:arbitro": "node --test testes/arbitro.test.mjs",
     "test:sessoes": "node --test testes/sessoes.test.mjs",
     "test:cadeia": "node --test testes/cadeia.test.mjs",
@@ -20,6 +20,16 @@
     "testes:log": "node -e \"process.stdout.write(require(String.fromCharCode(102,115)).readFileSync(\"testes/registro/ultimo.md\",\"utf8\"))\"",
     "test:cronista": "node --test testes/cronista.test.mjs",
     "test:jornada": "node --test testes/jornada.test.mjs",
-    "test:servidor": "node --test testes/servidor.test.mjs"
+    "test:servidor": "node --test testes/servidor.test.mjs",
+    "iniciar": "node modulos/gateway/proxy.mjs",
+    "mesa": "node modulos/mesa/mesa-servidor.mjs",
+    "test:mesa": "node --test testes/mesa-servidor.test.mjs",
+    "ficha": "node modulos/ficha/ficha-servidor.mjs",
+    "arbitro": "node modulos/arbitro/arbitro-servidor.mjs",
+    "cronista": "node modulos/cronista/cronista-servidor.mjs",
+    "test:modulos": "node --test testes/modulos.test.mjs"
+  },
+  "optionalDependencies": {
+    "mongodb": "^7.6.0"
   }
 }

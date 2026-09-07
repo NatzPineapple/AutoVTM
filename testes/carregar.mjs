@@ -20,23 +20,15 @@ import { fileURLToPath } from 'node:url';
 
 export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-/* A ordem é a mesma do index.html, e pelo mesmo motivo: const lido
-   antes do arquivo rodar é erro de TDZ. Manter as duas em sincronia
-   é obrigação — há teste que compara uma com a outra. */
-export const AREAS = {
-  data: ['data-traits', 'data-clans', 'data-disciplinas', 'data-predadores', 'data-vantagens',
-         'data-brasil', 'data-sabbat', 'data-anarquistas', 'data-independentes', 'data-seitas',
-         'data-mesa', 'data-recombinacao', 'data-escudo', 'data-itens', 'data-ressonancia'],
-  ficha: ['ficha-vocabulario', 'motor-ficha', 'motor-matilha', 'ficha-regras', 'ficha-oficial', 'fichas'],
-  arbitro: ['motor-dados', 'motor-arbitro', 'arbitro-lexico', 'arbitro-tabelas', 'motor-estado', 'motor-combate', 'motor-grafo',
-            'motor-especialista', 'motor-cadeia', 'motor-navegacao', 'motor-entrada', 'motor-intencao'],
-  cronista: ['compilador', 'diretor', 'recombinador', 'escada', 'narrador',
-             'motor-cronica', 'cronista', 'legado'],
-  front: ['dados-ui', 'criador-paineis', 'app', 'sessoes', 'mesa-render', 'mesa', 'mesa-acoes']
-};
-
-export const ORDEM = Object.entries(AREAS)
-  .flatMap(([area, nomes]) => nomes.map(n => `app/js/${area}/${n}.js`));
+/* A ORDEM DE CARGA SUBIU PARA comum/.  (§84)
+   Ela morava aqui, e por dois anos isso bastou: só o arreio precisava
+   dela. Agora o ArbitroServer também — ele carrega os mesmos arquivos
+   num contexto de vm para servir o Árbitro por HTTP, e um módulo não
+   pode depender de `testes/`. O arreio reexporta, e quem lia daqui
+   continua lendo daqui. */
+export { AREAS, ORDEM_DAS_AREAS, PASTA_DA_AREA, caminhoDe, ARQUIVOS, ORDEM }
+  from '../comum/ordem-de-carga.mjs';
+import { AREAS, caminhoDe } from '../comum/ordem-de-carga.mjs';
 
 /* localStorage de mentira, com a mesma semântica da coisa real:
    guarda string, devolve null quando não existe, e estoura quando
@@ -176,7 +168,7 @@ export function carregar(areas = Object.keys(AREAS), extras = {}) {
   for (const area of pedidas) {
     if (!AREAS[area]) throw new Error(`Área desconhecida: ${area}`);
     for (const nome of AREAS[area]) {
-      const arquivo = path.join(RAIZ, 'app', 'js', area, `${nome}.js`);
+      const arquivo = path.join(RAIZ, caminhoDe(area, nome));
       const fonte = fs.readFileSync(arquivo, 'utf8');
       try {
         new vm.Script(fonte + exportarTopo(fonte), { filename: `${area}/${nome}.js` })
@@ -192,6 +184,21 @@ export function carregar(areas = Object.keys(AREAS), extras = {}) {
      e cobrava nove vezes o tempo da suíte inteira. Aqui ela é zero.
      Quem quiser exercitá-la num teste, devolve o valor. */
   if (contexto.NarradorSimulado) contexto.NarradorSimulado.latenciaMs = [0, 0];
+
+  /* A FONTE DO ACASO É DA MESA, E O TESTE É A MESA AQUI.  (§82)
+
+     Desde a §82 o Árbitro não sorteia: ele diz quais dados, alguém
+     roda, ele apura. Quem instala a fonte no navegador é `mesa.js`;
+     quando o teste carrega a área `front`, ela já veio instalada, e
+     este bloco não toca nela.
+
+     Quando o teste carrega SÓ o Árbitro — que é o caso da maioria —,
+     não há Mesa nenhuma, e sem fonte `Dados.d10()` estoura. Então o
+     arreio faz o papel dela. Um dado honesto: quem quer valor fixo
+     usa `comDadosViciados`. */
+  if (contexto.Dados && !contexto.Dados.temFonte()) {
+    contexto.Dados.usarFonte(() => 1 + Math.floor(Math.random() * 10));
+  }
 
   return contexto;
 }

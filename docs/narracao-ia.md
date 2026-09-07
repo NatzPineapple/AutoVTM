@@ -203,6 +203,153 @@ O motor entrega o resultado; o Narrador escreve a consequência. **Nunca cite o 
 - Nunca termine perguntando "o que você faz?". A interface já pergunta.
 - Fala de NPC entra com travessão de diálogo, na linha, do jeito padrão do português.
 
+
+#### 4.7 O vocabulário oficial
+
+*(conferido no básico, págs. 117–122 e 205–211 — página por linha na tabela)*
+
+Esta seção era a §1 de `regras.md` e mudou de casa: **terminologia é matéria de voz, não
+de mecânica.** O motor não muda de comportamento se a palavra mudar; a prosa, sim. Quem
+escreve texto do projeto — narração, crônica, semente em `data-mesa.js`, campanha em
+`campanhas/` — usa a coluna da esquerda, e nenhuma das outras.
+
+A ordem de autoridade é a de `regras.md`: **o manual básico manda**; a ficha oficial
+(`modelo.pdf`) e o `Oblivio.pdf` mandam na terminologia quando o básico não decide; o
+Escudo do Mestre e o Guia do Jogador perdem para os dois.
+
+**Regra de uso:** a palavra da esquerda é a que o texto usa. As da coluna do meio existem
+para serem **reconhecidas** quando aparecerem numa anotação antiga ou num livro de apoio —
+nunca para serem escritas.
+
+| Use isto | Não use, mas reconheça | Inglês | Fonte |
+|---|---|---|---|
+| **Checagem de Sangue** | Provocação, Verificação de Despertar | Rouse Check | básico, pág. 211 — o nome cheio é *Checagem de Inflamar o Sangue* |
+| **Checagem** | — | Check | básico, pág. 122 — rolagem de **um dado só**, alvo 6+ |
+| **Surto de Sangue** | — | Blood Surge | básico |
+| **Rubor de Vida** | — | Blush of Life | básico, pág. 211 |
+| **Vitalidade** | Saúde | Health | básico, pág. 119 — é Vigor + 3 |
+| **Força de Vontade** | — | Willpower | básico, pág. 119 — é Autocontrole + Determinação |
+| **trilha** | barra, track | track | básico, pág. 119 — Vitalidade e Força de Vontade são trilhas |
+| **Debilitação** | Prejudicado | Impairment | básico |
+| **Mácula** | mancha | Stain | básico, pág. 207 · o Escudo do Mestre traz "mancha", e perde |
+| **Crítico Bestial** | Sucesso em Perigo, Vitória Confusa, crítico/sucesso bagunçado | Messy Critical | básico, pág. 207 · "bagunçado" é do Escudo, e perde |
+| **Falha Bestial** | — | Bestial Failure | básico, pág. 207 |
+| **vitória** | — | win | básico, pág. 120 — sucessos ≥ Dificuldade |
+| **vitória crítica** | — | critical win | básico, pág. 120 |
+| **margem** | — | margin | básico, pág. 121 — sucessos que passaram da Dificuldade |
+| **vencer a um custo** | — | win at a cost | básico, pág. 121 |
+| **falha total** | — | total failure | básico, pág. 122 — nenhum sucesso |
+| **Compulsão** | — | Compulsion | básico, pág. 207 |
+| **Gravidade da Perdição** | Gravidade de Bane | Bane Severity | básico |
+| **Perdição do Clã** | Maldição | Clan Bane | básico |
+| **Pilar** | Marco, Toque de Pedra | Touchstone | ficha oficial |
+| **Ladroagem** | Furto | Larceny | ficha oficial |
+| **Sagacidade** | Intuição | Insight | ficha oficial |
+| **Subterfúgio** | Lábia | Subterfuge | ficha oficial |
+| **Erudição** | Acadêmicos | Academics | ficha oficial |
+| **Percepção** | Consciência | Awareness | ficha oficial |
+| **Ciência** | Ciências | Science | ficha oficial |
+| **Ressonância** | — | Resonance | básico, pág. 227 |
+| **Efêmero** | Fugaz | ephemeral | básico, pág. 227 · "Fugaz" é do Escudo, e perde |
+| **Intenso** | Intensa | intense | básico, pág. 228 |
+| **Agudo** | Apurada | acute | básico, pág. 228 · "Apurada" é do Escudo, e perde |
+| **Discrasia** | coágulo | Dyscrasia | básico, pág. 228 — "coágulo" é gíria de lambedor jovem, e o livro diz isso |
+| **Proteanismo** | Metamorfose | Protean | básico, pág. 227 · "Metamorfose" é do Escudo, e perde |
+| **Feitiçaria de Sangue** | Feitiçaria do Sangue, Magia do Sangue | Blood Sorcery | básico, pág. 227 · "Magia do sangue" é do Escudo, e perde |
+| **hafla** | haft | *handflammpatrone* | básico, pág. 380 — arma incendiária de disparo único |
+| **munição sopro de dragão** | — | dragon's breath round | básico, pág. 380 |
+
+##### A divergência que ficou: piscina × parada de dados
+
+O manual chama o conjunto de dados de **parada de dados** — e também *parada de
+Habilidade*, *parada de Atributo*, *parada das trilhas* (básico, pág. 118). O projeto
+chama de **piscina**, do inglês *pool*, e chama assim em todo lugar: `piscinaDaFicha`,
+`piscinaFinal`, `piscinaDaRota`, a coluna da interface.
+
+**A decisão é dividida, e de propósito:**
+
+- **No código, `piscina` fica.** Renomear identificador em nove arquivos para trocar uma
+  palavra é risco sem retorno, e "parada" em português tem outro sentido forte demais
+  (parar) para virar nome de variável.
+- **Na prosa, use "parada de dados".** É o termo do livro, é o que o jogador leu.
+
+E não há conflito prático: pela §3.2 do README, **o Narrador não escreve número de regra**,
+então ele quase nunca precisa nomear a parada. Quem escreve essa palavra é a interface —
+e a interface fala com quem tem o livro na mão.
+
+##### Onde os dois livros oficiais discordam
+
+A tabela de **Dificuldade da Ação** existe nos dois, com os mesmos sete níveis e os mesmos
+exemplos, e com **nomes diferentes nos dois primeiros**:
+
+| Nível | Manual básico (pág. 119) | Escudo do Mestre (pág. 124) |
+|---|---|---|
+| 1 | Fácil | Rotineiro |
+| 2 | Rotineira | Direto |
+| 3 a 7 | Moderada · Desafiadora · Difícil · Muito difícil · Quase impossível | iguais |
+
+`data-escudo.js` carrega os nomes do Escudo. **Não é erro** — a mecânica é idêntica —, mas
+quem escrever prosa citando o nome do nível deve usar o do básico, que é o que manda.
+
+E discordam de novo na **tabela de Ressonância** (básico, pág. 227; Escudo, pág. 126). Aqui a
+diferença é maior, e é toda a favor do básico:
+
+| O Escudo escreve | O básico escreve |
+|---|---|
+| Fugaz · Apurada | **Efêmero · Agudo** |
+| "Rapiz, Potêncie" | **Celeridade, Potência** |
+| Magia do sangue | **Feitiçaria de Sangue** |
+| Metamorfose | **Proteanismo** |
+
+O projeto tinha copiado o Escudo, e as quatro entraram no `data-vantagens.js` e no `regras.md`.
+Corrigidas na §67 do README. **A regra é a mesma que já valia: onde os dois discordam, vale o
+básico** — mas aqui não é só nome de nível de dificuldade. "Rapiz" não é palavra, e "Metamorfose"
+apontava para uma Disciplina que o projeto já tinha renomeado.
+
+
+#### 4.8 O que o motor passou a saber, e o Narrador ainda não narrava
+
+Três coisas entraram no motor entre a §66 e a §69 e chegam ao Narrador como evento. Ele não
+inventa nenhuma delas — **elas vêm prontas na lista de eventos do turno** —, mas precisa saber o
+que fazer com elas na prosa, senão vira nota de sistema com adjetivo.
+
+**O fogo não apaga sozinho** *(§66; básico, págs. 379–381)*
+
+Lança-chamas, coquetel Molotov, hafla, Raufoss e munição sopro de dragão **queimam por turno até
+alguém apagar**, e cada um diz o que o apaga. O motor cobra o dano e devolve o evento; a narração
+tem de manter o fogo presente enquanto ele estiver lá.
+
+- Não resolva a queima numa frase e siga em frente. **Ela dura**, e é a única coisa neste jogo que
+  mata vampiro de verdade junto com o sol.
+- Fogo exposto é **gatilho de frenesi de Terror** (pág. 220). Se o personagem está queimando, a
+  Besta está acordada — isso é matéria de voz, não de dado.
+- O que apaga é **ação de alguém**: imersão em água com remoção do material, areia, ou
+  Autocontrole + Sobrevivência no caso do Molotov. Deixe isso visível na cena sem dizer a parada.
+
+**O sangue tem sabor, e o sabor dura** *(§67; básico, págs. 225–231)*
+
+Depois de se alimentar, o personagem carrega uma Ressonância e um temperamento até diluir ou até
+a Fome 5. O livro descreve a chegada disso em ordem: *"primeiramente, como um agudo gosto no
+sangue, então como imagens, sussurros e emoções"*.
+
+- **Narre o gosto, não a Ressonância.** "Colérico intenso" é nome de tabela. O que o personagem
+  sente é adrenalina velha, uma discussão que não acabou, vontade de quebrar coisa.
+- Temperamento **efêmero** não vale dado, e é a maioria das vítimas. Isso não o torna menos
+  narrável — é o sabor da noite, e o livro diz exatamente isso: *"suco e sabor narrativos à
+  caçada"*.
+- **Discrasia é coisa rara e cara.** Exige matar e drenar a bolsa, ou três noites bebendo dela.
+  Se o evento aparecer, a cena merece peso.
+
+**Convicção, Pilar e Desejo são cena, e não contabilidade** *(§69; básico, págs. 173–174 e 239)*
+
+- Quando a Mácula vem **reduzida em respeito a uma Convicção**, o personagem não está sendo
+  perdoado: ele está racionalizando, e o livro dá o exemplo com todas as letras — Joana esmaga uma
+  cabeça e se diz que foi pela família. Narre a racionalização, não o desconto.
+- **Perder um Pilar derruba a Convicção junto.** É a coisa mais pesada que acontece fora de
+  combate neste jogo, e chega como um evento só. Não a despache numa linha.
+- O **Desejo** paga na hora em que o personagem age. O livro é explícito sobre o propósito: é um
+  incentivo para agir. A narração deve **notar que ele agiu**, e não anunciar o ponto recuperado.
+
 ### 5. Bloco de estilo para o prefixo cacheado
 
 Este é o texto que vai no prompt do Narrador. Copiar como está.
@@ -246,7 +393,7 @@ São três pares de **registro cru → crônica**. O par é o que ensina: não b
 voz, é preciso mostrar a transformação. Repare que o registro tem número em toda linha e
 nenhuma crônica repete um só. É a lição mais importante do bloco.
 
-`servidor/contexto.mjs` lê a cerca abaixo e a inclui no prefixo cacheado quando a camada
+`modulos/cronista/contexto.mjs` lê a cerca abaixo e a inclui no prefixo cacheado quando a camada
 é o Cronista. Editar aqui muda o comportamento do próximo pedido.
 
 ```
@@ -352,7 +499,7 @@ personagem. A informação basta.
 Checagens determinísticas. Falhou → uma retentativa dizendo o motivo → se falhar de novo,
 o texto sai marcado como reprovado.
 
-Implementadas em `servidor/cronista.mjs`, função `validar()`:
+Implementadas em `modulos/cronista/cronista.mjs`, função `validar()`:
 
 | Checagem | Como testa |
 |---|---|
@@ -361,7 +508,7 @@ Implementadas em `servidor/cronista.mjs`, função `validar()`:
 | Reticências | Mais de uma ocorrência de `...` no texto |
 | **Número de regra** | Dígito perto de termo de regra, **nas duas ordens**: `3 de Fome` e `a Fome subiu para 3` |
 | **Eco do registro** | Item de lista começando com `Cena:`, `Jogador:`, `Teste de…:`, `Sistema:`, `Barrado:` |
-| **Tamanho** | Fora da faixa de 60 a 260 palavras |
+| **Tamanho** | Abaixo de 60 palavras. **Não há teto** (§56) |
 | Pergunta final | A prosa termina em `?` |
 | Idioma | Contagem de marcadores de inglês na prosa |
 | Id inexistente em relação | `relacoes[].id` fora das entidades declaradas |
@@ -381,7 +528,7 @@ Ainda não implementadas, e vale saber por quê:
 
 ### 6.1 A lista negra, em formato de máquina
 
-O bloco abaixo é a **fonte única** da lista de vocabulário proibido: `servidor/cronista.mjs`
+O bloco abaixo é a **fonte única** da lista de vocabulário proibido: `modulos/cronista/cronista.mjs`
 lê esta seção do próprio arquivo em vez de manter uma cópia no código. Editar aqui muda o
 validador. Um termo por linha, sem acento no que for opcional — a comparação normaliza.
 

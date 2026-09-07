@@ -13,7 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { carregar, fichaDeTeste, comDadosViciados, executar, AREAS, RAIZ } from './carregar.mjs';
+import { carregar, fichaDeTeste, comDadosViciados, executar, AREAS, RAIZ, caminhoDe } from './carregar.mjs';
 
 const g = carregar(['data', 'ficha', 'arbitro', 'front']);
 const { Arbitro, Cadeia, Navegacao, Grafo, Combate } = g;
@@ -216,7 +216,7 @@ test('Árbitro — a divisão em três', async (t) => {
     const vazando = [];
     for (const [obj, arq] of [['Lexico', 'arbitro-lexico'], ['TabelasV5', 'arbitro-tabelas']]) {
       const fonte = semComentario(
-        fs.readFileSync(path.join(RAIZ, 'app', 'js', 'arbitro', `${arq}.js`), 'utf8'));
+        fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', arq)), 'utf8'));
       const tem = new Set((fonte.match(/^ {2}(?:get )?([A-Za-z_$][\w$]*)\s*[:(]/gm) || [])
         .map(x => x.trim().replace(/^get /, '').replace(/[:(].*/, '')));
       for (const uso of new Set((fonte.match(/this\.([A-Za-z_$][\w$]*)/g) || []).map(x => x.slice(5)))) {
@@ -250,7 +250,7 @@ test('Árbitro — a divisão em três', async (t) => {
   await t.test('nenhum arquivo do Árbitro passa de 750 linhas', () => {
     const grandes = [];
     for (const nome of AREAS.arbitro) {
-      const n = fs.readFileSync(path.join(RAIZ, 'app', 'js', 'arbitro', `${nome}.js`), 'utf8')
+      const n = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', nome)), 'utf8')
         .split('\n').length;
       if (n > 750) grandes.push(`${nome}.js (${n})`);
     }
@@ -533,7 +533,7 @@ test('Árbitro — a área é independente do front (A6)', async (t) => {
        acompanha sozinho. */
     const semComentario = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     const leia = (area, nome) => semComentario(
-      fs.readFileSync(path.join(RAIZ, 'app', 'js', area, `${nome}.js`), 'utf8'));
+      fs.readFileSync(path.join(RAIZ, caminhoDe(area, nome)), 'utf8'));
     const declaradas = (fonte) =>
       [...fonte.matchAll(/^(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m => m[1]);
 
@@ -819,7 +819,7 @@ test('Cadeia — nada aqui se declara provisório', async (t) => {
 
     for (const nome of AREAS.arbitro) {
       const fonte = fs.readFileSync(
-        path.join(RAIZ, 'app', 'js', 'arbitro', `${nome}.js`), 'utf8');
+        path.join(RAIZ, caminhoDe('arbitro', nome)), 'utf8');
 
       /* Por BLOCO de comentário, não por linha. Linha a linha, a primeira
          versão deste teste acusou os próprios comentários que registram o
@@ -845,7 +845,7 @@ test('Cadeia — nada aqui se declara provisório', async (t) => {
        que é verdade — senão a próxima pessoa a ler o arquivo não sabe
        se o turno passa por aqui. */
     const fonte = fs.readFileSync(
-      path.join(RAIZ, 'app', 'js', 'arbitro', 'motor-cadeia.js'), 'utf8');
+      path.join(RAIZ, caminhoDe('arbitro', 'motor-cadeia')), 'utf8');
     const cabecalho = fonte.slice(0, fonte.indexOf('const Cadeia'));
     assert.ok(/arbitrarTurno/.test(cabecalho),
       'o cabeçalho não diz por onde a mesa entra');

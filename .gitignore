@@ -35,7 +35,7 @@ npm-debug.log*
 # Saída do comparador de modelos: reescrita a cada `npm run comparar`, e
 # versionar só geraria diff de ruído. As DUAS outras amostras da pasta são
 # ENTRADA de teste e ficam no repositório.
-servidor/amostras/ultima-comparacao.json
+modulos/cronista/amostras/ultima-comparacao.json
 
 # Modelos de linguagem, se algum dia forem baixados para dentro do projeto.
 # Hoje vivem no ollama, fora daqui.
@@ -85,3 +85,9 @@ $RECYCLE.BIN/
 # Registro das corridas de teste — resultado de execução, não código.
 # `npm test` reescreve, e guarda os vinte últimos.
 testes/registro/
+
+# Sessões de mesa (Módulo 3): estado de jogo local, não é código.
+sessoes/
+
+# Fichas guardadas pelo Módulo 2 quando não há MongoDB — dados de jogo, não código.
+fichas/

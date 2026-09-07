@@ -15,7 +15,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { carregar, fichaDeTeste, memoriaLocal, AREAS, RAIZ } from './carregar.mjs';
+import { carregar, fichaDeTeste, memoriaLocal, executar, AREAS, RAIZ, caminhoDe } from './carregar.mjs';
 
 /* Duas áreas. Foram quatro até a §47: FICHA_VAZIA, clan(), predador(),
    cidade() e esc() viviam em front/app.js, e motor-ficha.js chamava
@@ -305,7 +305,7 @@ test('Ficha — a área é independente do front', async (t) => {
     const sujos = [];
     for (const nome of AREAS.ficha) {
       const fonte = semComentario(
-        fs.readFileSync(path.join(RAIZ, 'app', 'js', 'ficha', `${nome}.js`), 'utf8'));
+        fs.readFileSync(path.join(RAIZ, caminhoDe('ficha', nome)), 'utf8'));
       const m = fonte.match(/(?<![\w$.])S\s*[.[]/g);
       if (m) sujos.push(`${nome}.js (${m.length})`);
     }
@@ -317,14 +317,14 @@ test('Ficha — a área é independente do front', async (t) => {
        despercebida porque quem passa argumento fica seguro. */
     const sujos = [];
     for (const nome of AREAS.ficha) {
-      const fonte = fs.readFileSync(path.join(RAIZ, 'app', 'js', 'ficha', `${nome}.js`), 'utf8');
+      const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('ficha', nome)), 'utf8');
       if (/[(,]\s*\w+\s*=\s*S\s*[),]/.test(fonte)) sujos.push(`${nome}.js`);
     }
     assert.deepEqual(sujos, [], 'voltou a existir parâmetro com padrão S');
   });
 
   await t.test('o Índice de Força não chama o Árbitro (F2)', () => {
-    const fonte = fs.readFileSync(path.join(RAIZ, 'app', 'js', 'ficha', 'motor-ficha.js'), 'utf8');
+    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('ficha', 'motor-ficha')), 'utf8');
     assert.ok(!/\bDados\./.test(fonte), 'motor-ficha voltou a chamar Dados');
   });
 
@@ -446,5 +446,228 @@ test('Ficha — a folha oficial', async (t) => {
     /* Decisão da §16.2: o número é interno. */
     const html = g.fichaOficialHTML(fichaDeTeste(g));
     assert.ok(!/Índice de Força/i.test(html), 'o Índice de Força voltou para a folha');
+  });
+});
+
+/* ============================================================
+   §77 — TIPOS DE PREDADOR (básico, págs. 175–178)
+
+   O capítulo tem DEZ tipos, e o projeto trazia dezesseis — seis
+   deles do Guia do Jogador, misturados sem distinção. Dos dez do
+   básico, SEIS estavam com nome inventado e quase todos com
+   mecânica errada.
+   ============================================================ */
+
+test('Predadores — os dez do básico, pela página (§77)', async (t) => {
+
+  const doLivro = () => g.PREDADORES.filter(p => p.pagina >= 175 && p.pagina <= 178);
+
+  await t.test('são exatamente dez, e todos declaram a página', (t2) => {
+    const dez = doLivro();
+    t2.diagnostic(dez.map(p => `${p.nome} (${p.pagina})`).join(' · '));
+    assert.equal(dez.length, 10, 'o capítulo do básico tem dez tipos');
+  });
+
+  await t.test('os nomes são os do livro, e não os que o projeto inventou', (t2) => {
+    /* Seis dos dez estavam traduzidos por conta própria. Dois deles o
+       livro nem traduz: "Sandman" e "Scene Queen" ficam em inglês. */
+    const nomes = doLivro().map(p => p.nome).sort();
+    t2.diagnostic(nomes.join(' · '));
+    assert.equal(nomes.join(' · '),
+      'Consensualista · Fazendeiro · Osíris · Sacoleiro · Sandman · Sanguessuga · ' +
+      'Scene Queen · Sereia · Trinchador · Vira-lata');
+    const inventados = ['Gato de Rua', 'Ensacador', 'João-Pestana', 'Rainha da Cena',
+                        'Cutelo', 'Sanguessuga de Sangue'];
+    for (const velho of inventados)
+      assert.ok(!nomes.includes(velho), `"${velho}" voltou: não é o nome do livro`);
+  });
+
+  await t.test('ficha salva com o id velho continua achando o Predador', (t2) => {
+    /* Os ids acompanharam os nomes. Sem o mapa, toda ficha salva
+       perderia o Predador em silêncio — a lição da §75.5. */
+    for (const [velho, novo] of Object.entries(g.PREDADORES_RENOMEADOS)) {
+      const p = g.predadorDe(velho);
+      t2.diagnostic(`${velho} → ${p ? p.id : '(perdido)'}`);
+      assert.ok(p, `o id antigo "${velho}" não resolve mais`);
+      assert.equal(p.id, novo);
+    }
+  });
+
+  await t.test('as Disciplinas de cada um são as da página', (t2) => {
+    /* Cinco dos dez estavam com Disciplina errada. */
+    const esperado = {
+      consensualista: 'auspicios,fortitude',
+      fazendeiro:     'animalismo,metamorfose',
+      osiris:         'feiticaria,presenca',
+      sacoleiro:      'feiticaria,ofuscacao',
+      sandman:        'auspicios,ofuscacao',
+      sanguessuga:    'celeridade,metamorfose',
+      scene_queen:    'dominacao,potencia',
+      sereia:         'fortitude,presenca',
+      trinchador:     'dominacao,animalismo',
+      vira_lata:      'celeridade,potencia'
+    };
+    for (const p of doLivro()) {
+      t2.diagnostic(`${p.nome}: ${p.disciplina.join(', ')}`);
+      assert.equal(p.disciplina.join(','), esperado[p.id], p.nome);
+    }
+  });
+
+  await t.test('toda Disciplina citada existe de verdade', () => {
+    for (const p of doLivro())
+      for (const d of p.disciplina)
+        assert.ok(g.DISCIPLINAS[d], `${p.nome} cita "${d}", que não existe`);
+  });
+
+  await t.test('toda especialização aponta para uma Habilidade real', (t2) => {
+    const ids = Object.values(g.HABILIDADES).flatMap(x => x.lista).map(h => h.id);
+    let n = 0;
+    for (const p of doLivro())
+      for (const [hid, nome] of p.especializacao.opcoes) {
+        n++;
+        assert.ok(ids.includes(hid), `${p.nome} cita a Habilidade "${hid}", que não existe`);
+        assert.ok(nome && nome.length > 2, `${p.nome}: especialização sem nome`);
+      }
+    t2.diagnostic(`${n} especializações conferidas`);
+  });
+
+  await t.test('o Sanguessuga ganha Potência de Sangue, e é o único', (t2) => {
+    /* "Aumente a Potência de Sangue em um" (pág. 177). O projeto não
+       tinha isso em lugar nenhum dos dez. */
+    const comPS = doLivro().filter(p => p.potenciaSangue);
+    t2.diagnostic(comPS.map(p => `${p.nome} +${p.potenciaSangue}`).join(', ') || 'nenhum');
+    assert.equal(comPS.length, 1);
+    assert.equal(comPS[0].id, 'sanguessuga');
+    assert.equal(comPS[0].potenciaSangue, 1);
+  });
+
+  await t.test('quem mexe na Humanidade mexe na direção certa', (t2) => {
+    const mapa = {};
+    for (const p of doLivro()) if (p.humanidade) mapa[p.id] = p.humanidade;
+    t2.diagnostic(JSON.stringify(mapa));
+    assert.deepEqual(mapa, {
+      consensualista: 1, fazendeiro: 1, sanguessuga: -1, vira_lata: -1
+    });
+  });
+
+  await t.test('a Feitiçaria de Sangue vem marcada como só de Tremere', () => {
+    /* "Ganhe um ponto em Feitiçaria de Sangue (somente Tremere)" —
+       vale para Osíris e Sacoleiro (pág. 176). */
+    for (const id of ['osiris', 'sacoleiro']) {
+      const p = g.predadorDe(id);
+      assert.ok(p.disciplina.includes('feiticaria'), `${p.nome} perdeu a Feitiçaria`);
+      assert.equal((p.disciplinaRestrita || {}).feiticaria, 'tremere',
+        `${p.nome} não marca a restrição de clã`);
+    }
+  });
+});
+
+test('Predadores — as travas que o livro impõe (§77)', async (t) => {
+
+  const ficha = (extra) => Object.assign(fichaDeTeste(g), extra);
+
+  await t.test('Ventrue não pode ser Fazendeiro nem Sacoleiro', (t2) => {
+    /* Básico, pág. 176, nos dois verbetes. Nenhuma das duas travas
+       existia: um Ventrue saía do criador como Fazendeiro. */
+    const v = ficha({ cla: 'ventrue', seita: 'camarilla' });
+    const permitidos = g.Seitas.predadoresPermitidos(v, { potencia: 1 }).map(p => p.id);
+    t2.diagnostic(`Ventrue pode: ${permitidos.length} tipos`);
+    assert.ok(!permitidos.includes('fazendeiro'), 'Ventrue pôde ser Fazendeiro');
+    assert.ok(!permitidos.includes('sacoleiro'), 'Ventrue pôde ser Sacoleiro');
+  });
+
+  await t.test('e outro clã pode os dois', () => {
+    const b = ficha({ cla: 'brujah', seita: 'camarilla' });
+    const permitidos = g.Seitas.predadoresPermitidos(b, { potencia: 1 }).map(p => p.id);
+    assert.ok(permitidos.includes('fazendeiro'));
+    assert.ok(permitidos.includes('sacoleiro'));
+  });
+
+  await t.test('Fazendeiro sai da lista com Potência de Sangue 3', (t2) => {
+    /* "Você não pode escolher Fazendeiro se sua Potência de Sangue
+       for 3 ou mais." (pág. 176) */
+    const f = ficha({ cla: 'brujah', seita: 'camarilla' });
+    for (const ps of [1, 2, 3, 4]) {
+      const pode = g.Seitas.predadoresPermitidos(f, { potencia: ps }).some(p => p.id === 'fazendeiro');
+      t2.diagnostic(`Potência ${ps}: ${pode ? 'pode' : 'não pode'}`);
+      assert.equal(pode, ps <= 2, `Potência ${ps}`);
+    }
+  });
+
+  await t.test('sem a Potência informada, a trava não é aplicada — e é de propósito', () => {
+    /* A camada de dados não alcança `derivados`. Quem sabe a Potência
+       passa; quem não passa recebe a lista sem essa trava, e isso está
+       escrito no código em vez de acontecer calado. */
+    const f = ficha({ cla: 'brujah', seita: 'camarilla' });
+    assert.ok(g.Seitas.predadoresPermitidos(f).some(p => p.id === 'fazendeiro'));
+  });
+});
+
+/* ============================================================
+   FICHA PARCIAL NÃO DERRUBA A BIBLIOTECA  (§85)
+
+   Antes da §85 toda ficha da biblioteca vinha do criador, e o
+   criador sempre produz forma completa. Desde a §85 ela pode vir
+   do FichaServer, de outra máquina ou de um `.json` importado — e
+   `pendenciasDaFicha` lia `f.atributos`, `f.habilidades`,
+   `f.especializacoes` e `f.conviccoes` sem perguntar.
+
+   O estrago era desproporcional: UMA ficha incompleta derrubava a
+   TELA INTEIRA, porque `listarFichas().map(resumoDaFicha)` morre
+   na primeira.
+   ============================================================ */
+
+test('Ficha — a ficha parcial não derruba a biblioteca (§85)', async (t) => {
+  const g = carregar(['data', 'ficha'], { localStorage: memoriaLocal() });
+
+  const PARCIAIS = {
+    'só nome e clã':        { fichaId: 'a__brujah', nome: 'A', cla: 'brujah' },
+    'só nome':              { fichaId: 'b__sem', nome: 'B' },
+    'mapas vazios':         { fichaId: 'c__x', nome: 'C', atributos: {}, habilidades: {} },
+    'sem convicções':       { fichaId: 'd__x', nome: 'D', cla: 'toreador', atributos: { forca: 2 } },
+    'sem especializações':  { fichaId: 'e__x', nome: 'E', habilidades: { armas_brancas: 3 } }
+  };
+
+  await t.test('`pendenciasDaFicha` aceita qualquer uma delas', (t2) => {
+    for (const [rotulo, f] of Object.entries(PARCIAIS)) {
+      const p = executar(g, `pendenciasDaFicha(${JSON.stringify(f)})`);
+      assert.ok(Array.isArray(p.problemas), `${rotulo}: não devolveu problemas`);
+      /* E ela DIZ que está incompleta, que é a razão de ela existir. */
+      assert.ok(p.problemas.length > 0, `${rotulo}: disse que a ficha está pronta`);
+    }
+    t2.diagnostic(`${Object.keys(PARCIAIS).length} formas parciais, nenhuma estourou`);
+  });
+
+  await t.test('e sem argumento nenhum também não estoura', () => {
+    for (const nada of ['undefined', 'null', '{}']) {
+      const p = executar(g, `pendenciasDaFicha(${nada})`);
+      assert.ok(Array.isArray(p.problemas), `pendenciasDaFicha(${nada}) quebrou`);
+    }
+  });
+
+  await t.test('a biblioteca inteira desenha com uma parcial no meio', (t2) => {
+    /* O caso real: uma ficha ruim entre boas. Antes, a lista inteira
+       morria — a tela ficava em branco e o jogador perdia o acesso às
+       fichas boas por causa da ruim. */
+    const ctx = carregar(['data', 'ficha'], { localStorage: memoriaLocal() });
+    const boa = Object.assign(fichaDeTeste(ctx), { fichaId: 'boa__brujah', nome: 'Boa' });
+    executar(ctx, `guardarFicha(${JSON.stringify(boa)})`);
+    for (const f of Object.values(PARCIAIS)) {
+      executar(ctx, `guardarFicha(${JSON.stringify(f)})`);
+    }
+    const resumos = executar(ctx, 'listarFichas().map(resumoDaFicha)');
+    t2.diagnostic(resumos.map(r => `${r.nome}:${r.pendencias}`).join(' · '));
+    assert.equal(resumos.length, 6, 'a lista perdeu ficha pelo caminho');
+    /* A boa continua sendo lida como boa. */
+    const boaResumo = resumos.find(r => r.nome === 'Boa');
+    assert.ok(boaResumo, 'a ficha completa sumiu da lista');
+    assert.ok(boaResumo.vitalidade > 0, 'a ficha completa perdeu os derivados');
+  });
+
+  await t.test('`contagem` sozinha aceita mapa ausente', () => {
+    /* Ela é a mais chamada das três, e o `|| {}` mora nela por isso:
+       o pressuposto era dela, não de quem a chama. */
+    assert.equal(executar(g, 'contagem(undefined, todosAtributos())[1]'), 0);
+    assert.equal(executar(g, 'contagem(null, todasHabilidades())[3]'), 0);
   });
 });

@@ -239,6 +239,28 @@ Contramedidas dos personagens, todas com custo: apagar gravação, comprar polic
 trocar identidade (Mérito Máscara), destruir aparelho, usar mortal como intermediário —
 e escolher vítima que ninguém vai procurar, que é escolha moral, não técnica.
 
+### 6.1 O que ela carrega
+
+*(básico, "Itens", págs. 378–381 — o inventário está em `data-itens.js`, com página em
+cada item)*
+
+Isto entrou no motor na §67 do README. Antes, um lança-chamas na mesa causava dano
+Superficial 0; hoje causa Agravado e continua queimando por turno. **A mudança é de
+gênero, não de número:** a Segunda Inquisição deixou de ser só procedimento e passou a
+ter arsenal que mata de verdade.
+
+| O que | Como narrar |
+|---|---|
+| **Detecção** — MiraX nos scanners de aeroporto, caoscópios em veículos grandes | O medo não é o tiro, é a catraca. MiraX básica cai com Rubor de Vida; a de segunda geração, não |
+| **Fogo** — sopro de dragão, hafla, lança-chamas, Molotov | Fogo é Agravado **e** gatilho de frenesi de Terror. Um vampiro competente foge, e foge feio |
+| **Raufoss** — projétil de 12,7 mm | Ignora qualquer armadura. Serve para dizer, numa cena, que a coterie está fora do peso dela |
+| **Estacas e redes** — lançadas de rifle de assalto | A SI **não quer matar**: quer levar. Estaca paralisa, rede prende |
+
+Regra de uso: **o arsenal aparece antes de ser usado.** Um cano de lança-chamas visto
+num porta-malas na primeira cena vale mais que o disparo na terceira. E o BOES brasileiro
+usa o de baixo orçamento — arma incendiária caseira, que causa um ponto a menos e
+queima as mãos de quem atira numa falha total. Isso é caracterização, não só mecânica.
+
 ---
 
 ## 7. Outros habitantes da noite
@@ -255,6 +277,41 @@ Existem. Aparecem pouco. Quando aparecem, a cena muda de gênero.
 
 Regra de contenção: **o Narrador não introduz outro sobrenatural por conta própria.** Só
 entra se a campanha compilada declarar. Vampiro é sobre vampiros.
+
+---
+
+## 7.1 As vítimas têm humor — e o humor virou dado
+
+*(básico, págs. 225–231; mecânica em regras.md §11)*
+
+Até a §67 do README a Ressonância era um nome no rodapé da ficha. Hoje ela **soma um dado**
+nas Disciplinas correspondentes quando o temperamento é intenso, e o motor sorteia o
+temperamento da bolsa quando o Narrador não o declarou. Isso muda o que a descrição de uma
+vítima precisa entregar.
+
+| Ressonância | Quem é, na rua | Alimenta |
+|---|---|---|
+| **Colérica** | quem está irado, provocando, com ciúme | Celeridade, Potência |
+| **Melancólica** | quem está triste, com medo, isolado, pensando demais | Fortitude, Ofuscação |
+| **Fleumática** | quem está apático, calmo, entorpecido, no controle | Auspícios, Dominação |
+| **Sanguínea** | quem está excitado, feliz, viciado, no auge da noite | Feitiçaria de Sangue, Presença |
+
+Como usar na narração:
+
+- **Descreva o estado emocional antes da jugular.** É a descrição que diz ao jogador o que
+  aquele sangue vale. "Ele está rindo alto demais para a hora" é informação mecânica.
+- **O ambiente enviesa.** Casa noturna encoraja o Sanguíneo e não atrai o Fleumático; velório,
+  o contrário. O livro autoriza o Narrador a alterar a ordem da tabela conforme o lugar.
+- **A maioria é efêmera, e efêmero não vale nada.** O dado é exceção, não rotina. Sangue
+  intenso é achado.
+- **Caçar o humor certo é ação.** Perseguir ou conversar por uma cena e rolar Determinação +
+  Sagacidade esclarece a Ressonância sem provar o sangue.
+- **O temperamento agudo é gancho de trama, não bônus.** Para usar a Discrasia é preciso
+  **matar e drenar a vítima** ou se alimentar dela por três noites — quer dizer, voltar. Uma
+  Discrasia é um relacionamento com prazo, e um corpo no fim dele.
+
+> Sangue de bolsa não tem Ressonância intensa, e animal não tem Discrasia. Quem se alimenta
+> só do seguro nunca ganha dado nenhum — e essa é a regra fazendo argumento moral.
 
 ---
 
@@ -297,7 +354,66 @@ Não é sotaque. É infraestrutura e convívio.
 
 ---
 
-## 9. Contrato de coerência para a IA
+## 9. Princípios da Crônica — o limite antes do limite
+
+*(básico, "Crenças", pág. 172. As Convicções, Pilares, Ambição e Desejo, que são do
+personagem, estão em regras.md Parte I §12.1 a §12.3.)*
+
+Convicção é do personagem. **Princípio é da mesa.** O grupo combina, antes de jogar, quais
+códigos aquela crônica leva a sério — por emulação de gênero, ironia dramática, gosto
+pessoal ou por serem assunto sensível na vida real.
+
+Duas propriedades que o livro deixa explícitas, e que valem para este projeto:
+
+1. **Princípios valem para todos os personagens da crônica**, mesmo os que individualmente
+   não os apoiam. São a base ética contra a qual o personagem se mede — "afinal, a luta entre
+   o código moral de um personagem e o da sua sociedade constitui um dos temas centrais da
+   literatura".
+2. **São uma trava de assunto sensível.** Se um jogador estiver realmente arriscando adquirir
+   um trauma real ao jogar uma história que contenha determinada violação, o Narrador **deve
+   evitar essa questão sensível** ou convidar aquele jogador para outra crônica.
+
+Os quatro conjuntos de exemplo do livro:
+
+| Conjunto | Princípios |
+|---|---|
+| **Humanista** | Não matarás, salvo em legítima defesa · Não escravizarás ou torturarás · Não farás mal aos inocentes |
+| **Crença na Justiça** | Nunca mate inocentes · Seja você mesmo, nunca se entregue · Sem uma causa você não é nada |
+| **Gótico/Romântico** | Nunca negue o amor verdadeiro · O culpado deve sofrer · Defenda as normas de uma sociedade decente |
+| **Código das Ruas** | Nunca dedure · Respeite os outros e exija respeito · Não mate estrangeiros |
+
+### 9.1 O que isso significa para uma mesa solo
+
+Numa mesa de grupo, os Princípios são negociados entre pessoas. Aqui não há grupo: há um
+jogador e um modelo. Então a trava muda de forma, e é honesto dizer como.
+
+- **O item 2 acima é obrigação da camada narrativa, não do jogador.** O Narrador não escala
+  violência sexual, tortura de criança ou abuso para produzir tensão. Não é censura de tema —
+  é a diferença entre uma crônica que *trata* de horror e uma que o *encena* gratuitamente.
+  Isso já está na §10 como regra dura.
+- **A crônica compilada pode declarar seus Princípios**, e quando declara, eles entram no
+  prefixo de contexto junto com o resto desta seção. Quando não declara, valem os do conjunto
+  Humanista como piso.
+- **Violar um Princípio custa Mácula**, como violar uma Convicção. Quem cobra isso é o
+  jogador pelo botão de Mácula, não o modelo — o Narrador **descreve** a violação e suas
+  consequências, e nunca aplica número. Ver §10, "Nunca", item 1.
+  Desde a §69, a doca também tem a **atenuante**: Mácula a serviço de uma Convicção vem
+  reduzida (básico, pág. 239). Continua sendo o jogador que decide que houve atenuante.
+
+> **O que está incompleto aqui, e está anotado.** O primeiro item acima trata a trava de
+> assunto sensível como obrigação **minha**, autor — uma lista que eu escrevi e o jogador
+> herda. O Apêndice III do básico (págs. 419–423) manda o contrário: a lista de **Linhas e
+> Véus** é **do jogador**, montada antes do jogo e editável a qualquer momento, e Véus podem
+> virar Linhas e vice-versa.
+>
+> Não está errado como **piso** — um Narrador automático precisa de uma trava que não dependa
+> de o jogador ter pensado nisso antes. Está errado como **teto**: hoje é tudo o que existe, e
+> o jogador não tem onde dizer o que não quer ver. É o item **G9** do README §14.1, junto com
+> a **Carta X**, que num aplicativo é literalmente um botão.
+
+---
+
+## 10. Contrato de coerência para a IA
 
 Regras duras da camada narrativa. O validador da **Parte B** do README §8.3 cobre as que dão
 para verificar por máquina; as de estilo vivem em `narracao-ia.md`.

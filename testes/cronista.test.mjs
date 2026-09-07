@@ -20,7 +20,9 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { carregar, fichaDeTeste, memoriaLocal, executar } from './carregar.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { carregar, fichaDeTeste, memoriaLocal, executar, RAIZ } from './carregar.mjs';
 
 /* `deepEqual` compara protótipo, e objeto vindo do `vm` não é objeto
    deste realm — "same structure but not reference-equal". A §46.6
@@ -992,5 +994,220 @@ test('Crônica — fatos e fios também têm teto (§51.2)', async (t) => {
     assert.ok(pedido.orcamento.estadoTeto, 'o pedido não conta o orçamento de estado');
     assert.ok(pedido.orcamento.estadoCortados > 0);
     assert.ok(pedido.fatos.length < 80, 'o pedido levou os 80 fatos assim mesmo');
+  });
+});
+
+/* ============================================================
+   §72 — A primeira campanha jogável
+
+   `A Conta do Duarte` existe para o usuário exercitar o Árbitro e
+   o Cronista à mão. Se ela apodrecer, o teste avisa — e apodrecer
+   é fácil: o id de uma cena é o SLUG DO TÍTULO, então renomear a
+   cena quebra todo `->` que aponta para ela. Foi o que aconteceu
+   na primeira escrita, e o compilador acusou 47 erros.
+   ============================================================ */
+
+test('Campanha — A Conta do Duarte compila e é jogável (§72)', async (t) => {
+
+  const md = fs.readFileSync(path.join(RAIZ, 'campanhas', 'a-conta-do-duarte.md'), 'utf8');
+  const c = g.Compilador.compilar(md);
+
+  await t.test('compila sem UM erro sequer', (t2) => {
+    t2.diagnostic(c.erros.length ? c.erros.slice(0, 5).join(' | ') : 'nenhum erro');
+    assert.equal(c.erros.length, 0, `a campanha não compila: ${c.erros.join(' | ')}`);
+  });
+
+  await t.test('está registrada em CAMPANHAS, e aponta para o arquivo certo', (t2) => {
+    const reg = g.CAMPANHAS.find(x => x.id === 'conta_duarte');
+    assert.ok(reg, 'a campanha não aparece na lista do saguão');
+    t2.diagnostic(`${reg.nome} · ${reg.arquivo} · ${reg.capitulos} capítulos`);
+    assert.equal(reg.arquivo, 'campanhas/a-conta-do-duarte.md');
+    assert.equal(reg.capitulos, c.capitulos.length,
+      'o número de capítulos no registro não bate com o do arquivo');
+    assert.equal(reg.cidade, c.meta.cidade);
+  });
+
+  await t.test('tem grafo de verdade: dois capítulos, oito cenas, saídas ligadas', (t2) => {
+    const cenas = c.capitulos.flatMap(cap => cap.cenas);
+    t2.diagnostic(`${c.capitulos.length} capítulos · ${cenas.length} cenas · ` +
+      `${cenas.reduce((a, s) => a + s.opcoes.length, 0)} opções`);
+    assert.equal(c.capitulos.length, 2);
+    assert.equal(cenas.length, 8);
+    /* O defeito que a §36.1 nomeou nas outras cinco: compilam e
+       devolvem GRAFO VAZIO. Aqui nenhuma cena pode estar vazia. */
+    for (const s of cenas) {
+      assert.ok(s.narracao.length > 80, `cena ${s.id} sem narração`);
+      assert.ok(s.opcoes.length >= 1, `cena ${s.id} sem opção nenhuma`);
+    }
+  });
+
+  await t.test('toda rota usa atributo e perícia que existem', (t2) => {
+    const atributos = Object.values(g.ATRIBUTOS).flatMap(x => x.lista).map(a => a.id);
+    const pericias = Object.values(g.HABILIDADES).flatMap(x => x.lista).map(h => h.id);
+    let n = 0;
+    for (const cap of c.capitulos) for (const cena of cap.cenas) for (const o of cena.opcoes)
+      for (const r of o.rotas) {
+        n++;
+        assert.ok(atributos.includes(r.atributo),
+          `${cena.id} / ${o.intencao}: atributo "${r.atributo}" não existe`);
+        assert.ok(pericias.includes(r.pericia) || atributos.includes(r.pericia),
+          `${cena.id} / ${o.intencao}: perícia "${r.pericia}" não existe`);
+      }
+    t2.diagnostic(`${n} rotas conferidas`);
+    assert.ok(n >= 20, 'poucas rotas para testar o Árbitro à mão');
+  });
+
+  await t.test('toda entidade citada existe na semente do Rio', (t2) => {
+    /* A campanha reaproveita os ids de SEMENTE_RIO de propósito, para
+       cair numa mesa que já tem grafo. Um id errado aqui é um
+       [[pessoa:x]] que não resolve. */
+    const semente = g.sementeDaCidade('rio');
+    const pessoas = semente.pessoas.map(p => p.id);
+    const locais = semente.locais.map(l => l.id);
+    const citadas = new Set(), citados = new Set();
+    for (const cap of c.capitulos) for (const cena of cap.cenas) {
+      (cena.entidades.pessoas || []).forEach(x => citadas.add(x));
+      (cena.entidades.locais || []).forEach(x => citados.add(x));
+      if (cena.local) citados.add(cena.local);
+      for (const m of cena.narracao.matchAll(/\[\[pessoa:([a-z0-9_]+)\]\]/g)) citadas.add(m[1]);
+    }
+    t2.diagnostic(`pessoas: ${[...citadas].join(', ')} · locais: ${[...citados].join(', ')}`);
+    for (const p of citadas) assert.ok(pessoas.includes(p), `pessoa "${p}" não existe na semente do Rio`);
+    for (const l of citados) assert.ok(locais.includes(l), `local "${l}" não existe na semente do Rio`);
+  });
+
+  await t.test('os oponentes do combate usam modelos que o Escudo conhece', (t2) => {
+    const combates = c.capitulos.flatMap(cap => cap.cenas)
+      .flatMap(s => s.gatilhos).filter(x => x.acao.tipo === 'combate');
+    assert.ok(combates.length >= 1, 'nenhum combate: o Árbitro de combate não seria exercitado');
+    for (const cb of combates) for (const o of cb.acao.oponentes) {
+      t2.diagnostic(`${o.modelo}${o.nome ? ` (${o.nome})` : ''}`);
+      assert.ok(g.Escudo.MODELOS_MORTAIS[o.modelo], `modelo "${o.modelo}" não existe`);
+    }
+    /* Ao menos um oponente ARMADO: é o que faz `armaPor` e a
+       tabela de dano entrarem na conta. */
+    assert.ok(combates.some(cb => cb.acao.oponentes.some(o => o.nome)),
+      'nenhum oponente com arma nomeada');
+  });
+
+  await t.test('cobre as três condições de gatilho que o compilador entende', (t2) => {
+    const tipos = new Set(c.capitulos.flatMap(cap => cap.cenas)
+      .flatMap(s => s.gatilhos).map(x => x.condicao.tipo));
+    t2.diagnostic([...tipos].join(', '));
+    for (const esperado of ['menciona', 'turnos', 'sempre'])
+      assert.ok(tipos.has(esperado), `nenhum gatilho do tipo "${esperado}"`);
+  });
+
+  await t.test('cobra custo nas quatro trilhas que o Diretor aplica', (t2) => {
+    const campos = new Set();
+    for (const cap of c.capitulos) for (const cena of cap.cenas) for (const o of cena.opcoes)
+      for (const d of [o.sucesso, o.falha])
+        (d && d.custos || []).forEach(x => campos.add(x.campo));
+    t2.diagnostic([...campos].join(', '));
+    for (const esperado of ['fome', 'macula', 'dano', 'vontade'])
+      assert.ok(campos.has(esperado), `nenhum custo em "${esperado}"`);
+  });
+
+  await t.test('e o Diretor consegue abrir a primeira cena', (t2) => {
+    const estado = g.Diretor.iniciar(c);
+    const ab = g.Diretor.abrirCena(c, estado, estado.cena);
+    const tipos = ab.eventos.map(e => e.tipo);
+    t2.diagnostic(`cena "${estado.cena}" · eventos: ${tipos.join(', ')}`);
+    assert.ok(tipos.includes('narracao'), 'a abertura não produziu narração');
+    assert.equal(estado.cena, 'camarim');
+  });
+});
+
+test('Compilador — o nome do traço vira o id dele (§72)', async (t) => {
+
+  /* Antes da §72 o compilador só slugificava. "Subterfúgio" virava
+     `subterfugio`, e `Dados.piscinaDe` lia `habilidades.subterfugio`
+     — que não existe. A rota parecia válida e valia ZERO DADOS, em
+     silêncio. E "Subterfúgio" é justamente a grafia que o
+     `narracao-ia.md` §4.7 manda usar. */
+
+  const rotaDe = (par) => {
+    const c = g.Compilador.compilar(
+      `# C\n## Cena :: X\nlocal: x\n\n### Opções\n- intencao: agir\n  rotas:\n  - ${par} :: "t"\n`);
+    return c.capitulos[0].cenas[0].opcoes[0].rotas[0];
+  };
+
+  await t.test('os seis nomes que não batem com o id interno', (t2) => {
+    const casos = [
+      ['Manipulação + Subterfúgio',   'manipulacao', 'labia'],
+      ['Raciocínio + Sagacidade',     'raciocinio',  'intuicao'],
+      ['Destreza + Ladroagem',        'destreza',    'furto'],
+      ['Inteligência + Erudição',     'inteligencia','academicos'],
+      ['Inteligência + Ciência',      'inteligencia','ciencias'],
+      ['Raciocínio + Percepção',      'raciocinio',  'consciencia']
+    ];
+    for (const [par, atr, per] of casos) {
+      const r = rotaDe(par);
+      t2.diagnostic(`${par} → ${r.atributo} + ${r.pericia}`);
+      assert.equal(r.atributo, atr, par);
+      assert.equal(r.pericia, per, par);
+    }
+  });
+
+  await t.test('e a parada montada com esse id dá dados de verdade', (t2) => {
+    /* A prova de que importa: com o slug cru a parada some. */
+    const f = fichaDeTeste(g);
+    f.habilidades.labia = 3;
+    const boa  = g.Dados.piscinaDe(f, 'manipulacao', rotaDe('Manipulação + Subterfúgio').pericia);
+    const crua = g.Dados.piscinaDe(f, 'manipulacao', 'subterfugio');
+    t2.diagnostic(`com o id certo: ${boa.total} dados · com o slug cru: ${crua.total}`);
+    assert.ok(boa.total > crua.total, 'o id resolvido não mudou nada na parada');
+  });
+
+  await t.test('o id interno continua aceito, para não quebrar o que já existe', () => {
+    const r = rotaDe('Manipulação + Lábia');
+    assert.equal(r.pericia, 'labia');
+  });
+
+  await t.test('nome que não existe passa reto, e o erro aparece na rota', () => {
+    /* O compilador não inventa: se não conhece, devolve o slug, e
+       quem confere é o teste da campanha. */
+    const r = rotaDe('Manipulação + Sarcasmo');
+    assert.equal(r.pericia, 'sarcasmo');
+  });
+});
+
+test('Campanha — nenhuma cena fica inalcançável (§72)', async (t) => {
+
+  /* O compilador confere se todo DESTINO existe. Não confere o
+     inverso: se toda CENA é destino de alguém. Ao emendar o grafo
+     desta campanha eu deixei a última cena órfã — compilava com zero
+     erros e era impossível de chegar nela jogando.
+
+     O compilador não vai passar a cobrar isso: cena solta é legítima
+     numa campanha modular (a §70.2 descreve exatamente isso no
+     Apêndice II). Mas NESTA campanha não é, e é isto que o teste
+     tranca. */
+  const md = fs.readFileSync(path.join(RAIZ, 'campanhas', 'a-conta-do-duarte.md'), 'utf8');
+  const c = g.Compilador.compilar(md);
+  const cenas = c.capitulos.flatMap(cap => cap.cenas);
+
+  const alvos = new Set();
+  for (const s of cenas) {
+    for (const o of s.opcoes)
+      for (const d of [o.sucesso, o.falha]) if (d && d.destino) alvos.add(d.destino);
+    for (const gt of s.gatilhos) if (gt.acao.tipo === 'ir') alvos.add(gt.acao.destino);
+    s.saidas.forEach(x => alvos.add(x));
+  }
+
+  await t.test('toda cena depois da primeira é destino de alguém', (t2) => {
+    const orfas = cenas.slice(1).map(s => s.id).filter(id => !alvos.has(id));
+    t2.diagnostic(`${cenas.length} cenas · ${alvos.size} destinos citados`);
+    assert.equal(orfas.length, 0, `cena(s) inalcançável(is): ${orfas.join(', ')}`);
+  });
+
+  await t.test('e a última cena não empurra para lugar nenhum', (t2) => {
+    /* O outro lado do mesmo erro: uma cena final que aponta para si
+       mesma prende o jogador num laço. A última não tem destino. */
+    const ultima = cenas[cenas.length - 1];
+    const destinos = ultima.opcoes
+      .flatMap(o => [o.sucesso, o.falha]).filter(Boolean).map(d => d.destino).filter(Boolean);
+    t2.diagnostic(`${ultima.id}: destinos ${destinos.length ? destinos.join(', ') : 'nenhum'}`);
+    assert.equal(destinos.length, 0, `a cena final aponta para ${destinos.join(', ')}`);
   });
 });
