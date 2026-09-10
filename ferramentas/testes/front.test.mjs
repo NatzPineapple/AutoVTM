@@ -28,7 +28,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { carregar, fichaDeTeste, memoriaLocal, executar, AREAS, RAIZ, caminhoDe } from './carregar.mjs';
 
-const TODAS = ['data', 'ficha', 'arbitro', 'cronista', 'front'];
+const TODAS = ['data', 'ficha', 'arbitro', 'cronista', 'front', 'mesa'];
 
 /** Contexto com uma mesa aberta e um personagem de pé. */
 function comMesa() {
@@ -41,8 +41,19 @@ function comMesa() {
   return g;
 }
 
+/* A Mesa ganhou área própria na reorganização que juntou `mesa.js` e
+   companhia a `modulos/mesa/`, ao lado de `mesa-servidor.mjs`.
+   Este arquivo continua chamando os dois de "front" no sentido amplo —
+   é tudo navegador —, então `fonteFront` acha a área certa sozinho em
+   vez de reescrever cada chamada com o nome da área nova. */
+const areaDoArquivoFront = (nome) => {
+  if (AREAS.front.includes(nome)) return 'front';
+  if (AREAS.mesa.includes(nome)) return 'mesa';
+  throw new Error(`arquivo não é do front nem da mesa: ${nome}`);
+};
+
 const fonteFront = (nome) =>
-  fs.readFileSync(path.join(RAIZ, caminhoDe('front', nome)), 'utf8');
+  fs.readFileSync(path.join(RAIZ, caminhoDe(areaDoArquivoFront(nome), nome)), 'utf8');
 
 /* ============================================================
    O DESPACHANTE — o que só ficou testável na §50
@@ -83,7 +94,7 @@ test('Front — o despachante da mesa', async (t) => {
        atributo sai de uma interpolação. Então a busca é pelo NOME entre
        aspas em qualquer lugar do front. É mais frouxo, e ainda pega o
        caso que importa: ação que ninguém menciona em canto nenhum. */
-    const front = AREAS.front.map(fonteFront).join('\n');
+    const front = [...AREAS.front, ...AREAS.mesa].map(fonteFront).join('\n');
     const mortas = Object.keys(g.ACOES_MESA)
       .filter(a => !front.includes(`'${a}'`) && !front.includes(`"${a}"`));
     assert.deepEqual(mortas, [], 'ação no despachante que a tela não oferece');
@@ -130,7 +141,7 @@ test('Front — o despachante da mesa', async (t) => {
   });
 
   await t.test('nenhum arquivo do front voltou a ter switch de ação', () => {
-    for (const nome of AREAS.front) {
+    for (const nome of [...AREAS.front, ...AREAS.mesa]) {
       assert.ok(!/switch\s*\(\s*acao\s*\)/.test(fonteFront(nome)),
         `${nome}.js voltou ao switch`);
     }
@@ -372,7 +383,7 @@ test('Front — dois ids de sessão nunca colidem (N7)', async (t) => {
   });
 });
 
-const TODAS_71 = ['data','ficha','arbitro','cronista','front'];
+const TODAS_71 = ['data','ficha','arbitro','cronista','front','mesa'];
 
 /* ============================================================
    §71 — Três correções no criador de fichas
@@ -407,8 +418,16 @@ test('Criador — a ordem dos passos (§71, item 1)', async (t) => {
   await t.test('o número do passo é derivado, e não escrito à mão', (t2) => {
     /* Estava escrito em cada painel — "Passo IV", "Passo V". Reordenar
        significava caçar os cinco e acertar todos: segunda lista para o
-       mesmo fato, que é a lição de sempre neste projeto. */
-    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('front', 'criador-paineis')), 'utf8');
+       mesmo fato, que é a lição de sempre neste projeto.
+
+       Os nove painéis, cada um no seu arquivo em `paineis/` desde a
+       divisão de `criador-paineis.js`: o número de passo é escrito em
+       cada um deles, então a varredura tem de olhar todos, e não só o
+       tronco que ficou em `criador-paineis.js`. */
+    const fonte = fonteFront('criador-paineis')
+      + ['painel-cronica', 'painel-cla', 'painel-atributos', 'painel-habilidades',
+         'painel-disciplinas', 'painel-predador', 'painel-vantagens', 'painel-alma', 'painel-ficha']
+        .map(n => fs.readFileSync(path.join(RAIZ, caminhoDe('front', `paineis/${n}`)), 'utf8')).join('\n');
     const escritosAMao = fonte.match(/class="num">Passo [IVX]+</g) || [];
     t2.diagnostic(`numerais escritos à mão: ${escritosAMao.length}`);
     assert.equal(escritosAMao.length, 0,

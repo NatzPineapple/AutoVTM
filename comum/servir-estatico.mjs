@@ -19,7 +19,7 @@
 
    O QUE PROTEGE: uma LISTA DE RAÍZES PERMITIDAS. Antes, o teto
    era "dentro de app/". Agora é "dentro de uma destas três", e o
-   resto do repositório — docs/, Livros/, .git/, testes/,
+   resto do repositório — docs/, Livros/, .git/, ferramentas/testes/,
    package.json — não é servível por caminho nenhum, nem por
    travessia, nem por acerto.
    ============================================================ */

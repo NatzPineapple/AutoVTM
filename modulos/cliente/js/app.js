@@ -705,7 +705,7 @@ function renderFichas() {
           <span class="chip" data-acao="abrir-ficha" data-id="${esc(r.id)}">Abrir no criador</span>
           <span class="chip" data-acao="ver-ficha" data-id="${esc(r.id)}">Fechar</span>
         </div>
-        <div class="oficial-palco">${fichaOficialHTML(fichaPorId(r.id))}</div>
+        <div class="oficial-palco">${fichaModeloHTML(fichaPorId(r.id))}</div>
       </div>` : ''}`).join('');
 
   $('#app').innerHTML = `

@@ -1126,7 +1126,7 @@ const Diagnostico = {
 
     this.checar(G, 'A folha oficial desenha uma ficha que não é a do criador', () => {
       const f = Object.assign(this.fichaDeTeste(), { nome: 'Nome Improvável Zyx' });
-      const html = fichaOficialHTML(f);
+      const html = fichaModeloHTML(f);
       if (!html.includes('Nome Improvável Zyx')) return 'a folha não usou a ficha recebida';
       return html.includes(String(S.nome || ' ')) && S.nome
         ? 'a folha vazou a ficha global S' : true;

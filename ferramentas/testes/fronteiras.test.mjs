@@ -28,9 +28,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
  import { spawn } from 'node:child_process';
-import { AREAS, ORDEM, ARQUIVOS, RAIZ, caminhoDe, carregar } from './carregar.mjs';
-
-const ORDEM_DAS_AREAS = ['data', 'ficha', 'arbitro', 'cronista', 'front'];
+import { AREAS, ORDEM, ARQUIVOS, ORDEM_DAS_AREAS, RAIZ, caminhoDe, carregar } from './carregar.mjs';
 
 const semComentario = (t) =>
   t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/.*$/gm, ' ');
@@ -193,7 +191,7 @@ test('Fronteiras — o que cada área não pode saber', async (t) => {
     const sujos = [];
     for (const area of ['ficha', 'arbitro']) {
       for (const arquivo of AREAS[area]) {
-        if (arquivo === 'ficha-oficial') continue;   // é render por projeto (§43)
+        if (arquivo === 'ficha-modelo') continue;   // é render por projeto (§43)
         if (html.test(semComentario(fonteDe(area, arquivo)))) sujos.push(`${area}/${arquivo}.js`);
       }
     }
@@ -237,10 +235,12 @@ test('Fronteiras — o que cada área não pode saber', async (t) => {
   await t.test('o front não recalcula regra por conta própria', () => {
     /* Ele pode CHAMAR o Árbitro; não pode refazer a conta. É a prova do
        defeito nº 1 da auditoria: interface e rolagem dando números
-       diferentes. */
+       diferentes. Front e Mesa juntos: a Mesa é quem instala a fonte e
+       quem rola de verdade (§82), então ela é a mais provável de
+       reincidir. */
     const sujos = [];
-    for (const arquivo of AREAS.front) {
-      const limpa = soCodigo(fonteDe('front', arquivo));
+    for (const area of ['front', 'mesa']) for (const arquivo of AREAS[area]) {
+      const limpa = soCodigo(fonteDe(area, arquivo));
       if (/_apurar\s*\(/.test(limpa)) sujos.push(`${arquivo}.js recalcula rolagem`);
       if (/\bd10\s*\(\s*\)/.test(limpa) && arquivo !== 'dados-ui') sujos.push(`${arquivo}.js rola dado`);
     }
@@ -265,9 +265,9 @@ test('Relator — ele conta o que reprovou, inclusive o grupo que estourou (§94
      reporter quanto o arquivo de teste são passados ao `node --test`
      como caminho, e caminho absoluto do Windows não sobrevive nem ao
      carregador de ESM nem ao casamento de arquivos do runner. Um nível
-     de pasta a mais também mantém o arquivo fora de `testes/*.test.mjs`,
-     que é o que o `npm test` varre. */
-  const relativa = 'testes/.relator-de-mentira';
+     de pasta a mais também mantém o arquivo fora de
+     `ferramentas/testes/*.test.mjs`, que é o que o `npm test` varre. */
+  const relativa = 'ferramentas/testes/.relator-de-mentira';
   const pasta = path.join(RAIZ, relativa);
   fs.mkdirSync(pasta, { recursive: true });
   const alvo = path.join(pasta, 'mentira.test.mjs');
@@ -306,8 +306,8 @@ test('Relator — ele conta o que reprovou, inclusive o grupo que estourou (§94
     const proc = spawn(process.execPath,
       /* caminho RELATIVO de propósito: o carregador de ESM do Node recusa
          caminho absoluto do Windows como reporter ('protocol c:'), e é por
-         isso que o package.json também usa './testes/relator.mjs'. */
-      ['--test', '--test-reporter=./testes/relator.mjs',
+         isso que o package.json também usa './ferramentas/testes/relator.mjs'. */
+      ['--test', '--test-reporter=./ferramentas/testes/relator.mjs',
        '--test-reporter-destination=stdout', `${relativa}/mentira.test.mjs`],
       { cwd: RAIZ, env: ambiente() });
     let txt = '', ruim = '';
@@ -361,9 +361,18 @@ const GRANDES_CONHECIDOS = {
      O teto próprio saiu junto. Config que sobra depois de paga a dívida
      é config morta, e este projeto já achou cinco tabelas mortas (§67,
      §90 duas vezes, §91, §100) — esta não vira a sexta. */
-  'front/mesa.js': 'fluxo do turno e persistência de estado; a rodada mora em mesa-combate.js',
-  'front/criador-paineis.js': 'nove painéis em template string; trava na decisão de framework (§16.1)',
-  'front/mesa-render.js': 'todo o HTML da mesa; mesma trava',
+  /* Os três de Mesa mudaram de rótulo na reorganização que juntou
+     `mesa.js` e companhia a `modulos/mesa/`, ao lado de
+     `mesa-servidor.mjs`. GRANDES_CONHECIDOS é indexado pela
+     área, e a área deles agora é `mesa`, não `front` — o motivo de
+     cada um continua o mesmo. */
+  /* `front/criador-paineis.js` SAIU desta lista: a decisão N5/N6
+     (§16.2, "sem framework não há o que dividir") foi revista a pedido
+     do usuário, e os nove painéis viraram nove arquivos em
+     `paineis/`. O tronco caiu para menos de cem linhas — só o que mais
+     de um painel usa (`numeroDoPasso`, `pontosHTML`, `campoSeita`). */
+  'mesa/mesa.js': 'fluxo do turno e persistência de estado; a rodada mora em mesa-combate.js',
+  'mesa/mesa-render.js': 'todo o HTML da mesa; mesma trava',
   'front/app.js': 'estado do criador, telas e importação/exportação; mesma trava',
   /* Passou do teto na §89, com o Apêndice II e o Apêndice III. As duas
      metades do §89 no front são ORQUESTRAÇÃO — chamam `Projetos` e
@@ -371,7 +380,7 @@ const GRANDES_CONHECIDOS = {
      exatamente o que o cabeçalho deste arquivo diz ser o dono dele.
      Partir o front em mais arquivos é a decisão N5/N6, e ela já foi
      tomada: não entra. */
-  'front/mesa-acoes.js': 'o despachante e a orquestração de toda ação da mesa; mesma trava'
+  'mesa/mesa-acoes.js': 'o despachante e a orquestração de toda ação da mesa; mesma trava'
 };
 
 
@@ -448,12 +457,21 @@ test('Nada engole exceção sem dizer nada', async (t) => {
   /* Os `.js` que o navegador carrega, MAIS todo `.mjs` de servidor do
      projeto. A varredura de `.mjs` era só `servidor/`; depois da §79 ela
      desce por `modulos/`, `comum/` e `ferramentas/`, senão um módulo
-     novo nasce fora da regra sem ninguém notar. */
+     novo nasce fora da regra sem ninguém notar.
+
+     `ferramentas/testes/` fica DE FORA desde que `testes/` mudou de
+     pasta para lá: esta regra é sobre o app, não sobre os testes que o
+     verificam. Um teste que espera o servidor cair (`catch (e) { caiu =
+     true; }`, com o `assert.ok(caiu, ...)` logo depois) não é exceção
+     engolida — é o próprio teste. Antes da mudança de pasta, `testes/`
+     nunca foi varrido por este teste; a exclusão aqui só devolve o
+     mesmo alcance de antes. */
   const mjsDe = (pasta) => {
     const fora = [];
     const raiz = path.join(RAIZ, pasta);
     if (!fs.existsSync(raiz)) return fora;
     for (const item of fs.readdirSync(raiz, { withFileTypes: true })) {
+      if (pasta === 'ferramentas' && item.name === 'testes') continue;
       const rel = `${pasta}/${item.name}`;
       if (item.isDirectory()) fora.push(...mjsDe(rel));
       else if (item.name.endsWith('.mjs')) fora.push(rel);
@@ -524,7 +542,7 @@ test('Nada engole exceção sem dizer nada', async (t) => {
 
 test('Estrutura — uma pasta por módulo', async (t) => {
   const { resolver, RAIZES_PERMITIDAS, PAGINA_INICIAL } =
-    await import('../comum/servir-estatico.mjs');
+    await import('../../comum/servir-estatico.mjs');
   const { PASTA_DA_AREA } = await import('./carregar.mjs');
 
   await t.test('as pastas antigas não voltaram a existir', () => {
@@ -572,7 +590,7 @@ test('Estrutura — uma pasta por módulo', async (t) => {
        entregaria docs/, testes/, package.json e os PDFs de Livros/. */
     assert.deepEqual([...RAIZES_PERMITIDAS].sort(), ['campanhas', 'comum', 'modulos']);
 
-    const negados = ['/package.json', '/README.md', '/docs/regras.md', '/testes/carregar.mjs',
+    const negados = ['/package.json', '/README.md', '/docs/regras.md', '/ferramentas/testes/carregar.mjs',
       '/Livros/basico.pdf', '/.git/config', '/sessoes/s1/ficha.json',
       '/../package.json', '/modulos/../package.json', '/comum/../../etc/passwd'];
     const vazando = negados.filter(u => resolver(RAIZ, u) !== null);
@@ -650,7 +668,7 @@ test('Documento — o README aponta para arquivos que existem', async (t) => {
        junto — o documento disse "dez arquivos" com doze no disco, e
        "11 arquivos" com doze, as duas vezes ao lado do total errado.
        Trancar a metade que dá para trancar é melhor que nenhuma. */
-    const reais = fs.readdirSync(path.join(RAIZ, 'testes'))
+    const reais = fs.readdirSync(path.join(RAIZ, 'ferramentas', 'testes'))
       .filter(n => n.endsWith('.test.mjs')).length;
     const POR_EXTENSO = { dez: 10, onze: 11, doze: 12, treze: 13, catorze: 14, quatorze: 14 };
     const ditos = new Set();
@@ -680,8 +698,11 @@ test('Documento — o README aponta para arquivos que existem', async (t) => {
     /* Metade do defeito da §79 estava no CÓDIGO, não no documento:
        `app.js` e `mesa.js` mostram o comando ao jogador quando o
        servidor não responde, e mostravam um caminho morto. */
-    const front = AREAS.front.map(n =>
-      fs.readFileSync(path.join(RAIZ, caminhoDe('front', n)), 'utf8')).join('\n');
+    const front = [
+      ...AREAS.front.map(n => ({ area: 'front', n })),
+      ...AREAS.mesa.map(n => ({ area: 'mesa', n }))
+    ].map(({ area, n }) =>
+      fs.readFileSync(path.join(RAIZ, caminhoDe(area, n)), 'utf8')).join('\n');
     const comandos = [...new Set([...front.matchAll(/node\s+([A-Za-z0-9_./-]+\.mjs)/g)].map(m => m[1]))];
     t2.diagnostic(comandos.join(' · '));
     assert.ok(comandos.length >= 2, 'a interface não mostra comando nenhum');
@@ -699,8 +720,8 @@ test('Documento — o README aponta para arquivos que existem', async (t) => {
    ============================================================ */
 
 test('Estrutura — a verificação de origem vive num lugar só (§86)', async (t) => {
-  const Origem = await import('../comum/origem.mjs');
-  const { PORTAS } = await import('../comum/portas.mjs');
+  const Origem = await import('../../comum/origem.mjs');
+  const { PORTAS } = await import('../../comum/portas.mjs');
 
   const pedido = (cabecalhos) => ({ headers: cabecalhos });
 
@@ -783,7 +804,7 @@ test('Estrutura — a verificação de origem vive num lugar só (§86)', async 
    ============================================================ */
 
 test('Estrutura — desligar avisa que há sessão em andamento (§86)', async (t) => {
-  const Sistemas = await import('../comum/sistemas.mjs');
+  const Sistemas = await import('../../comum/sistemas.mjs');
 
   await t.test('a saúde do módulo devolve o CORPO, e não só sim/não', (t2) => {
     /* Era booleano até a §86, e o aviso precisa do número que já existia

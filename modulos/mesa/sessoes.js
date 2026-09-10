@@ -267,7 +267,13 @@ function sessaoPorId(id) {
   return lerJSON(chaveDaSessao(id), null);
 }
 
-function quando(ts) {
+/* Chamava-se `quando` — nome curto demais, e a reorganização que deu à
+   Mesa uma área própria expôs o preço: a checagem de fronteiras casa identificador contra
+   prosa em template string aninhada, e "quando" aparece o tempo todo
+   em texto comum do jogo ("quem manda quando a coisa aperta"). Um
+   nome de palavra comum é frágil onde a checagem é regex, não parser
+   de verdade — o mesmo motivo que já poupa o `$` do front. */
+function haQuanto(ts) {
   if (!ts) return '';
   const min = Math.round((Date.now() - ts) / 60000);
   if (min < 1) return 'agora';

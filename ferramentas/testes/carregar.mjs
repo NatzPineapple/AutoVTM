@@ -18,7 +18,10 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
-export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/* `testes/` mora dentro de `ferramentas/` desde a reorganização que
+   levou este arquivo pra cá: a raiz do projeto fica DOIS níveis acima
+   agora, não um. */
+export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 /* A ORDEM DE CARGA SUBIU PARA comum/.  (§84)
    Ela morava aqui, e por dois anos isso bastou: só o arreio precisava
@@ -27,8 +30,8 @@ export const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
    pode depender de `testes/`. O arreio reexporta, e quem lia daqui
    continua lendo daqui. */
 export { AREAS, ORDEM_DAS_AREAS, PASTA_DA_AREA, caminhoDe, ARQUIVOS, ORDEM }
-  from '../comum/ordem-de-carga.mjs';
-import { AREAS, caminhoDe } from '../comum/ordem-de-carga.mjs';
+  from '../../comum/ordem-de-carga.mjs';
+import { AREAS, caminhoDe } from '../../comum/ordem-de-carga.mjs';
 
 /* localStorage de mentira, com a mesma semântica da coisa real:
    guarda string, devolve null quando não existe, e estoura quando

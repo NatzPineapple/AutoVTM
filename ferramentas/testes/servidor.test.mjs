@@ -25,7 +25,7 @@ import path from 'node:path';
 import os from 'node:os';
 import http from 'node:http';
 import { RAIZ } from './carregar.mjs';
-import { foiEstouroDeTempo } from '../comum/estouro.mjs';
+import { foiEstouroDeTempo } from '../../comum/estouro.mjs';
 
 /* Os dois juízes — Narrador e Cronista — leem a MESMA lista negra, da
    mesma seção do guia. O teste lê da fonte, não de uma cópia. */
@@ -296,7 +296,7 @@ test('Servidor — o provedor local', async (t) => {
   /* `OLLAMA_HOST` é lido na carga do módulo, então é preciso apontá-lo
      para a porta morta ANTES do import. */
   process.env.OLLAMA_HOST = 'http://127.0.0.1:1';
-  const provedor = await import('../modulos/cronista/provedor-ollama.mjs');
+  const provedor = await import('../../modulos/cronista/provedor-ollama.mjs');
 
   await t.test('é o único transporte, e se identifica', () => {
     assert.equal(provedor.id, 'ollama');
@@ -360,7 +360,7 @@ test('Servidor — o provedor local', async (t) => {
    ============================================================ */
 
 test('Cronista — o validador do servidor', async (t) => {
-  const cronista = await import('../modulos/cronista/cronista.mjs');
+  const cronista = await import('../../modulos/cronista/cronista.mjs');
 
   /* Uma crônica limpa, no tamanho pedido, sem nada que reprove. */
   const prosaDe = (n) =>
@@ -533,7 +533,7 @@ test('Cronista — o validador do servidor', async (t) => {
    ============================================================ */
 
 test('Narrador — o validador do servidor', async (t) => {
-  const narrador = await import('../modulos/cronista/narrador.mjs');
+  const narrador = await import('../../modulos/cronista/narrador.mjs');
 
   const prosaDe = (n) =>
     'A porta range e alguém do outro lado decide não responder ainda. '
@@ -681,8 +681,8 @@ test('Narrador — o validador do servidor', async (t) => {
    ============================================================ */
 
 test('Servidor — o turno segmentado (§57)', async (t) => {
-  const narrador = await import('../modulos/cronista/narrador.mjs');
-  const intencao = await import('../modulos/cronista/intencao.mjs');
+  const narrador = await import('../../modulos/cronista/narrador.mjs');
+  const intencao = await import('../../modulos/cronista/intencao.mjs');
 
   const base = { cena: { local: 'boate_ipanema', hora: '23h40' }, personagem: 'Marina',
                  presentes: ['Bia'], pessoas: [], locais: [], fios: [], historico: [],
@@ -775,7 +775,7 @@ test('Servidor — o turno segmentado (§57)', async (t) => {
 
 test('Contexto — todo bloco do manifesto existe de verdade (§68)', async (t) => {
 
-  const { manifesto, secao } = await import('../modulos/cronista/contexto.mjs');
+  const { manifesto, secao } = await import('../../modulos/cronista/contexto.mjs');
 
   await t.test('o manifesto não está vazio', (t2) => {
     const m = manifesto();
@@ -1377,7 +1377,7 @@ test('Servidor — ligar e desligar (§76)', async (t) => {
    ============================================================ */
 
 test('Servidor — os limites do jogador no prefixo (§89)', async (t) => {
-  const ctx = await import('../modulos/cronista/contexto.mjs');
+  const ctx = await import('../../modulos/cronista/contexto.mjs');
 
   await t.test('sem nada declarado, não há bloco', () => {
     /* Um bloco dizendo "o jogador não declarou nada" seria pior do que
@@ -1435,7 +1435,7 @@ test('Servidor — os limites do jogador no prefixo (§89)', async (t) => {
 });
 
 test('Servidor — o fade e os projetos no corpo do turno (§89)', async (t) => {
-  const narrador = await import('../modulos/cronista/narrador.mjs');
+  const narrador = await import('../../modulos/cronista/narrador.mjs');
   const base = { cena: { local: 'boate_ipanema', hora: '23h40' }, personagem: 'Marina',
                  presentes: [], pessoas: [], locais: [], fios: [], historico: [],
                  texto: 'sigo em frente' };

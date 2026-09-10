@@ -2979,7 +2979,7 @@ Os campos que importam para o resto do app:
 
 | Campo | Quem consome |
 |---|---|
-| `bussola.tipo` | `motor-estado.js` (Remorso, Máculas), `ficha-oficial.js` (rótulo no PDF) |
+| `bussola.tipo` | `motor-estado.js` (Remorso, Máculas), `ficha-modelo.js` (rótulo no PDF) |
 | `ancoras.tipo` | passo VIII, doca de Pessoas na mesa |
 | `grupo` | passo VII, `motor-ficha.js` (componente Rede do Índice de Força) |
 | `cargos` | passo I |
@@ -3182,7 +3182,7 @@ pendência no Sabá e não existe nas demais.
 | `motor-arbitro.js` | Caça em matilha: dentro da Perambulação, sucesso com custo automático; fora, dificuldade padrão. Sacerdote rola com +1 dado por companheiro. | pequeno |
 | `motor-ficha.js` | Componente **Rede** do Índice de Força passa a somar o grupo: Arena e Pontos de Matilha no Sabá, território e favores a cobrar nos Anarquistas, contratos nos Independentes. Recalibrar depois, com as mesmas 3 fichas de referência. | médio |
 | `motor-ficha.js` | Componente **Fragilidade** absorve os Defeitos impostos por seita. | pequeno |
-| `ficha-oficial.js` | Rótulos vindos do perfil, e o bloco extra da segunda folha. | pequeno |
+| `ficha-modelo.js` | Rótulos vindos do perfil, e o bloco extra da segunda folha. | pequeno |
 | `mesa.js` | A doca de **Pessoas** vira doca de **Ritae** quando `ancoras.tipo === 'ritae'`. Estado coletivo da matilha aparece na doca do grupo. | médio |
 | `diretor.js` | Gatilhos novos: celebração de Ritae, cobrança de favor, contrato vencendo. São gatilhos de campanha, e é aí que essa estrutura paga por si. | pequeno |
 

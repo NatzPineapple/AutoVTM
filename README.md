@@ -206,7 +206,7 @@ npm test              # 1.192 testes, doze arquivos, zero dependência
 npm run testes:log    # o registro da última corrida
 ```
 
-**Os números desta seção são conferidos, não escritos.** `testes/fronteiras.test.mjs` reprova
+**Os números desta seção são conferidos, não escritos.** `ferramentas/testes/fronteiras.test.mjs` reprova
 quando um arquivo passa do teto de linhas sem estar na lista, e quando este documento afirma uma
 contagem que não bate com o disco. É o item X3 da §45.5, e a razão dele é simples: contagem
 escrita à mão em documento envelhece calada.
@@ -253,7 +253,7 @@ que seja render, persistência ou regra.
 > ordem — que é a ordem de carga. Antes de montar a lista, **releia a tabela abaixo**: é ela que
 > diz quem é dono de quê, e é a divisão que o usuário decidiu na §43.
 >
-> **Geral** é o que atravessa áreas, mais `modulos/`, `comum/`, `ferramentas/`, `testes/`, `campanhas/`, `docs/` e as
+> **Geral** é o que atravessa áreas, mais `modulos/`, `comum/`, `ferramentas/`, `ferramentas/testes/`, `campanhas/`, `docs/` e as
 > decisões que estão na mesa do usuário. `comum/dados/` **não é área**: o que for dele vai em
 > Geral.
 
@@ -298,7 +298,7 @@ modulos/                 UM MÓDULO POR PASTA. A pasta É o módulo, e não onde
     motor-ficha.js         extrator → JSON, Índice de Força interno, calibragem
     motor-matilha.js       matilha como estado coletivo entre fichas
     ficha-regras.js        derivados, contagens, pendências, validação de seita
-    ficha-oficial.js       as duas folhas Carta do modelo oficial
+    ficha-modelo.js        as duas folhas Carta do modelo oficial
     fichas.js              biblioteca: guardar, listar, abrir, apagar
 
   mesa/                  MÓDULO 3 — porta 5175, o estado da partida ativa (§78)
@@ -366,26 +366,27 @@ comum/                   O QUE NÃO É DE MÓDULO NENHUM porque é de todos
 ferramentas/             o que NÃO é o produto: serve para trabalhar nele
   iniciar.cmd              sobe tudo de uma vez, no Windows: ollama, Gateway e módulos
   desligar.cmd             o par dele: pede o desligamento na ordem certa e confere
+  testar.cmd               o terceiro do trio: roda `npm test` e mostra o resultado
   dev.mjs                  estático sem cache, sem /api — para mexer no criador
   comparador.mjs           mede as três camadas: cronista, narrador e intencao
   _render.mjs              extração de página de PDF, offline
 
-testes/                  `npm test` — runner nativo do Node, sem dependência (§44)
-  carregar.mjs             o arreio: roda os scripts clássicos num contexto de vm
-  arreio.test.mjs          o arreio conferindo a si mesmo contra o index.html (§44.4)
-  ficha.test.mjs           a área Ficha, independente do front (§44, §47)
-  arbitro.test.mjs         dados, estado, combate, grafo, especialista (§46, §49)
-  sessoes.test.mjs         persistência de sessões: uma chave cada, e o índice (§47.5)
-  cadeia.test.mjs          testes da cadeia, da navegação e da divisão do Árbitro (§48–§49)
-  fronteiras.test.mjs      as fronteiras entre áreas e o teto de tamanho (§50.1, §50.3)
-  cronista.test.mjs        compilador, diretor, recombinador, escada, orçamento, legado (§51.1)
-  jornada.test.mjs         o jogo inteiro: turno, briga, crônica, telas (§52.1)
-  servidor.test.mjs        o proxy por HTTP: travessia, origem, limite de taxa (§53.3)
-  front.test.mjs           despachante, HTML gerado e o criador (§50.5)
-  mesa-servidor.test.mjs   o Módulo 3: pasta, checkout/checkin, WebSocket (§78)
-  modulos.test.mjs         os Módulos 2 e 4: guardador, id, pedido e apuramento (§83, §84)
-  relator.mjs              escreve o registro de cada corrida em registro/ (§50.7)
-  registro/                o que rodou, quando e quanto demorou — fora do git
+  testes/                  `npm test` — runner nativo do Node, sem dependência (§44)
+    carregar.mjs             o arreio: roda os scripts clássicos num contexto de vm
+    arreio.test.mjs          o arreio conferindo a si mesmo contra o index.html (§44.4)
+    ficha.test.mjs           a área Ficha, independente do front (§44, §47)
+    arbitro.test.mjs         dados, estado, combate, grafo, especialista (§46, §49)
+    sessoes.test.mjs         persistência de sessões: uma chave cada, e o índice (§47.5)
+    cadeia.test.mjs          testes da cadeia, da navegação e da divisão do Árbitro (§48–§49)
+    fronteiras.test.mjs      as fronteiras entre áreas e o teto de tamanho (§50.1, §50.3)
+    cronista.test.mjs        compilador, diretor, recombinador, escada, orçamento, legado (§51.1)
+    jornada.test.mjs         o jogo inteiro: turno, briga, crônica, telas (§52.1)
+    servidor.test.mjs        o proxy por HTTP: travessia, origem, limite de taxa (§53.3)
+    front.test.mjs           despachante, HTML gerado e o criador (§50.5)
+    mesa-servidor.test.mjs   o Módulo 3: pasta, checkout/checkin, WebSocket (§78)
+    modulos.test.mjs         os Módulos 2 e 4: guardador, id, pedido e apuramento (§83, §84)
+    relator.mjs              escreve o registro de cada corrida em registro/ (§50.7)
+    registro/                o que rodou, quando e quanto demorou — fora do git
 
 campanhas/               .md das campanhas, servidos por rota própria
 sessoes/                 as pastas de sessão do Módulo 3 — estado de jogo, fora do git
@@ -397,7 +398,7 @@ Livros/                  os PDFs de origem; nada em código depende deles em exe
 ### A fronteira de cada área
 
 Desde a §50 a fronteira é **derivada do código**, não uma lista de nomes proibidos.
-`testes/fronteiras.test.mjs` lê o que cada arquivo declara, lê o que cada arquivo usa, e aplica
+`ferramentas/testes/fronteiras.test.mjs` lê o que cada arquivo declara, lê o que cada arquivo usa, e aplica
 uma regra só:
 
 > uma área pode usar o que as áreas **anteriores** declaram, e nunca o que as posteriores
@@ -531,7 +532,7 @@ material por área, para saber onde mexer.
 | Persistência de sessões | `sessoes.js` | ⚠️ Funciona; reescreve tudo a cada clique, §14.1 item 3 |
 | Mesa: fluxo, combate, bolsa | `mesa.js` · `mesa-render.js` | ✅ Pronto — §37 |
 | Criador: nove passos, cinco seitas | `app.js` · `criador-paineis.js` · `ficha-regras.js` | ✅ Pronto |
-| Folha oficial do V5 | `ficha-oficial.js` | ✅ Pronto — recebe a ficha por parâmetro, §37.7 |
+| Folha oficial do V5 | `ficha-modelo.js` | ✅ Pronto — recebe a ficha por parâmetro, §37.7 |
 
 **Servidor** — os `.mjs` de `modulos/` e `comum/`, ESM, zero dependências:
 
@@ -547,8 +548,8 @@ material por área, para saber onde mexer.
 
 | Peça | Onde | Estado |
 |---|---|---|
-| Testes automatizados | `testes/` | ✅ **1.192 testes**, doze arquivos, 13 s — as quatro áreas, os módulos, as jornadas do jogo e o servidor. Mais de cem com evidência do que viram |
-| Registro de cada corrida | `testes/registro/` | ✅ O que rodou, quando e por que falhou — §50.7 |
+| Testes automatizados | `ferramentas/testes/` | ✅ **1.192 testes**, doze arquivos, 13 s — as quatro áreas, os módulos, as jornadas do jogo e o servidor. Mais de cem com evidência do que viram |
+| Registro de cada corrida | `ferramentas/testes/registro/` | ✅ O que rodou, quando e por que falhou — §50.7 |
 | Página de diagnóstico | `modulos/cliente/diagnostico.html` | ✅ **175 checagens**, dezessete grupos, §21 |
 | Regras compiladas dos livros | `docs/regras.md` | ✅ Quatro partes |
 | Cenário, seitas, matrizes de relação | `docs/cenario.md` | ✅ Base do Narrador |
@@ -1358,7 +1359,7 @@ A §45 corta o mesmo material com mais detalhe de código — útil para saber *
 
 > **A lista sai separada por área:** Ficha · Árbitro · Cronista · Front · Geral, nessa ordem, que
 > é a ordem de carga. Antes de montar, **releia a tabela da Parte A → Estrutura**: é ela que diz
-> quem é dono de quê. **Geral** é o que atravessa áreas, mais `modulos/`, `comum/`, `ferramentas/`, `testes/`, `campanhas/`,
+> quem é dono de quê. **Geral** é o que atravessa áreas, mais `modulos/`, `comum/`, `ferramentas/`, `ferramentas/testes/`, `campanhas/`,
 > `docs/` e as decisões que estão na mesa do usuário. `comum/dados/` não é área — ver §43.2.
 >
 > A ordem por PESO, para responder "o que fazer em seguida", está no fim, em §14.1.2.
@@ -3138,15 +3139,15 @@ reaparecia.
 Reproduzido: 1 sessão → apagar → 0 → uma ação qualquer → 1 de novo. `apagarSessao` passou a
 zerar `M` quando apaga a sessão carregada.
 
-### 37.7 Unir `ficha-oficial` com `ficha-regras`: não
+### 37.7 Unir `ficha-modelo` com `ficha-regras`: não
 
 Avaliado e recusado, pela regra do próprio projeto. `ficha-regras.js` devolve dados e é
-consumido por cinco arquivos; `ficha-oficial.js` devolve HTML das duas folhas. Juntar
+consumido por cinco arquivos; `ficha-modelo.js` devolve HTML das duas folhas. Juntar
 recoloca regra e render no mesmo arquivo, que é o que a §27 desfez.
 
-O problema real ali era outro: `ficha-oficial.js` lia o global `S` direto e só sabia
+O problema real ali era outro: `ficha-modelo.js` lia o global `S` direto e só sabia
 desenhar a ficha do criador. Agora `ofFolha1`, `ofFolha2`, `notasDaSeita` e
-`fichaOficialHTML` recebem a ficha por parâmetro (`F = S`), que é o que permite a biblioteca
+`fichaModeloHTML` recebem a ficha por parâmetro (`F = S`), que é o que permite a biblioteca
 da §37.2 mostrar qualquer ficha. Há checagem contra o vazamento de `S`.
 
 ### 37.8 Verificação
@@ -3851,7 +3852,7 @@ Agora está organizado por **assunto**, em quatro áreas, e a divisão é físic
 | **Front** | `modulos/cliente/js/` | O front |
 
 O critério é de assunto, não de camada: o que é da ficha fica com a ficha **mesmo sendo
-render, persistência ou regra**. Por isso `ficha-oficial.js` (que gera HTML) e `fichas.js`
+render, persistência ou regra**. Por isso `ficha-modelo.js` (que gera HTML) e `fichas.js`
 (que grava em `localStorage`) moram junto de `motor-ficha.js`. A árvore completa está na
 **Parte A → Estrutura**.
 
@@ -3983,7 +3984,7 @@ COMO RODAR E VERIFICAR
                                telas. NAO escreva roteiro a mao no console
                                para conferir isso — ja esta em jornada.test.mjs
                                (secao 52). Se faltar caminho, ACRESCENTE LA.
-                               Escreve um registro em testes/registro/ultimo.md
+                               Escreve um registro em ferramentas/testes/registro/ultimo.md
                                com tudo o que rodou e o porque de cada falha.
   npm run testes:log           mostra esse registro
   npm run test:cru             a saida do runner, sem o relator
@@ -4013,7 +4014,7 @@ Não confie em inspeção visual do painel do navegador: nesta base já houve tr
 diagnósticos errados por cache. Meça o comportamento, não a aparência.
 
 TESTES — o que existe, e como acrescentar
-  testes/carregar.mjs  o arreio. Roda os scripts CLASSICOS num node:vm, na mesma
+  ferramentas/testes/carregar.mjs  o arreio. Roda os scripts CLASSICOS num node:vm, na mesma
                    ordem do index.html. Duas armadilhas ja registradas:
                    - const/let/class de topo NAO viram propriedade do objeto
                      global. So var e function. O arreio exporta a mao.
@@ -4027,8 +4028,8 @@ TESTES — o que existe, e como acrescentar
                    combate reproduzivel. Melhor ainda: Dados._apurar() e pura e
                    recebe os dados prontos — ROLAR DADO EM TESTE E QUASE SEMPRE
                    ERRO.
-  testes/relator.mjs   reporter nativo do node --test; escreve o registro em
-                   testes/registro/. O runner conta cada GRUPO como um teste,
+  ferramentas/testes/relator.mjs   reporter nativo do node --test; escreve o registro em
+                   ferramentas/testes/registro/. O runner conta cada GRUPO como um teste,
                    entao ele diz 326 onde o registro diz 271. O registro conta
                    as folhas, que e o numero de coisas afirmadas.
   As dez suites: arreio, ficha, arbitro, cadeia, cronista, sessoes, front,
@@ -4105,7 +4106,7 @@ modulos/arbitro/motor-dados.js. Nao ha tabela de traducao no meio, de proposito
 — tabela de traducao e um segundo lugar onde a estrutura esta escrita.
 Se mover ou criar arquivo, conserte TRES lugares: os <script src> de
 index.html, os de diagnostico.html, e as listas AREAS e PASTA_DA_AREA de
-testes/carregar.mjs. Ha teste comparando as tres — se elas divergirem,
+ferramentas/testes/carregar.mjs. Ha teste comparando as tres — se elas divergirem,
 arreio.test.mjs reprova. Ja quebrou uma vez sem esse teste, e o app abriu mudo,
 com 26 erros 404 e nenhuma mensagem na tela.
 As campanhas vivem em campanhas/ na RAIZ, servidas por uma rota propria nos
@@ -4236,7 +4237,7 @@ AO FALAR DE PENDENCIA, SEPARE POR AREA — sempre.
   Ficha · Arbitro · Cronista · Front · Geral, nessa ordem (a de carga).
   ANTES de montar a lista, releia a Parte A > Estrutura: e a tabela de la
   que diz quem e dono de que. Geral leva o que atravessa areas, mais
-  servidor/, testes/, campanhas/, docs/ e as decisoes do usuario.
+  servidor/, ferramentas/testes/, campanhas/, docs/ e as decisoes do usuario.
   comum/dados/ NAO e area: o que for dele vai em Geral.
   A secao 14.1 e por PESO (o que fazer em seguida); a secao 45 e por AREA
   (onde mexer). Pedido de lista se responde por area.
@@ -4347,7 +4348,7 @@ npm test
 
 O app é script clássico de navegador: sem módulo ES, sem `export`, tudo em `const` no escopo
 léxico global. Isso é decisão do projeto (§1) e não vai mudar por causa de teste. Então
-`testes/carregar.mjs` faz o que o navegador faz — lê os arquivos na ordem e roda todos no
+`ferramentas/testes/carregar.mjs` faz o que o navegador faz — lê os arquivos na ordem e roda todos no
 **mesmo contexto**, com `node:vm`:
 
 ```js
@@ -4454,7 +4455,7 @@ tranca a decisão da §16.2 no código: se o número voltar para a folha, o test
 ### 44.4 O arreio testa a si mesmo
 
 Um arreio que carrega os arquivos numa ordem diferente da do navegador testa um app que não
-existe. `testes/arreio.test.mjs` (6 testes) impede a divergência silenciosa:
+existe. `ferramentas/testes/arreio.test.mjs` (6 testes) impede a divergência silenciosa:
 
 - **A ordem é exatamente a do `index.html`** — comparada `<script src>` por `<script src>`. A
   ordem não é decorativa: `const` lido antes do arquivo rodar é TDZ.
@@ -4590,7 +4591,7 @@ Cinco itens foram pagos; os dois últimos fecharam por decisão sua, na §16.2.
 | N3 | O `catch (e) {}` do `salvar()` do criador | Idem — e este guardava a ficha **em edição**, nove passos de criação. §50.6 |
 | N4 | `mesa.js` com `switch` de 48 casos, e crescendo | Virou o mapa `ACOES_MESA`, em `mesa-acoes.js`. 1.503 → 1.203 linhas. §50.4 |
 | N7 | Dois ids de sessão iguais no mesmo milissegundo | Sufixo aleatório e conferência contra o gravado. §50.6 |
-| N5 | `criador-paineis.js` em template string, e `app.js` junto | Fechado por decisão: sem framework, não há o que dividir. §16.2 |
+| N5 | `criador-paineis.js` em template string, e `app.js` junto | Fechado por decisão: sem framework, não há o que dividir. §16.2. **Reaberto e dividido depois** — ver nota abaixo |
 | N6 | `mesa-render.js`, todo o HTML da mesa | Idem — e a §57 o deixou menor, tirando os modos do compositor |
 
 **N8 fechado na §54.3:** as nove funções sem teste direto ganharam um. As portas de entrada de
@@ -4607,6 +4608,15 @@ tamanho que estão.
 A §57 mexeu no maior deles e o deixou **menor**: o compositor perdeu a fileira de modos, a linha
 de volume e a de alvo, e ganhou uma caixa só. O que substituiu não veio para o front — foi para
 `arbitro/motor-entrada.js`, onde dá para testar sem desenhar nada.
+
+**N5 foi reaberta numa revisão de código posterior, a pedido do usuário** (sem número de §: esta
+nota não segue a numeração do resto do documento). `criador-paineis.js` — só ele, não `app.js` nem
+`mesa-render.js` — foi dividido em nove arquivos, um por painel, em `modulos/cliente/js/paineis/`.
+O tronco (`criador-paineis.js`) caiu para menos de cem linhas: só `numeroDoPasso`, `pontosHTML` e
+`campoSeita`, usados por mais de um painel. O argumento original ("sem framework, dividir é só
+mover template string") continua válido em geral — a decisão foi trocada, não refutada — mas o
+usuário preferiu a organização por arquivo mesmo sem framework escolhido. N6 (`mesa-render.js`)
+**continua fechada**: não foi tocada nesta revisão.
 
 O tamanho deles não é mais registrado aqui: passou a ser conferido a cada `npm test` (§50.3).
 
@@ -4644,7 +4654,7 @@ A §79 fez a pasta ser o módulo. Esta é a tabela de "onde mexer" para os cinco
 | Checkout, checkin, autosave, o que muda em memória | `modulos/mesa/mesa-estado.mjs` | O *State Cache*. É aqui que a partida vive |
 | A rolagem: os valores e o registro dela | `modulos/mesa/mesa-estado.mjs` → `rolar()` | O acaso da sessão. **Não apura** — ver §82 |
 | Falar com os módulos, do navegador | `modulos/cliente/js/ponte.js` | A ÚNICA parte do Cliente que sabe que há servidor (§85, §87) |
-| A rodada de combate na mesa | `modulos/cliente/js/mesa-combate.js` | Orquestração da rodada (F1, §100). **Regra de combate mora no Árbitro** |
+| A rodada de combate na mesa | `modulos/mesa/mesa-combate.js` | Orquestração da rodada (F1, §100). **Regra de combate mora no Árbitro** |
 | Ver a conversa entre Mesa, Árbitro e Cronista | `modulos/cliente/js/trafego.js` | O registro do tráfego e a forma de cada linha (§93). **Observador: não muda nada, não vive na sessão** |
 | O que a sessão grava em disco | `modulos/mesa/mesa-pasta.mjs` | `meta.json`, `ficha.json`, `mesa.json`, `historico.jsonl` |
 | Falar com o FichaServer | `modulos/mesa/cliente-ficha.mjs` | O contrato do Módulo 2, e o que fazer quando ele não existe |
@@ -4689,7 +4699,7 @@ arquivos, sem dependência nenhuma.
 
 ```bash
 npm test
-node --test testes/arbitro.test.mjs
+node --test ferramentas/testes/arbitro.test.mjs
 ```
 
 ### 46.1 Rolar dado num teste é quase sempre erro
@@ -4868,7 +4878,7 @@ tendo o atalho que ele legitimamente quer. O que mudou é **a direção**: o fro
 define, e nunca o contrário. Se um dos invólucros crescer para além de uma linha, ele está no
 arquivo errado.
 
-`esc()` veio junto pelo mesmo motivo — `ficha-oficial.js` a puxava do front. Ela é a razão de o
+`esc()` veio junto pelo mesmo motivo — `ficha-modelo.js` a puxava do front. Ela é a razão de o
 nome `<script>alert(1)</script>` sair como texto na folha, e agora tem uma definição só no
 projeto inteiro.
 
@@ -5313,7 +5323,7 @@ Cinco coisas de uma vez, e elas se sustentam: X2 e X3 (as checagens que envelhec
 do front, o registro auditável de cada corrida, e os itens N3, N4 e N7.
 
 **271 testes** — o número de coisas realmente afirmadas, em sete arquivos. Cada `npm test` deixa
-um registro legível em `testes/registro/`.
+um registro legível em `ferramentas/testes/registro/`.
 
 > **Sobre N1 e N2:** já estavam fechados na §47 — uma chave por sessão, e o `catch` vazio virado
 > aviso. O que sobrava do front era N3, N4 e N7.
@@ -5325,7 +5335,7 @@ escrita à mão envelhece, e esta envelheceu **três vezes** — deixou passar `
 (§47), `predador()` no Árbitro (§49), e o teste do A6 chegou a reprovar por listar um nome que
 acabara de mudar de área.
 
-`testes/fronteiras.test.mjs` não tem lista. Ele **deriva tudo do código**: lê o que cada arquivo
+`ferramentas/testes/fronteiras.test.mjs` não tem lista. Ele **deriva tudo do código**: lê o que cada arquivo
 declara, lê o que cada arquivo usa, e aplica uma regra só —
 
 > uma área pode usar o que as áreas **anteriores** declaram, e nunca o que as posteriores
@@ -5447,7 +5457,7 @@ poucos milissegundos, exatamente o caso que quebrava — e confere que os mil s�
 
 ### 50.7 O registro de cada corrida
 
-`npm test` passou a escrever um registro em `testes/registro/`: o que rodou, em que arquivo,
+`npm test` passou a escrever um registro em `ferramentas/testes/registro/`: o que rodou, em que arquivo,
 quanto tempo, e a mensagem completa de cada falha com arquivo e linha.
 
 É um *reporter* nativo do `node --test` — um módulo que recebe o fluxo de eventos —, então
@@ -5458,7 +5468,7 @@ Uma nota que o registro traz, porque os dois números confundem: **o runner do N
 grupo como um teste**, além dos testes dentro dele. Por isso ele diz 326 onde o registro diz 271.
 O registro conta as folhas, que é o número de coisas realmente afirmadas.
 
-`testes/registro/` está no `.gitignore`: registro é resultado de execução, não código.
+`ferramentas/testes/registro/` está no `.gitignore`: registro é resultado de execução, não código.
 
 ```bash
 npm test              # roda e escreve o registro
@@ -5668,7 +5678,7 @@ aconteceu naquela vez.
 
 ### 52.1 As jornadas
 
-`testes/jornada.test.mjs` — 49 testes, sete jornadas. Elas não testam peças: testam o **jogo**,
+`ferramentas/testes/jornada.test.mjs` — 49 testes, sete jornadas. Elas não testam peças: testam o **jogo**,
 chamando as mesmas funções que o clique chama.
 
 | Jornada | O caminho |
@@ -5729,7 +5739,7 @@ O método mudou, e é isto que fica valendo:
 | | O que responde |
 |---|---|
 | **`npm test`** | **408 testes, nove arquivos, 2,8 s.** Regra, fronteira, e agora as jornadas do jogo inteiro. É a primeira e a principal |
-| `testes/registro/ultimo.md` | o que rodou, quanto demorou, e o porquê de cada falha |
+| `ferramentas/testes/registro/ultimo.md` | o que rodou, quanto demorou, e o porquê de cada falha |
 | `diagnostico.html` | a **costura no navegador**: render de verdade, os 45 `GET`, o console |
 
 **O que o navegador ainda responde sozinho** — e por isso continua sendo aberto depois de mexer em
@@ -8202,7 +8212,7 @@ ela precisa continuar pegando.
 ### 76.5 A verificação
 
 - **`npm test`: 660 testes** (eram 652), verde em duas corridas.
-- **Oito testes novos** em `testes/servidor.test.mjs`, com o proxy de verdade numa porta própria:
+- **Oito testes novos** em `ferramentas/testes/servidor.test.mjs`, com o proxy de verdade numa porta própria:
   as seis linhas do diagnóstico, `GET` recusado nas duas rotas, origem de fora recusada, desligar
   só o modelo **sem** derrubar o servidor, o relatório antes da saída, e o servidor saindo mesmo.
 - **`diagnostico.html`: 175 de 175.**
@@ -8388,14 +8398,14 @@ três vezes é que duas escritas do mesmo fato divergem em silêncio.
 `comum/servir-estatico.mjs` concentra isso, e o Gateway e o `dev.mjs` passaram a usar o mesmo
 arquivo em vez de duas cópias da mesma regra. **A guarda ficou mais estreita, não mais larga:**
 antes o teto era "dentro de `app/`"; agora é uma lista de três raízes — `modulos`, `comum`,
-`campanhas` — e `package.json`, `docs/`, `testes/`, `.git/`, `Livros/` e `sessoes/` respondem
+`campanhas` — e `package.json`, `docs/`, `ferramentas/testes/`, `.git/`, `Livros/` e `sessoes/` respondem
 403 por qualquer caminho.
 
 ### 79.2 A área e a pasta deixaram de ser a mesma coisa
 
 A **área** é conceito de projeto: quem é dono de quê, e quem pode depender de quem. A **pasta** é
 onde os arquivos estão. Eram iguais enquanto tudo vivia em `app/js/<área>`; agora a área `data`
-mora em `comum/dados` e a `front` em `modulos/cliente/js`. `testes/carregar.mjs` guarda a única
+mora em `comum/dados` e a `front` em `modulos/cliente/js`. `ferramentas/testes/carregar.mjs` guarda a única
 tradução de uma para a outra (`PASTA_DA_AREA`), e todo o resto deriva dali.
 
 ### 79.3 A verificação, e o que ela achou
@@ -8521,7 +8531,7 @@ Quatro checagens novas, todas derivadas e nenhuma escrita à mão:
 - **a interface não manda o jogador rodar arquivo inexistente** — esta olha `app.js` e `mesa.js`,
   porque metade do defeito da §79 estava no código, não no documento.
 
-As três primeiras olham só as raízes de hoje (`modulos/`, `comum/`, `ferramentas/`, `testes/`).
+As três primeiras olham só as raízes de hoje (`modulos/`, `comum/`, `ferramentas/`, `ferramentas/testes/`).
 As seções de registro citam `node servidor/proxy.mjs` de propósito: ali o comando velho **é** a
 descrição do defeito, não uma instrução.
 
@@ -8583,8 +8593,8 @@ a fonte do acaso é instalada de fora, por quem é a Mesa naquele contexto.
 
 | Contexto | Quem instala |
 |---|---|
-| Navegador | `modulos/cliente/js/mesa.js`, no carregamento |
-| Testes | `testes/carregar.mjs`, e só quando a área `front` não veio junto |
+| Navegador | `modulos/mesa/mesa.js`, no carregamento |
+| Testes | `ferramentas/testes/carregar.mjs`, e só quando a área `front` não veio junto |
 | Servidor | `modulos/mesa/mesa-estado.mjs`, na rota de rolagem |
 
 **Sem fonte, `d10()` estoura** — e isso é decisão, não descuido. Um valor padrão de reserva
@@ -8709,7 +8719,7 @@ Havia duas saídas:
 
 1. reescrever o Árbitro como ESM — duas implementações da mesma regra durante a migração, e a
    certeza de que divergiriam;
-2. **rodar os mesmos arquivos** num contexto de `node:vm`, que é o que `testes/carregar.mjs` faz
+2. **rodar os mesmos arquivos** num contexto de `node:vm`, que é o que `ferramentas/testes/carregar.mjs` faz
    desde a §44 para poder afirmar qualquer coisa sobre eles.
 
 A segunda. `arbitro-contexto.mjs` carrega `data`, `ficha` e `arbitro` — 33 arquivos, os mesmos
@@ -8775,14 +8785,14 @@ módulo registrado tem de ter arquivo no disco**, e só o Gateway pode não se l
 
 ### 84.5 A ordem de carga subiu para `comum/`
 
-`AREAS` e `PASTA_DA_AREA` moravam em `testes/carregar.mjs`. O ArbitroServer precisa delas, e **um
-módulo não pode depender de `testes/`**. Foram para `comum/ordem-de-carga.mjs`; o arreio
+`AREAS` e `PASTA_DA_AREA` moravam em `ferramentas/testes/carregar.mjs`. O ArbitroServer precisa delas, e **um
+módulo não pode depender de `ferramentas/testes/`**. Foram para `comum/ordem-de-carga.mjs`; o arreio
 reexporta, e quem lia dele continua lendo.
 
 ### 84.6 A verificação
 
 - **`npm test`: 771 testes** (eram 743), em doze arquivos. Trinta novos em
-  `testes/modulos.test.mjs`.
+  `ferramentas/testes/modulos.test.mjs`.
 - **Mutação em quatro garantias**: ficha sem nome entrando, a peneira de id afrouxada, o Árbitro
   deixando de conferir a quantidade de dados, e o contexto do Módulo 4 ganhando um sorteio de
   verdade. As quatro derrubaram o teste certo.

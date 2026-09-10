@@ -30,9 +30,9 @@ process.env.VITAE_SESSOES = RAIZ;
 process.env.VITAE_PORTA_FICHA = '5999';
 process.env.VITAE_TEMPO_FICHA = '400';
 
-const { criarServidor, encerrarProcesso } = await import('../modulos/mesa/mesa-servidor.mjs');
-const Estado = await import('../modulos/mesa/mesa-estado.mjs');
-const Pasta = await import('../modulos/mesa/mesa-pasta.mjs');
+const { criarServidor, encerrarProcesso } = await import('../../modulos/mesa/mesa-servidor.mjs');
+const Estado = await import('../../modulos/mesa/mesa-estado.mjs');
+const Pasta = await import('../../modulos/mesa/mesa-pasta.mjs');
 
 /* ------------------------------------------------------------
    O ARREIO
@@ -422,7 +422,7 @@ test('MesaServer — o que ele recusa', async (t) => {
        escreve. Se um dia alguém importar o Árbitro ou o Cronista aqui,
        este teste cai antes de a mistura endurecer. */
     const codigo = ['mesa-servidor.mjs', 'mesa-estado.mjs', 'mesa-pasta.mjs']
-      .map(n => fs.readFileSync(new URL(`../modulos/mesa/${n}`, import.meta.url), 'utf8'))
+      .map(n => fs.readFileSync(new URL(`../../modulos/mesa/${n}`, import.meta.url), 'utf8'))
       .join('\n')
       .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     for (const proibido of ['./cronista.mjs', './narrador.mjs', './intencao.mjs', 'motor-arbitro']) {
@@ -549,7 +549,7 @@ test('MesaServer — o canal em tempo real (WebSocket)', async (t) => {
     c.fechar();
     /* O que importa aqui é a POLÍTICA, e ela está no código: mudar
        estado passa pelas rotas, onde há origem e limite de corpo. */
-    const fonte = fs.readFileSync(new URL('../modulos/mesa/mesa-servidor.mjs', import.meta.url), 'utf8');
+    const fonte = fs.readFileSync(new URL('../../modulos/mesa/mesa-servidor.mjs', import.meta.url), 'utf8');
     t2.diagnostic('a política vive em abrirCanal()');
     assert.match(fonte, /O canal só avisa/);
     assert.ok(enviar('{"tipo":"ping"}').length > 6);

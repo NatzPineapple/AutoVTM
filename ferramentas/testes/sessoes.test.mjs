@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { carregar, fichaDeTeste, memoriaLocal, executar } from './carregar.mjs';
 
 /* Sessão é do front, e o front precisa de tudo. */
-const TODAS = ['data', 'ficha', 'arbitro', 'cronista', 'front'];
+const TODAS = ['data', 'ficha', 'arbitro', 'cronista', 'front', 'mesa'];
 
 /** Contexto novo, com memória própria e uma mesa aberta. */
 function mesa({ cota = Infinity } = {}) {

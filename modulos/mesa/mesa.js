@@ -1115,7 +1115,7 @@ function renderSaguao() {
       <div class="sessao-corpo" data-mesa="continuar-sessao" data-id="${s.id}">
         <div class="sessao-topo">
           <span class="sessao-personagem">${esc(s.personagem)}</span>
-          <span class="sessao-quando">${quando(s.atualizadoEm)}</span>
+          <span class="sessao-quando">${haQuanto(s.atualizadoEm)}</span>
         </div>
         <div class="sessao-meta">${esc(s.cla)} · ${esc(s.campanha)}</div>
         ${s.capitulo ? `<div class="sessao-onde">${esc(s.capitulo)}</div>` : ''}

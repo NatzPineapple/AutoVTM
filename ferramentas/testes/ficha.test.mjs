@@ -423,13 +423,13 @@ test('Ficha — a matilha não some em silêncio (F5)', async (t) => {
 
 test('Ficha — a folha oficial', async (t) => {
   await t.test('gera as duas folhas com o nome do personagem', () => {
-    const html = g.fichaOficialHTML(fichaDeTeste(g, { nome: 'Inácia Vasques' }));
+    const html = g.fichaModeloHTML(fichaDeTeste(g, { nome: 'Inácia Vasques' }));
     assert.ok(typeof html === 'string' && html.length > 500, 'a folha veio vazia');
     assert.ok(html.includes('Inácia Vasques'), 'o nome não apareceu na folha');
   });
 
   await t.test('escapa o que o jogador escreve', () => {
-    const html = g.fichaOficialHTML(fichaDeTeste(g, { nome: '<script>alert(1)</script>' }));
+    const html = g.fichaModeloHTML(fichaDeTeste(g, { nome: '<script>alert(1)</script>' }));
     assert.ok(!html.includes('<script>alert(1)</script>'), 'HTML do jogador entrou cru na folha');
   });
 
@@ -437,14 +437,14 @@ test('Ficha — a folha oficial', async (t) => {
     /* §37.7 fez a folha receber a ficha por parâmetro. Se ela voltar a
        ler o `S` global, este teste cai. */
     g.S = fichaDeTeste(g, { nome: 'DO_CRIADOR' });
-    const html = g.fichaOficialHTML(fichaDeTeste(g, { nome: 'DO_PARAMETRO' }));
+    const html = g.fichaModeloHTML(fichaDeTeste(g, { nome: 'DO_PARAMETRO' }));
     assert.ok(html.includes('DO_PARAMETRO'), 'a folha ignorou o parâmetro');
     assert.ok(!html.includes('DO_CRIADOR'), 'a folha leu o S global do criador');
   });
 
   await t.test('não devolve o Índice de Força para o jogador', () => {
     /* Decisão da §16.2: o número é interno. */
-    const html = g.fichaOficialHTML(fichaDeTeste(g));
+    const html = g.fichaModeloHTML(fichaDeTeste(g));
     assert.ok(!/Índice de Força/i.test(html), 'o Índice de Força voltou para a folha');
   });
 });

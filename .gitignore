@@ -84,7 +84,7 @@ $RECYCLE.BIN/
 
 # Registro das corridas de teste — resultado de execução, não código.
 # `npm test` reescreve, e guarda os vinte últimos.
-testes/registro/
+ferramentas/testes/registro/
 
 # Sessões de mesa (Módulo 3): estado de jogo local, não é código.
 sessoes/

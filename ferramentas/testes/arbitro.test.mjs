@@ -14,10 +14,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { carregar, fichaDeTeste, comDadosViciados, executar, instantaneo, RAIZ, AREAS, caminhoDe } from './carregar.mjs';
 
-/* Mesma dívida da §45.2: `nomeAtributo()` vive em front/mesa-render.js e
+/* Mesma dívida da §45.2: `nomeAtributo()` vive em mesa/mesa-render.js e
    é chamada por motor-combate.js e por Arbitro.piscinaFinal(). Enquanto
    isso for verdade, a área não carrega sozinha. */
-const AREAS_DO_ARBITRO = ['data', 'ficha', 'arbitro', 'front'];
+const AREAS_DO_ARBITRO = ['data', 'ficha', 'arbitro', 'front', 'mesa'];
 const g = carregar(AREAS_DO_ARBITRO);
 const { Dados, Arbitro, Estado, Combate, Rodada, Grafo, Especialista, Cadeia,
         Perdicoes, RolagemUnica, Escudo, derivados, Oblivio, MotorOblivio, Lexico } = g;

@@ -25,9 +25,9 @@ const PASTA_DAS_FICHAS = fs.mkdtempSync(path.join(os.tmpdir(), 'vitae-fichas-'))
 process.env.VITAE_FICHAS = PASTA_DAS_FICHAS;
 process.env.VITAE_FICHA_GUARDADOR = 'pasta';
 
-const Ficha = await import('../modulos/ficha/ficha-servidor.mjs');
-const Guardador = await import('../modulos/ficha/ficha-guardador.mjs');
-const Arbitro = await import('../modulos/arbitro/arbitro-servidor.mjs');
+const Ficha = await import('../../modulos/ficha/ficha-servidor.mjs');
+const Guardador = await import('../../modulos/ficha/ficha-guardador.mjs');
+const Arbitro = await import('../../modulos/arbitro/arbitro-servidor.mjs');
 
 const ORIGEM = 'http://localhost:5173';
 
@@ -230,7 +230,7 @@ test('ArbitroServer — o mesmo Árbitro do navegador, por HTTP', async (t) => {
     /* A garantia da §82 do lado do serviço. Se alguém acrescentar uma
        rota que sorteie, ela estoura no primeiro dado — e o erro diz
        qual regra foi quebrada. */
-    const { montarContexto } = await import('../modulos/arbitro/arbitro-contexto.mjs');
+    const { montarContexto } = await import('../../modulos/arbitro/arbitro-contexto.mjs');
     const ctx = montarContexto();
     assert.throws(() => ctx.Dados.d10(), /não rola dado/);
     assert.throws(() => ctx.Dados.rolar({ piscina: 3 }), /não rola dado/);

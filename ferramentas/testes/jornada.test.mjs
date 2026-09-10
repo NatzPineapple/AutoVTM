@@ -29,7 +29,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { carregar, fichaDeTeste, memoriaLocal, executar, instantaneo, comDadosViciados } from './carregar.mjs';
 
-const TODAS = ['data', 'ficha', 'arbitro', 'cronista', 'front'];
+const TODAS = ['data', 'ficha', 'arbitro', 'cronista', 'front', 'mesa'];
 
 /** Um app recém-aberto, com uma ficha jogável no criador. */
 function app(extraDaFicha = {}) {
@@ -72,7 +72,7 @@ test('Jornada — criar personagem, guardar, e abrir a mesa', async (t) => {
   });
 
   await t.test('a folha oficial sai com o nome e sem o Índice de Força', () => {
-    const html = rodar(g, 'fichaOficialHTML(S)');
+    const html = rodar(g, 'fichaModeloHTML(S)');
     assert.ok(html.includes('Inácia Vasques'));
     assert.ok(!/Índice de Força/i.test(html), 'o número interno vazou para a folha');
   });

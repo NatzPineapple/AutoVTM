@@ -324,7 +324,7 @@ function ofFolha2(F) {
 }
 
 /* ---------- montagem ---------- */
-function fichaOficialHTML(F) {
+function fichaModeloHTML(F) {
   return `<div class="oficial">${ofFolha1(F)}${ofFolha2(F)}</div>`;
 }
 

@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { carregar, fichaDeTeste, comDadosViciados, executar, AREAS, RAIZ, caminhoDe } from './carregar.mjs';
 
-const g = carregar(['data', 'ficha', 'arbitro', 'front']);
+const g = carregar(['data', 'ficha', 'arbitro', 'front', 'mesa']);
 const { Arbitro, Cadeia, Navegacao, Grafo, Combate } = g;
 
 const navegar = (gr, alvoId, alvo = null) => Navegacao.navegar({
@@ -537,8 +537,12 @@ test('Árbitro — a área é independente do front (A6)', async (t) => {
     const declaradas = (fonte) =>
       [...fonte.matchAll(/^(?:function|const|let|class)\s+([A-Za-z_$][\w$]*)/gm)].map(m => m[1]);
 
+    /* Front e Mesa: as duas metades de navegador que ficam depois do
+       Árbitro na ordem de carga. */
     const soDoFront = new Set();
-    for (const nome of AREAS.front) for (const d of declaradas(leia('front', nome))) soDoFront.add(d);
+    for (const area of ['front', 'mesa']) {
+      for (const nome of AREAS[area]) for (const d of declaradas(leia(area, nome))) soDoFront.add(d);
+    }
     /* Nome que as camadas de baixo também declaram não conta: repetição
        de nome não é dependência. */
     for (const area of ['data', 'ficha', 'arbitro']) {

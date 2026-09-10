@@ -247,7 +247,7 @@ export default async function* relator(fonte) {
   for (const f of falhas) {
     yield `  ✖ ${f.nome}\n    ${String((f.erro && f.erro.message) || '').split('\n')[0]}\n`;
   }
-  if (!semRegistro) yield `\nRegistro: testes/registro/ultimo.md\n`;
+  if (!semRegistro) yield `\nRegistro: ferramentas/testes/registro/ultimo.md\n`;
 }
 
 /* Guarda os vinte últimos. Sem isso, a pasta vira um cemitério e
@@ -258,6 +258,7 @@ function podar(pasta, quantos = 20) {
     .sort()
     .reverse();
   for (const velho of arquivos.slice(quantos)) {
-    try { fs.unlinkSync(path.join(pasta, velho)); } catch (e) {}
+    try { fs.unlinkSync(path.join(pasta, velho)); }
+    catch (e) { console.warn(`[relator] não apaguei ${velho}:`, e.message); }
   }
 }

@@ -13,7 +13,7 @@
         divergiriam — é a lição que este projeto já pagou três
         vezes, e a mais cara delas foi sobre DOCUMENTO, não código.
      2. **rodar os mesmos arquivos** num contexto de `node:vm`, que
-        é exatamente o que `testes/carregar.mjs` faz desde a §44
+        é exatamente o que `ferramentas/testes/carregar.mjs` faz desde a §44
         para poder afirmar qualquer coisa sobre eles.
 
    Então o ArbitroServer não tem regra de jogo dentro. Ele tem um
@@ -96,7 +96,7 @@ export function montarContexto() {
     Math, Date, JSON, Object, Array, String, Number, Boolean, RegExp, Map, Set, Promise, Error,
     AbortController, URL, TextEncoder, TextDecoder
   };
-  /* `ficha-oficial.js` chama `window.addEventListener` no topo, para
+  /* `ficha-modelo.js` chama `window.addEventListener` no topo, para
      ajustar a escala da folha ao redimensionar. Num serviço não há
      janela nem redimensionamento; sem estes ocos, o arquivo estoura
      no carregamento e leva o processo junto. */

@@ -159,7 +159,7 @@ function piscinaDaFicha(ficha, atributoId, periciaId, { casaEspecializacao = nul
 /* ------------------------------------------------------------
    ESCAPE
    Definição única do projeto. Morava em `front/app.js`, e
-   `ficha-oficial.js` a usava de lá — mais um fio da inversão do
+   `ficha-modelo.js` a usava de lá — mais um fio da inversão do
    F1. Fica aqui porque a Ficha carrega antes do front, e assim a
    dependência aponta para o lado certo: o front usa o que a Ficha
    define, nunca o contrário.
