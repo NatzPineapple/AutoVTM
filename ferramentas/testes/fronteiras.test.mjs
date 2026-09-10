@@ -572,7 +572,11 @@ test('Estrutura — uma pasta por módulo', async (t) => {
       return fora;
     };
     const sujos = [];
-    for (const rel of ['modulos', 'comum', 'ferramentas', 'testes'].flatMap(varrer)) {
+    /* `testes/` não é mais pasta de topo própria: mora dentro de
+       `ferramentas/`, então `varrer('ferramentas')` já desce lá. Listá-la
+       de novo aqui seria escanear a mesma coisa duas vezes — e, pior,
+       tentar abrir uma pasta de topo que não existe mais. */
+    for (const rel of ['modulos', 'comum', 'ferramentas'].flatMap(varrer)) {
       const texto = semComentario(fs.readFileSync(path.join(RAIZ, rel), 'utf8'));
       if (/\bapp\/js\/|\bnode servidor\/|['"`]\.\.\/servidor\//.test(texto)) sujos.push(rel);
     }
