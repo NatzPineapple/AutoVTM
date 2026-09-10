@@ -29,6 +29,7 @@ Livros/
 # existir, mas npm cria a pasta assim mesmo, e o mupdf entra aqui quando
 # você renderiza página de livro.
 node_modules/
+campanhas/
 npm-debug.log*
 .npm/
 
