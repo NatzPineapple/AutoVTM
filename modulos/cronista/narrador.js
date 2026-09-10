@@ -186,6 +186,14 @@ const NarradorProxy = {
         .replace(/\*\*|\*/g, '').replace(/\s+/g, ' ').trim();
       return limpo.length > n ? limpo.slice(0, n - 1) + '…' : limpo;
     };
+    /* CARTA X  (§89)
+
+       A passagem retirada não viaja. O que viaja é o fato de ela ter
+       sido retirada — sem o texto, porque devolver o texto ao modelo
+       é a única forma garantida de ele voltar ao assunto. O resumo do
+       que foi tirado sobe uma vez só, no bloco de limites do prefixo,
+       e lá ele vem com a ordem de não voltar. */
+    if (m.retirado) return '[retirado pelo jogador — não aconteceu]';
     if (m.autor === 'cena') return `[cena] ${m.titulo || ''}${m.sub ? ` — ${m.sub}` : ''}`;
     if (m.autor === 'jogador') return `[jogador ${m.modo || 'agir'}] ${corte(m.texto)}`;
     if (m.autor === 'narrador') return `[narração] ${corte(m.texto)}`;
@@ -243,6 +251,16 @@ const NarradorProxy = {
       arbitro: turno.arbitro || '',
       resultado: turno.resultado || '',
       gancho: turno.gancho || '',
+      /* §89 — LINHAS E VÉUS, e o pedido de corte.
+
+         Sobe já FORMATADO, e de propósito: quem sabe montar o bloco é
+         `Limites.paraModelo`, que é uma função só. Mandar as listas
+         cruas obrigaria o servidor a ter a sua própria cópia da regra
+         — duas listas para o mesmo fato, que é exatamente o que este
+         projeto já viu divergir em silêncio quatro vezes. */
+      limites: (typeof Limites !== 'undefined') ? Limites.paraModelo(turno.limites) : '',
+      projetos: (typeof Projetos !== 'undefined') ? Projetos.paraModelo(turno.projetos) : '',
+      fade: !!turno.fade,
       acoes: Object.keys(Arbitro.ACOES)
     };
   },

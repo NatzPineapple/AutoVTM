@@ -428,9 +428,13 @@ const Estado = {
     }
     const c = claDe(f.cla);
     if (!c) return { origem: 'nenhuma', eventos: [{ tipo: 'nota', texto: 'Sem clã, sem Compulsão.' }] };
+    /* §95 (A10) — gatilho 2 de 2, e o livro manda SOMAR (pág. 79). */
+    const daPerdicao = (typeof Perdicoes !== 'undefined')
+      ? Perdicoes.aoVirATona(f, `Compulsão — ${c.compulsao.nome}`).eventos : [];
     return { origem: 'cla', nome: c.compulsao.nome, texto: c.compulsao.texto,
              alternativa: cam ? cam.compulsao.nome : null,
-             eventos: [{ tipo: 'compulsao', texto: `Compulsão de clã — ${c.compulsao.nome}: ${c.compulsao.texto}` }] };
+             eventos: [{ tipo: 'compulsao', texto: `Compulsão de clã — ${c.compulsao.nome}: ${c.compulsao.texto}` },
+                       ...daPerdicao] };
   },
 
   podeComprarHumanidade(f) {
@@ -549,17 +553,62 @@ const Estado = {
       return { eventos, rolagem: null, resistiu: false, cavalgou: true, info };
     }
 
-    const piscina = (f.atributos.autocontrole || 0) + (f.atributos.determinacao || 0)
-                  + (info.modificadorHumanidade || 0);
+    let piscina = (f.atributos.autocontrole || 0) + (f.atributos.determinacao || 0)
+                + (info.modificadorHumanidade || 0);
+
+    /* A PERDIÇÃO BRUJAH, COMO O LIVRO A ESCREVE.  (§88 — básico, pág. 67)
+
+       "Subtraia uma quantidade de dados igual à Gravidade da Perdição do
+        Brujah de qualquer parada para resistir a um frenesi de fúria,
+        o que não pode reduzir a parada a menos do que um dado."
+
+       O projeto dizia outra coisa em três pontos ao mesmo tempo: somava
+       à DIFICULDADE em vez de subtrair da PARADA, usava a Potência de
+       Sangue em vez da Gravidade da Perdição, e não tinha o piso.
+
+       Somar 3 à dificuldade e tirar 3 dados da parada NÃO são a mesma
+       coisa: o primeiro só muda quantos sucessos bastam, o segundo muda
+       a chance de haver sucesso nenhum — e é ele que empurra para a
+       Falha Bestial, que é o ponto da Perdição.
+
+       Só FÚRIA: o livro nomeia o tipo, e o Brujah resiste a medo e fome
+       como qualquer um. */
+    const d2 = derivados(f);
+    const cla = claDe(f.cla);
+    let perdicaoBrujah = 0;
+    if (cla && cla.id === 'brujah' && tipo === 'furia') {
+      perdicaoBrujah = d2.gravidadePerdicao || 0;
+      /* O PISO DE 1 DADO JÁ ESTAVA GARANTIDO, e este `Math.max` é o
+         segundo cinto. `Dados.pedir` aplica a parada mínima de 1 desde a
+         §63 (item A1), então tirar esta linha não muda um resultado
+         sequer — MEDIDO na §88: com Gravidade 3 e Autocontrole +
+         Determinação 2, a parada sai 1 dos dois jeitos.
+
+         Ele fica porque o livro enuncia o piso DENTRO da Perdição Brujah
+         (pág. 67), e quem lê esta função não deveria precisar saber que
+         existe uma rede embaixo. Mas o teste não distingue os dois, e
+         dizer que ele "protege" seria falso. */
+      piscina = Math.max(1, piscina - perdicaoBrujah);
+    }
+
     const r = Dados.rolar({ piscina, fome: 0, dificuldade: info.dificuldade,
                             rotulo: `Resistir ao frenesi de ${tipo}` });
     eventos.push({ tipo: 'nota',
       texto: `${info.gatilho || tipo} — dificuldade ${info.dificuldade}. ${info.nota}` });
+    if (perdicaoBrujah) {
+      eventos.push({ tipo: 'nota',
+        texto: `Sangue Fervente: −${perdicaoBrujah} dado(s) por Gravidade da Perdição `
+             + `(piso de 1 dado).` });
+    }
 
     if (r.passou) {
       eventos.push({ tipo: 'frenesi', texto: `Resistiu ao frenesi de ${tipo} por uma cena.` });
     } else {
       eventos.push({ tipo: 'critico', texto: `Frenesi de ${tipo}: a Besta assume o controle.` });
+      /* §95 (A10) — Perdição Gangrel: pág. 73, e o porquê está lá. */
+      if (typeof Perdicoes !== 'undefined') {
+        eventos.push(...Perdicoes.aspectosDoFrenesi(f, { cavalgou: cavalgar }).eventos);
+      }
     }
     return { eventos, rolagem: r, resistiu: r.passou, cavalgou: false, info };
   },
@@ -569,6 +618,11 @@ const Estado = {
     const c = Arbitro.consequencias(resultado);
     if (!c) return { eventos };
     const alvo = escolha || c.escolhas[0];
+
+    /* §95 (A10) — Perdição Malkaviana, gatilho 1 de 2: pág. 79. */
+    if (typeof Perdicoes !== 'undefined' && resultado && resultado.tipo === 'falhaBestial') {
+      eventos.push(...Perdicoes.aoVirATona(f, 'Falha Bestial').eventos);
+    }
 
     if (/mácula|macula/i.test(alvo)) {
       eventos.push(...this.ganharMacula(f, 1, resultado.tipo === 'perigo' ? 'Sucesso em Perigo' : 'Falha Bestial').eventos);
@@ -590,23 +644,11 @@ const Estado = {
     return { eventos, escolha: alvo, opcoes: c.escolhas };
   },
 
-  CUSTO_XP: {
-    atributo:      (n) => n * 5,
-    habilidade:    (n) => n * 3,
-    especializacao: () => 3,
-    disciplinaCla: (n) => n * 5,
-    disciplinaFora:(n) => n * 7,
-    disciplinaCaitiff: (n) => n * 6,
-    ritual:        (n) => n * 3,
-    formula:       (n) => n * 3,
-    vantagem:      (n) => n * 3,
-    potenciaSangue:(n) => n * 10
-  },
-
-  custoDe(tipo, novoNivel) {
-    const fn = this.CUSTO_XP[tipo];
-    return fn ? fn(novoNivel) : null;
-  },
+  /* A tabela de custos e o gastador moram em `motor-experiencia.js`
+     desde a §91. Ela ficou aqui, sem chamador nenhum, desde que foi
+     escrita — e este atalho existe para quem lia dela continuar
+     lendo. */
+  custoDe(tipo, novoNivel) { return Experiencia.custoDe(tipo, novoNivel); },
 
   /* ----------------------------------------------------------
      O DESEJO PAGA NA HORA  (§69, item A7)
@@ -693,8 +735,10 @@ const Estado = {
       if (!compra.pode) eventos.push({ tipo: 'nota', texto: compra.motivo });
     }
 
-    f.xpTotal = String((parseInt(f.xpTotal, 10) || 0) + xp);
-    eventos.push({ tipo: 'xp', texto: `${xp} ponto${xp === 1 ? '' : 's'} de experiência. Total: ${f.xpTotal}.` });
+    /* §91 — quem credita é a carteira, e ela diz quanto sobrou livre.
+       Antes o total subia e ninguém sabia quanto dele estava gasto,
+       porque não havia como gastar. */
+    eventos.push(...Experiencia.creditar(f, xp, 'fim de sessão').eventos);
     return { eventos, xp };
   }
 };

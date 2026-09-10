@@ -62,14 +62,32 @@ function derivados(f) {
     ? Escudo.GERACAO_POTENCIA.find(x => ger >= x.geracoes[0] && ger <= x.geracoes[1])
     : null;
   const bonusPredador = p?.potenciaSangue || 0;
+  /* §91 — a Potência de Sangue se COMPRA com experiência ("Novo nível
+     × 10", pág. 151), e até a §91 não havia por onde: ela era derivada
+     da geração e do Predador, e mais nada. `potenciaMod` é o caminho,
+     e ele é o mesmo que a Humanidade já usava desde a §69. */
   const potencia = (f.mortal || c?.sangueFraco) ? 0
-    : Math.min(10, (faixa ? faixa.min : 1) + bonusPredador);
+    : Math.min(10, (faixa ? faixa.min : 1) + bonusPredador + (f.potenciaMod || 0));
+
+  /* A GRAVIDADE DA PERDIÇÃO VIRA DERIVADO.  (§88)
+
+     Ela já existia em `Escudo.POTENCIA_SANGUE[n].perdicao`, e a folha
+     oficial já a imprimia — mas nada a CALCULAVA, e por isso nada podia
+     usá-la. O efeito disso foi grande: as nove Perdições de clã em
+     `data-clans.js` foram escritas com números inventados no lugar dela
+     ("dois dados", "de uma a três"), porque o valor não estava à mão.
+
+     O livro é uniforme: TODA Perdição de clã se mede em Gravidade da
+     Perdição. Sem ela, nenhuma delas dá para escrever certo. */
+  const perdicao = (typeof Escudo !== 'undefined' && Escudo.POTENCIA_SANGUE[potencia])
+    ? Escudo.POTENCIA_SANGUE[potencia].perdicao : 0;
 
   return {
     vitalidade: vigor + 3,
     vontade: auto + det,
     humanidade,
     potencia,
+    gravidadePerdicao: perdicao,
     geracao: f.geracao
   };
 }
@@ -103,11 +121,77 @@ function sincronizarMatilha(f) {
 
    O `|| {}` fica AQUI, e não em cada chamador, porque é aqui que a
    suposição mora. */
-function contagem(obj, lista) {
+/* `semContar` tira um traço da conta. Existe por causa do ponto que o
+   Predador dá quando a especialização dele cai numa Habilidade zerada
+   (§91, básico pág. 149): ele é do Predador, e o livro não o desconta
+   da distribuição escolhida — contá-lo faria a cota parecer estourada
+   por uma escolha que o jogador nem fez. */
+function contagem(obj, lista, { semContar = '' } = {}) {
   const c = { 1:0, 2:0, 3:0, 4:0, 5:0 };
   const fonte = obj || {};
-  lista.forEach(t => { const v = fonte[t.id] || 0; if (v >= 1) c[v]++; });
+  lista.forEach(t => {
+    let v = fonte[t.id] || 0;
+    if (semContar && t.id === semContar) v -= 1;
+    if (v >= 1) c[v]++;
+  });
   return c;
+}
+
+/* SANGUE-RALO NÃO DISTRIBUI PONTOS EM DISCIPLINA.  (§91, pág. 142)
+
+   "Sangues-ralos não escolhem nenhum clã e NÃO DISTRIBUEM PONTOS EM
+    DISCIPLINAS. Em vez disso, ganham Disciplinas temporárias
+    dependendo da Ressonância do sangue que eles consomem, e podem
+    aprender Alquimia Sangue-Ralo por meio de UMA QUALIDADE OU
+    EXPERIÊNCIA."
+
+   O projeto mandava pôr um ponto em Alquimia na criação — um ponto
+   que o livro não dá, e que vinha do lugar errado: da lista de
+   Disciplinas do clã, como se Sangue-Ralo fosse um clã com uma
+   Disciplina só.
+
+   `disciplinasDisponiveis` continua devolvendo Alquimia, porque ela É
+   a Disciplina que um sangue-ralo pode ter — o que mudou é que a
+   CRIAÇÃO não lhe dá pontos de graça. Quem cobra isso é
+   `pontosDeDisciplinaNaCriacao`. */
+function pontosDeDisciplinaNaCriacao(f) {
+  const c = claDe(f.cla);
+  if (!c) return 0;
+  if (c.sangueFraco) return 0;
+  return 3 + (f.predadorDisciplina ? 1 : 0);
+}
+
+/* A ESPECIALIZAÇÃO DO PREDADOR, E O PONTO QUE VEM COM ELA.  (§91, pág. 149)
+
+   "Se um tipo de Predador adicionar uma especialização cuja Habilidade
+    correspondente VOCÊ NÃO POSSUA, ganhe um ponto nessa Habilidade."
+
+   Isto nasceu dentro do ouvinte de clique do criador, e a mutação
+   mostrou o preço disso: regra escondida num `case` não tem como ser
+   testada sem simular clique. É regra de criação, e regra de criação é
+   da área Ficha.
+
+   `escolha` é `habilidadeId|nome da especialização`, ou vazio para
+   tirar. A função devolve o que mudou, para quem chama poder dizer. */
+function especializacaoDoPredador(f, escolha) {
+  const antes = f.pontoDoPredador || '';
+  /* Tirar o ponto anterior: ele era do Predador, e não da distribuição
+     escolhida — se ficasse, o jogador ganharia um ponto por troca. */
+  if (antes) {
+    f.habilidades[antes] = Math.max(0, (f.habilidades[antes] || 0) - 1);
+    if (!f.habilidades[antes]) delete f.habilidades[antes];
+    f.pontoDoPredador = '';
+  }
+  f.predadorEspec = escolha || '';
+  if (!f.predadorEspec) return { habilidade: '', ganhouPonto: false };
+
+  const [hid, nome] = f.predadorEspec.split('|');
+  f.especializacoes[hid] = nome;
+  if ((f.habilidades[hid] || 0) > 0) return { habilidade: hid, ganhouPonto: false };
+
+  f.habilidades[hid] = 1;
+  f.pontoDoPredador = hid;
+  return { habilidade: hid, ganhouPonto: true };
 }
 
 function disciplinasDisponiveis(f) {

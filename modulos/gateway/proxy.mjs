@@ -15,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { enderecoDe } from '../../comum/portas.mjs';
 import { daPropriaCasa } from '../../comum/origem.mjs';
+import { foiEstouroDeTempo } from '../../comum/estouro.mjs';
 import { servir as servirEstatico, SEM_CACHE } from '../../comum/servir-estatico.mjs';
 import { estado as estadoDosSistemas, ligar as ligarSistemas, desligar as desligarSistemas } from '../../comum/sistemas.mjs';
 
@@ -60,7 +61,7 @@ function permitirChamada() {
    `emVoo` existe para não empilhar chamadas num modelo local. Só que
    ele era liberado apenas no `finally` — quando o modelo respondia.
 
-   O extrator de intenção desiste em 30 s (`Intencao.TEMPO_LIMITE`), e
+   O extrator de intenção desiste em 60 s (`Intencao.TEMPO_LIMITE`), e
    com um 12B na máquina isso acontece. O cliente ia embora, o servidor
    continuava moendo, e o pedido seguinte do MESMO TURNO — a narração —
    levava "Já existe uma chamada em andamento". O jogador perdia a
@@ -124,7 +125,42 @@ function lerCorpo(req, limite = 1_000_000) {
    `/api/mesa/saude`. Reencaminhar `upgrade` seria um segundo
    soquete no meio do caminho sem nada a ganhar.
    ------------------------------------------------------------ */
-async function encaminhar(req, res, modulo, caminho) {
+/* DOIS TEMPOS-LIMITE, E NÃO UM SÓ.  (§97)
+
+   Havia um número para tudo: 20 s. Ele serve para uma saúde, um
+   checkout, um espelho de ficha — e **corta pela metade a única coisa
+   que este Gateway encaminha cujo trabalho é esperar um modelo de
+   linguagem**.
+
+   Os orçamentos de dentro já eram generosos e nunca chegavam a valer:
+
+     provedor-ollama.mjs   300 s  para a chamada ao modelo
+     intencao.mjs           60 s  para o extrator
+     proxy.mjs              20 s  ← cortava os dois
+
+   Um 12B numa máquina de mesa leva mais de 20 s para narrar um turno.
+   O jogador via "o módulo cronista não respondeu" com o módulo no ar,
+   e o conselho que vinha junto era subir um servidor que já estava
+   subido.
+
+   O de fora tem de ser o MAIOR, senão o de dentro nunca decide nada.
+
+   E, no caso do modelo, o de fora não deve existir.  (§98)
+
+   A §97 trocou 20 s por 300 s e ainda era um teto do Gateway sobre uma
+   espera que não é dele. O ollama roda na máquina do jogador: quem sabe
+   quanto uma narração demora é o `provedor-ollama.mjs`, que já tem os
+   seus 300 s, e quem decide desistir é quem está esperando — o
+   navegador, que pode fechar a aba.
+
+   Um Gateway que corta no meio não protege ninguém: o modelo continua
+   moendo do outro lado, o trabalho é jogado fora, e o jogador perde o
+   turno. Por isso **zero = sem limite**, e zero é o padrão nas rotas de
+   modelo. Quem quiser um teto o põe em `VITAE_TEMPO_MODELO`. */
+const TEMPO_MODULO = Number(process.env.VITAE_TEMPO_MODULO || 20000);
+const TEMPO_MODELO = Number(process.env.VITAE_TEMPO_MODELO || 0);
+
+async function encaminhar(req, res, modulo, caminho, { tempo = TEMPO_MODULO } = {}) {
   const alvo = `${enderecoDe(modulo)}${caminho}`;
   const temCorpo = req.method !== 'GET' && req.method !== 'HEAD';
   try {
@@ -141,13 +177,36 @@ async function encaminhar(req, res, modulo, caminho) {
         req.on('end', () => ok(bruto || '{}'));
         req.on('error', falha);
       }) : undefined,
-      signal: AbortSignal.timeout(Number(process.env.VITAE_TEMPO_MODULO || 20000))
+      /* Zero é "sem limite", e aí não se instala relógio nenhum — pôr
+         `AbortSignal.timeout(0)` abortaria na hora. */
+      signal: tempo > 0 ? AbortSignal.timeout(tempo) : undefined
     });
     const texto = await r.text();
     res.writeHead(r.status, Object.assign(
       { 'Content-Type': 'application/json; charset=utf-8' }, SEM_CACHE));
     res.end(texto);
   } catch (e) {
+    /* DESISTIR NÃO É O MESMO QUE ESTAR FORA DO AR, e a mensagem tem de
+       saber a diferença.  (§97)
+
+       As duas caíam no mesmo 503, com o mesmo texto e o mesmo conselho
+       de subir o servidor. Num registro de tráfego as duas ficavam
+       idênticas — só o tempo as separava, 5 ms contra 20 s, e ninguém
+       lê um log procurando isso. Quem estava depurando via quatro
+       módulos fora do ar quando três estavam fora e um tinha demorado.
+
+       Módulo no ar que demorou NÃO leva o comando de subir junto:
+       mandar subir o que já está de pé é conselho que atrapalha. */
+    if (foiEstouroDeTempo(e)) {
+      return responderJSON(res, 504, {
+        erro: `O módulo "${modulo}" está no ar, mas demorou mais de ${
+          Math.round(tempo / 1000)} s para responder.`,
+        detalhe: 'O Gateway desistiu de esperar; o módulo pode ainda estar trabalhando.',
+        tempoLimite: tempo,
+        esgotou: true,
+        ajuste: 'VITAE_TEMPO_MODELO (rotas de modelo) ou VITAE_TEMPO_MODULO (as demais)'
+      });
+    }
     /* Módulo fora do ar é o caso comum enquanto a migração corre.
        503 com o comando de subir, e não 500 com o texto do erro. */
     return responderJSON(res, 503, {
@@ -293,10 +352,13 @@ async function rotaAPI(req, res, url) {
   if (url in DO_MODELO) {
     /* O HEAD de `/api/intencao` é a sonda barata do elo 1: pergunta se
        ele existe sem gastar chamada, então não entra no balde. */
+    /* O HEAD é sonda: ele NÃO ganha o orçamento do modelo, porque uma
+       sonda que demora cinco minutos não é sonda. */
     if (req.method === 'HEAD') return encaminhar(req, res, 'cronista', DO_MODELO[url]);
     if (req.method !== 'POST') return responderJSON(res, 405, { erro: 'Use POST.' });
     if (!pedidoDaPropriaPagina(req)) return responderJSON(res, 403, { erro: 'Origem não autorizada.' });
-    return comLimite(res, () => encaminhar(req, res, 'cronista', DO_MODELO[url]));
+    return comLimite(res, () => encaminhar(req, res, 'cronista', DO_MODELO[url],
+                                           { tempo: TEMPO_MODELO }));
   }
 
 
@@ -322,4 +384,16 @@ servidor.listen(PORTA, ENDERECO, () => {
   console.log(`Escutando só em ${ENDERECO}. Para expor na rede, VITAE_ESCUTAR=0.0.0.0 — e saiba o que está fazendo.`);
   console.log('Sem cache: toda alteração aparece no F5.');
   console.log('As regras e o modelo vivem nos módulos: use o botão Ligar tudo, na capa.');
+  /* DIZER COM QUE ORÇAMENTO SUBIU.  (§98)
+
+     A §97 consertou o corte e o conserto não valeu: o processo no ar
+     era 28 minutos mais velho que o arquivo, e não havia como saber
+     disso olhando o log — a única pista era a mensagem antiga, e ela
+     só é reconhecível por quem escreveu a nova.
+
+     Node não recarrega arquivo sozinho. Um servidor que anuncia os
+     próprios números responde "qual build está rodando?" na primeira
+     linha, e essa pergunta custou duas rodadas de teste. */
+  console.log(`Tempo-limite: módulos ${TEMPO_MODULO} ms · rotas de modelo ${
+    TEMPO_MODELO > 0 ? TEMPO_MODELO + ' ms' : 'sem limite'}.`);
 });

@@ -3,19 +3,49 @@
    7 pontos de Vantagens • 2 pontos de Defeitos na criação
    ============================================================ */
 
+/* ANTECEDENTES — básico, pág. 153  (§91)
+
+   São DOZE no livro, e o projeto tinha ONZE. Faltava a Ficha de
+   Conhecimento, e dois estavam com o nome de outra edição:
+
+     Retentores  →  LACAIOS
+     Mentor      →  MAWLA
+
+   O mais incômodo é que o `glossario-traducao.md` deste projeto já
+   decidia os dois — "Retainer → Lacaio" na linha 326, "Loresheet →
+   Ficha de Conhecimento" na linha 73 — desde antes. O dado não
+   divergia do livro: divergia do próprio glossário do projeto, que
+   ninguém tinha como conferir porque nada comparava os dois.
+
+   `ANTECEDENTES_RENOMEADOS` segue a receita da §77 com os Predadores:
+   ficha salva com o id velho não perde os pontos em silêncio. */
 const ANTECEDENTES = [
-  { id: 'aliados',     nome: 'Aliados',      max: 5, desc: 'Grupo de mortais que ajudam por lealdade, medo ou amor. Definem-se por Efetividade e Confiança.' },
-  { id: 'contatos',    nome: 'Contatos',     max: 5, desc: 'Gente que devolve sua ligação de madrugada. Informação, não músculo.' },
-  { id: 'fama',        nome: 'Fama',         max: 5, desc: 'Reconhecimento entre mortais. Portas abertas — e câmeras.' },
-  { id: 'influencia',  nome: 'Influência',   max: 5, desc: 'Poder sobre estruturas mortais: polícia, imprensa, prefeitura, tráfico.' },
-  { id: 'mascara',     nome: 'Máscara',      max: 2, desc: 'Identidade civil falsa e sustentável. Sem ela, o século XXI te devora.' },
-  { id: 'recursos',    nome: 'Recursos',     max: 5, desc: 'Dinheiro, propriedade, renda passiva que sobrevive à sua morte social.' },
-  { id: 'refugio',     nome: 'Refúgio',      max: 5, desc: 'Onde você dorme sem virar cinza. Tamanho, segurança e segredo.' },
-  { id: 'rebanho',     nome: 'Rebanho',      max: 5, desc: 'Fonte de alimento confiável e recorrente. Pessoas, não abstrações.' },
-  { id: 'retentores',  nome: 'Retentores',   max: 5, desc: 'Carniçais e servos vinculados. Leais porque bebem de você.' },
-  { id: 'status',      nome: 'Status',       max: 5, desc: 'Posição reconhecida dentro da sua seita. Vale mais que dinheiro numa Elísio.' },
-  { id: 'mentor',      nome: 'Mentor',       max: 5, desc: 'Um Membro mais velho que investe em você. E cobra.' }
+  { id: 'aliados',     nome: 'Aliados',      max: 5, pagina: 153, desc: 'Associados mortais, geralmente parentes ou amigos. Definem-se por Efetividade e Confiança.' },
+  { id: 'contatos',    nome: 'Contatos',     max: 5, pagina: 153, desc: 'As fontes de informação que você possui. Gente que devolve sua ligação de madrugada.' },
+  { id: 'lacaios',     nome: 'Lacaios',      max: 5, pagina: 153, desc: 'Seguidores, seguranças e servos. Carniçais leais porque bebem de você.' },
+  { id: 'fama',        nome: 'Fama',         max: 5, pagina: 153, desc: 'O quão conhecido você é entre os mortais. Portas abertas — e câmeras.' },
+  { id: 'ficha_conhecimento', nome: 'Ficha de Conhecimento', max: 5, pagina: 153,
+    loresheet: true,
+    desc: 'Sua conexão com as histórias e figuras lendárias do mundo das trevas. É um Antecedente de forma incomum: cada Ficha traz os próprios efeitos, nível a nível.' },
+  { id: 'influencia',  nome: 'Influência',   max: 5, pagina: 153, desc: 'Seu poder político na sociedade mortal: polícia, imprensa, prefeitura, tráfico.' },
+  { id: 'mascara',     nome: 'Máscara',      max: 2, pagina: 153, desc: 'Uma identidade falsa completa, incluindo documentação. Sem ela, o século XXI te devora.' },
+  { id: 'mawla',       nome: 'Mawla',        max: 5, pagina: 153, desc: 'Um Membro que o aconselha e apoia: um mentor, patrono ou partidário. E cobra.' },
+  { id: 'rebanho',     nome: 'Rebanho',      max: 5, pagina: 153, desc: 'As bolsas às quais você tem acesso livre e seguro. Pessoas, não abstrações.' },
+  { id: 'recursos',    nome: 'Recursos',     max: 5, pagina: 153, desc: 'Riqueza, pertences e renda que sobrevivem à sua morte social.' },
+  { id: 'refugio',     nome: 'Refúgio',      max: 5, pagina: 153, desc: 'Um lugar para dormir com segurança durante o dia. Tamanho, segurança e segredo.' },
+  { id: 'status',      nome: 'Status',       max: 5, pagina: 153, desc: 'Sua posição na sociedade dos não vivos. Vale mais que dinheiro numa Elísio.' }
 ];
+
+const ANTECEDENTES_RENOMEADOS = { retentores: 'lacaios', mentor: 'mawla' };
+
+/* "Nenhum sangue-ralo pode comprar Laço, Mawla, Lacaios ou Status
+    durante a criação de personagem (uma coterie mista pode comprá-los
+    como Antecedentes compartilhados)."          (básico, pág. 149)
+
+   "Laço" ali é o Antecedente de Laço de Sangue, que este projeto não
+   tem como Antecedente — o Laço vive em `motor-lacos.js` desde a §90.
+   Os outros três existem, e a criação passou a barrá-los. */
+const ANTECEDENTES_VEDADOS_A_SANGUE_RALO = ['mawla', 'lacaios', 'status'];
 
 const MERITOS = [
   { id: 'aparencia', nome: 'Aparência Impressionante', custos: [2, 4], desc: 'Beleza que trava conversas. 2: notável. 4: perigosa.' },

@@ -84,10 +84,20 @@ async function medir(modelo, dados, opcoes) {
 
 const SUJEIRA = ['\`\`\`', 'claro', 'desculpe', 'como posso', 'assistente'];
 
+/* §94 — comparação de fala tolerante ao que o modelo TEM de fazer.
+
+   Em fala indireta ("digo pra ela que ela não devia ter vindo") o papel
+   manda reescrever para fala direta, então exigir a frase igual seria
+   exigir o contrário do pedido. O que se confere é a palavra-chave,
+   sem acento e em minúsculas — o resto é do modelo. */
+const semAcento = (t) => String(t || '').toLowerCase()
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 async function medirIntencao(modelo, dados, opcoes) {
   const contexto = opcoes.semContexto ? {} : (dados.cena || {});
   const erros = [], foraDoFormato = [], faltando = [], tempos = [];
-  let acertos = 0, total = 0;
+  const falaErrada = [], falaInventada = [], falaPerdida = [];
+  let acertos = 0, total = 0, comFala = 0, falaOk = 0, semFala = 0, silencioOk = 0;
 
   for (let i = 0; i < opcoes.repeticoes; i++) {
     for (const caso of dados.casos) {
@@ -110,28 +120,59 @@ async function medirIntencao(modelo, dados, opcoes) {
 
       const vazios = (caso.exige || []).filter(c => !s[c]);
       if (vazios.length) faltando.push(`${caso.frase}: sem ${vazios.join(', ')}`);
+
+      /* ---- G6: a leitura de fala, medida ----
+
+         Dois erros, e eles não custam o mesmo. Perder a fala deixa o
+         turno mudo — chato. INVENTAR fala põe na boca do personagem
+         algo que o jogador não escreveu, e isso vira narração e
+         história. Por isso as duas contas são separadas. */
+      if (caso.volume === undefined) continue;
+      if (caso.volume === 'none') {
+        semFala++;
+        if (!s.speech) silencioOk++;
+        else falaInventada.push(`${caso.frase}: inventou "${s.speech}"`);
+        continue;
+      }
+      comFala++;
+      if (!s.speech) { falaPerdida.push(`${caso.frase}: não ouviu fala nenhuma`); continue; }
+      const volumeOk = s.speech_volume === caso.volume;
+      const chaves = (caso.falaContem || []).filter(k => !semAcento(s.speech).includes(semAcento(k)));
+      if (volumeOk && !chaves.length) falaOk++;
+      else falaErrada.push(`${caso.frase}: `
+        + (volumeOk ? '' : `volume ${s.speech_volume} em vez de ${caso.volume}`)
+        + (volumeOk || !chaves.length ? '' : ' · ')
+        + (chaves.length ? `fala "${s.speech}" sem ${chaves.join(', ')}` : ''));
     }
   }
   process.stdout.write('\n');
   tempos.sort((a, b) => a - b);
   return { modelo, total, acertos, taxa: total ? +(100 * acertos / total).toFixed(1) : 0,
            foraDoFormato, erros, faltando,
+           comFala, falaOk, semFala, silencioOk, falaErrada, falaInventada, falaPerdida,
            mediana: tempos[Math.floor(tempos.length / 2)] || 0, pior: tempos[tempos.length - 1] || 0 };
 }
 
 function tabelaIntencao(resultados, opcoes) {
   barra('RESULTADO');
   console.log(pad('modelo', 22) + padE('tipo ok', 9) + padE('formato', 9) +
-              padE('ms med', 9) + padE('ms pior', 9));
+              padE('fala ok', 9) + padE('calado', 9) + padE('ms med', 9) + padE('ms pior', 9));
   for (const r of resultados) {
     console.log(pad(r.modelo, 22) + padE(`${r.acertos}/${r.total}`, 9) +
                 padE(r.foraDoFormato.length ? `${r.foraDoFormato.length} ✕` : 'ok', 9) +
+                padE(`${r.falaOk}/${r.comFala}`, 9) +
+                padE(`${r.silencioOk}/${r.semFala}`, 9) +
                 padE(r.mediana, 9) + padE(r.pior, 9));
   }
+  console.log('\n  "fala ok" = volume certo E a palavra-chave na fala.');
+  console.log('  "calado"  = não inventou fala onde não havia — o erro mais caro dos dois.');
   for (const r of resultados) {
     for (const [rotulo, lista] of [['FORA DO FORMATO', r.foraDoFormato],
                                    ['TIPO ERRADO', r.erros],
-                                   ['CAMPO ESPERADO VAZIO', r.faltando]]) {
+                                   ['CAMPO ESPERADO VAZIO', r.faltando],
+                                   ['FALA INVENTADA', r.falaInventada],
+                                   ['FALA PERDIDA', r.falaPerdida],
+                                   ['FALA TORTA', r.falaErrada]]) {
       if (!lista.length) continue;
       barra(`${r.modelo} — ${rotulo}`);
       lista.forEach(x => console.log('  ' + x));

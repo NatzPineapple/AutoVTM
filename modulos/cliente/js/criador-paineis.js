@@ -322,6 +322,131 @@ function painelAtributos() {
   <div class="grade g3">${grupos}</div>`;
 }
 
+/* ------------------------------------------------------------
+   A VIDA HUMANA — o método das págs. 145–146  (§91)
+
+   O criador oferecia só o quadro rápido da pág. 147, que o próprio
+   livro chama de "ESCOLHA ALTERNATIVA RÁPIDA". Alternativa a este.
+
+   Aqui as Habilidades não são distribuídas: são CONTADAS a partir
+   do que o personagem fez em vida — a profissão, o evento que o
+   marcou, três passatempos. E a soma cai exatamente numa das duas
+   distribuições, conforme o último passo. Não são dois sistemas: o
+   quadro rápido é este método escrito de trás para frente.
+   ------------------------------------------------------------ */
+function painelVidaHumana() {
+  const v = S.vidaHumana || (S.vidaHumana = { profissao: '', evento: '',
+                                              passatempos: [], adicionais: '', opcoes: {} });
+  const r = Criacao.montar(v);
+  const hab = (id) => nomeHabilidade(id);
+
+  const cartaoProf = Criacao.PROFISSOES.map(p => {
+    const linha = (slots) => slots.map(s => s.fixo ? hab(s.fixo)
+      : (s.escolha || []).map(hab).join(' ou ')).join(' · ');
+    return `
+    <div class="cartao clicavel ${v.profissao === p.id ? 'selec' : ''}"
+      data-acao="vida-prof" data-id="${p.id}">
+      <div class="cla-nome">${esc(p.nome)}</div>
+      <p class="quiet" style="margin:.2rem 0 0"><b>•••</b> ${esc(linha(p.tres))}</p>
+      <p class="quiet" style="margin:.1rem 0 0"><b>••</b> ${esc(linha(p.dois))}</p>
+    </div>`;
+  }).join('');
+
+  /* Onde o livro escreve "A ou B", o jogador decide. Os chips só
+     aparecem depois da profissão escolhida — antes não há o que
+     decidir. */
+  const prof = Criacao.profissaoPor(v.profissao);
+  const escolhas = prof ? [
+    ...prof.tres.map((s, i) => [s, `prof3:${i}`, 3]),
+    ...prof.dois.map((s, i) => [s, `prof2:${i}`, 2])
+  ].filter(([s]) => s.escolha).map(([s, chave, nivel]) => `
+    <div class="linha-traco">
+      <span class="traco-nome">Nível ${nivel}<small>${esc(s.nota || 'escolha uma')}</small></span>
+      <div class="chips" style="margin:0">
+        ${s.escolha.map(id => `<span class="chip ${
+          (v.opcoes[chave] || s.escolha[0]) === id ? 'on' : ''}"
+          data-acao="vida-opcao" data-id="${chave}|${id}">${esc(hab(id))}</span>`).join('')}
+      </div>
+    </div>`).join('') : '';
+
+  const cartaoEvento = Criacao.EVENTOS.map(e => `
+    <div class="cartao clicavel ${v.evento === e.id ? 'selec' : ''}"
+      data-acao="vida-evento" data-id="${e.id}">
+      <div class="cla-nome">${esc(e.nome)}</div>
+      <p class="quiet" style="margin:.2rem 0 0">${esc(e.habilidades.map(hab).join(' · '))}</p>
+      ${e.divergencia ? `<p class="quiet" style="margin:.2rem 0 0;font-size:.75rem"><em>${
+        esc(e.divergencia)}</em></p>` : ''}
+    </div>`).join('');
+
+  const ev = Criacao.eventoPor(v.evento);
+  const escolhaEvento = (ev && ev.habilidades.length > 1) ? `
+    <div class="linha-traco">
+      <span class="traco-nome">Qual fica em 3<small>a outra fica em 2</small></span>
+      <div class="chips" style="margin:0">
+        ${ev.habilidades.map(id => `<span class="chip ${
+          (v.opcoes.evento || ev.habilidades[0]) === id ? 'on' : ''}"
+          data-acao="vida-opcao" data-id="evento|${id}">${esc(hab(id))}</span>`).join('')}
+      </div>
+    </div>` : '';
+
+  const hobbies = Criacao.PASSATEMPOS.map(h => `
+    <span class="chip ${v.passatempos.includes(h.id) ? 'on' : ''}"
+      data-acao="vida-hobby" data-id="${h.id}"
+      title="${esc(hab(h.habilidade))}${h.alternativa ? ` ou ${hab(h.alternativa)}` : ''}">${
+      esc(h.nome)}</span>`).join('');
+
+  const adicionais = Object.entries(Criacao.ADICIONAIS).map(([k, a]) => `
+    <div class="cartao clicavel ${v.adicionais === k ? 'selec' : ''}"
+      data-acao="vida-adicionais" data-id="${k}">
+      <div class="cla-nome">${esc(a.nome)}</div>
+      <p class="quiet" style="margin:.2rem 0 0">${esc(a.texto)}</p>
+      <div class="cla-discs">cai na distribuição <b>${esc(
+        DIST_HABILIDADES[a.distribuicao].nome)}</b></div>
+    </div>`).join('');
+
+  const soma = Object.entries(r.pontos).sort((a, b) => b[1] - a[1])
+    .map(([id, n]) => `<div class="linha"><span class="rot">${esc(hab(id))}</span><span>${
+      '•'.repeat(n)}</span></div>`).join('') || '<p class="quiet">Nada ainda.</p>';
+
+  return `
+  <div class="painel-cabeca">
+    <div class="num">Passo ${numeroDoPasso('habilidades')}</div>
+    <h2>A vida que você teve</h2>
+    <p>Este é o método do livro, das <b>págs. 145–146</b>. Você não distribui pontos: você conta o
+    que fez em vida, e as Habilidades saem daí.
+    <button class="btn fantasma" data-acao="modohab" data-id="" style="margin-left:.8rem">usar o
+    quadro rápido</button></p>
+  </div>
+
+  <div class="caixa"><h4>O que você fazia por dinheiro</h4>
+  <p>Duas Habilidades em <b>três</b> e duas em <b>dois</b>, mais uma especialização profissional.</p></div>
+  <div class="grade g3">${cartaoProf}</div>
+  ${escolhas ? `<div class="caixa"><h4>Onde o livro deixa escolher</h4>${escolhas}</div>` : ''}
+
+  <div class="caixa"><h4>O que te marcou</h4>
+  <p>Um evento-chave: uma Habilidade em <b>três</b>, outra em <b>dois</b>.</p></div>
+  <div class="grade g3">${cartaoEvento}</div>
+  ${escolhaEvento ? `<div class="caixa">${escolhaEvento}</div>` : ''}
+
+  <div class="caixa"><h4>O que você fazia por prazer</h4>
+  <p>Escolha <b>três</b> passatempos — um ponto cada.
+  ${v.passatempos.length}/${Criacao.QUANTOS_PASSATEMPOS} escolhidos.</p>
+  <div class="chips">${hobbies}</div></div>
+
+  <div class="caixa"><h4>E o resto</h4>
+  <p>O último passo decide em qual distribuição a sua vida cai.</p></div>
+  <div class="grade g2">${adicionais}</div>
+
+  <div class="caixa ouro">
+    <h4>A conta${r.distribuicao ? ` — distribuição ${esc(DIST_HABILIDADES[r.distribuicao].nome)}` : ''}</h4>
+    ${soma}
+    ${r.falta.length
+      ? `<p class="quiet" style="margin:.5rem 0 0">Falta: ${esc(r.falta.join(' · '))}.</p>`
+      : `<div class="chips"><span class="chip" data-acao="vida-aplicar" data-id="ok">Levar isto
+         para a ficha</span></div>`}
+  </div>`;
+}
+
 function painelHabilidades() {
   const modos = Object.entries(DIST_HABILIDADES).map(([k, m]) => `
     <div class="cartao clicavel ${S.modoHabilidade === k ? 'selec' : ''}" data-acao="modohab" data-id="${k}">
@@ -332,19 +457,36 @@ function painelHabilidades() {
         .map(([v,q]) => `${q}× nível ${v}`).join(' · ')}</div>
     </div>`).join('');
 
+  /* §91 — o método longo é o texto principal do livro; o quadro das
+     três distribuições é a "escolha alternativa rápida" dele. Aqui os
+     dois convivem, e a escolha entre eles é o primeiro clique. */
+  if (S.modoHabilidade === 'vida') return painelVidaHumana();
+
   if (!S.modoHabilidade) {
     return `
     <div class="painel-cabeca">
       <div class="num">Passo ${numeroDoPasso('habilidades')}</div>
       <h2>O Ofício de estar morto</h2>
-      <p>Escolha primeiro o formato da sua competência. Depois distribua os pontos.</p>
+      <p>Duas maneiras, e as duas são do livro. A de cima é a das
+      <b>págs. 145–146</b>: você conta a vida que teve e as Habilidades saem dela. As três de baixo
+      são o quadro da <b>pág. 147</b>, que o livro chama de <em>escolha alternativa rápida</em>.</p>
+    </div>
+    <div class="grade g2">
+      <div class="cartao clicavel destaque" data-acao="modohab" data-id="vida">
+        <div class="cla-nome">A vida que você teve</div>
+        <p class="cla-lema">“Ele conseguiu seus três pontos em Briga naquele ano de merda como
+        segurança em Pattaya?”</p>
+        <p class="quiet" style="margin:0">Profissão, um evento que te marcou, três passatempos.
+        Dá as mesmas Habilidades das duas primeiras distribuições — e um passado junto.</p>
+      </div>
     </div>
     <div class="grade g3">${modos}</div>`;
   }
 
   const modo = DIST_HABILIDADES[S.modoHabilidade];
   const lista = todasHabilidades();
-  const c = contagem(S.habilidades, lista);
+  /* O ponto que o Predador deu não entra na cota (§91, pág. 149). */
+  const c = contagem(S.habilidades, lista, { semContar: S.pontoDoPredador || '' });
   const cotas = Object.entries(modo.cotas).sort((a,b)=>b[0]-a[0]).map(([v,q]) => {
     const usado = c[v] || 0;
     const cls = usado === q ? 'ok' : usado > q ? 'excedeu' : '';
@@ -409,7 +551,8 @@ function painelDisciplinas() {
   const disp = disciplinasDisponiveis(S);
   const bonusPredador = S.predadorDisciplina ? 1 : 0;
   const total = totalPontosDisc(S);
-  const alvo = 3 + bonusPredador;
+  /* §91 — sangue-ralo não distribui ponto nenhum (pág. 142). */
+  const alvo = pontosDeDisciplinaNaCriacao(S);
   const doisEmUma = Object.values(S.disciplinas).some(v => v >= 2);
 
   const cards = disp.map(id => {
@@ -463,8 +606,13 @@ function painelDisciplinas() {
   </div>
   ${c.disciplinasLivres ? `<div class="caixa"><h4>Caitiff</h4><p>Sem clã, sem restrição: distribua os três pontos
     entre quaisquer Disciplinas. O preço vem depois, em experiência.</p></div>` : ''}
-  ${c.sangueFraco ? `<div class="caixa"><h4>Sangue Fraco</h4><p>Você não herda Disciplinas.
-    Coloque um ponto em Alquimia de Sangue Fraco e trabalhe o resto com Méritos e Defeitos de Sangue Fraco.</p></div>` : ''}
+  ${c.sangueFraco ? `<div class="caixa"><h4>Sangue Fraco</h4><p>Você <b>não distribui ponto nenhum</b>
+    aqui — o livro é explícito (pág. 142). As Disciplinas que você usa são <b>temporárias</b>, e vêm
+    da Ressonância do sangue que você bebeu. A <b>Alquimia de Sangue-Ralo</b> se aprende por uma
+    <b>Qualidade</b> ou com <b>experiência</b>, e não de graça na criação.</p>
+    <p class="quiet" style="margin:.4rem 0 0;font-size:.8rem">Você também não pode comprar
+    <b>Mawla, Lacaios ou Status</b> agora (pág. 149) — numa coterie mista eles entrariam como
+    Antecedentes compartilhados, e esta mesa é de um jogador só.</p></div>` : ''}
   <div class="grade g2">${cards}</div>`;
 }
 
@@ -545,11 +693,21 @@ function painelPredador() {
 function painelVantagens() {
   const vt = totalVantagens(S), dt = totalDefeitos(S);
 
-  const antHTML = ANTECEDENTES.map(a => `
-    <div class="linha-traco">
-      <span class="traco-nome">${a.nome}<small>${esc(a.desc)}</small></span>
-      ${pontosHTML(S.antecedentes[a.id] || 0, a.max, `ant:${a.id}`, true)}
-    </div>`).join('');
+  /* §91 — "Nenhum sangue-ralo pode comprar Laço, Mawla, Lacaios ou
+     Status durante a criação de personagem" (pág. 149). Barrar em vez
+     de esconder: o Antecedente continua existindo, e a tela diz por
+     que ele não está ao alcance agora. */
+  const ehRalo = !!(clan() && clan().sangueFraco);
+  const antHTML = ANTECEDENTES.map(a => {
+    const vedado = ehRalo && ANTECEDENTES_VEDADOS_A_SANGUE_RALO.includes(a.id);
+    return `
+    <div class="linha-traco ${vedado ? 'apagado' : ''}">
+      <span class="traco-nome">${a.nome}<small>${esc(vedado
+        ? 'Sangue-ralo não compra este na criação (pág. 149).' : a.desc)}</small></span>
+      ${vedado ? '<span class="quiet">—</span>'
+               : pontosHTML(S.antecedentes[a.id] || 0, a.max, `ant:${a.id}`, true)}
+    </div>`;
+  }).join('');
 
   const merHTML = MERITOS.map(m => {
     const atual = S.meritos[m.id] || 0;
@@ -985,7 +1143,13 @@ function painelFicha() {
   </div>
 
   <div class="acoes-ficha" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1rem">
-    <button class="btn primario" data-acao="guardar-ficha">Guardar na biblioteca</button>
+    <!-- §92 — os três verbos, em ordem de intenção: terminar, guardar
+         sem sair, e descartar. FINALIZAR guarda e limpa o criador; era
+         ele que faltava, e por isso a ficha pronta ficava aberta. -->
+    <button class="btn primario" data-acao="finalizar-ficha"
+      title="Guarda na biblioteca e limpa o criador para o próximo personagem">Finalizar</button>
+    <button class="btn" data-acao="guardar-ficha"
+      title="Guarda e continua editando">Guardar e continuar</button>
     <button class="btn" data-acao="imprimir">Imprimir / PDF</button>
     <button class="btn" data-acao="exportar">Exportar .json</button>
     <button class="btn" data-acao="exportartxt">Exportar .txt</button>

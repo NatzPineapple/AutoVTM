@@ -52,6 +52,7 @@ const Ponte = {
      ---------------------------------------------------------- */
   ligada: false,          /* o MesaServer respondeu */
   fichaServer: false,     /* o FichaServer respondeu */
+  arbitro: false,         /* o ArbitroServer respondeu */
   portaMesa: 0,           /* para o WebSocket, que não passa pelo Gateway */
   guardador: '',          /* 'mongo' ou 'pasta', quando há FichaServer */
   motivo: 'ainda não perguntei',
@@ -59,16 +60,48 @@ const Ponte = {
 
   TEMPO: 6000,
 
+  /* TODO O HTTP DE MÓDULO PASSA POR AQUI, e é por isso que o gancho do
+     tráfego mora neste lugar e em nenhum outro: um ponto só registra
+     tudo, e não há como uma rota nova escapar do registro por
+     esquecimento. (§93)
+
+     O `de`/`para` é escolhido pelo CAMINHO, e não por quem chamou: a
+     Mesa fala com o Árbitro pelo `/api/arbitro`, com o Cronista pelo
+     `/api/narrador`, e com os outros três módulos como "Módulos". */
+  _lado(caminho) {
+    if (/\/api\/arbitro/.test(caminho)) return 'arbitro';
+    if (/\/api\/(narrador|cronista|intencao)/.test(caminho)) return 'cronista';
+    return 'modulo';
+  },
+
   async _pedir(caminho, opcoes = {}) {
     /* `AbortSignal.timeout` não existe em navegador muito velho nem no
        `vm` dos testes sem o extra; sem ele a chamada só não desiste. */
     const corte = (typeof AbortSignal !== 'undefined' && AbortSignal.timeout)
       ? { signal: AbortSignal.timeout(this.TEMPO) } : {};
+    const metodo = (opcoes.method || 'GET').toUpperCase();
+    const outroLado = this._lado(caminho);
+    const anota = (typeof Trafego !== 'undefined');
+    const t0 = Date.now();
+    if (anota) {
+      Trafego.registrar({ de: 'mesa', para: outroLado, via: 'http',
+        assunto: `${metodo} ${caminho} →`,
+        dados: opcoes.body ? Trafego._talvezObjeto(opcoes.body) : undefined });
+    }
     try {
       const r = await fetch(caminho, Object.assign({ cache: 'no-store' }, corte, opcoes));
       const corpo = await r.json().catch(() => ({}));
+      if (anota) {
+        Trafego.registrar({ de: outroLado, para: 'mesa', via: 'http',
+          assunto: `${metodo} ${caminho} ← ${r.status}`, ms: Date.now() - t0,
+          erro: r.ok ? '' : `HTTP ${r.status}`, dados: corpo });
+      }
       return { ok: r.ok, status: r.status, corpo };
     } catch (e) {
+      if (anota) {
+        Trafego.registrar({ de: outroLado, para: 'mesa', via: 'http',
+          assunto: `${metodo} ${caminho} ✕`, ms: Date.now() - t0, erro: e.message });
+      }
       return { ok: false, status: 0, corpo: {}, erro: e.message };
     }
   },
@@ -91,10 +124,14 @@ const Ponte = {
     this.fichaServer = !!(f.ok && f.corpo.modulo === 'ficha');
     this.guardador = this.fichaServer ? ((f.corpo.guardador || {}).tipo || '') : '';
 
+    const a = await this._pedir('/api/arbitro/saude');
+    this.arbitro = !!(a.ok && a.corpo.modulo === 'arbitro');
+
     this.motivo = this.ligada
       ? (this.fichaServer ? '' : 'O FichaServer não respondeu: as fichas ficam no navegador.')
       : (m.erro || `O MesaServer não respondeu (${m.status}).`);
-    return { ligada: this.ligada, fichaServer: this.fichaServer, motivo: this.motivo };
+    return { ligada: this.ligada, fichaServer: this.fichaServer,
+             arbitro: this.arbitro, motivo: this.motivo };
   },
 
   /* ==========================================================
@@ -272,6 +309,79 @@ const Ponte = {
   },
 
   /* ==========================================================
+     O ÁRBITRO DO SERVIDOR  (§87, item M8)
+
+     O Módulo 4 existia desde a §84 e ninguém o consultava. E a
+     pendência dizia a verdade incômoda: **é o mesmo código.** A §84
+     carrega os mesmos arquivos num `node:vm`, então pedir a ele o
+     que o navegador já sabe calcular não corrige regra nenhuma.
+
+     Então por que consultar?
+
+     1. **Porque as duas cópias PODEM divergir, e hoje ninguém
+        notaria.** Não por regra diferente — por navegador com `.js`
+        velho em cache (é a §36, o defeito mais caro deste projeto),
+        por módulo subido antes de uma correção, por `data-*.js`
+        editado de um lado só. Duas respostas para a mesma pergunta,
+        vindas de runtimes diferentes, viram uma CONFERÊNCIA — e o
+        que era código duplicado passa a ser segunda opinião.
+
+     2. **Porque fecha a cadeia da §82 do lado do servidor:** o
+        Árbitro diz quais dados (5176), a Mesa roda e grava (5175), o
+        Árbitro apura e confere a quantidade (5176). O navegador
+        desenha.
+
+     Quando o módulo não responde, tudo isto some e o turno resolve
+     local — como resolveu até aqui.
+     ========================================================== */
+
+  divergencias: 0,
+  ultimaDivergencia: null,
+
+  /** PASSO 1 no servidor. Devolve `{ pedido, composicao }` ou null. */
+  async pedidoDoArbitro(situacao) {
+    if (!this.arbitro) return null;
+    const r = await this._postar('/api/arbitro/pedido', situacao);
+    if (!r.ok || !r.corpo.pedido) return null;
+    return r.corpo;
+  },
+
+  /** PASSO 3 no servidor. Devolve `{ veredito, descricao }` ou null. */
+  async apurarNoArbitro(pedido, valores) {
+    if (!this.arbitro) return null;
+    const r = await this._postar('/api/arbitro/apurar', { pedido, valores });
+    if (!r.ok || !r.corpo.veredito) return null;
+    return r.corpo;
+  },
+
+  /**
+   * Compara duas respostas para a mesma pergunta e registra quando
+   * elas diferem. NÃO decide quem vence — só conta e diz.
+   *
+   * Quem vence é sempre o servidor, quando ele respondeu: se as duas
+   * discordam, a do navegador é a suspeita (cache velho é a causa
+   * provável, e o servidor não tem cache).
+   */
+  conferir(assunto, local, doServidor, campos) {
+    if (!local || !doServidor) return true;
+    const diferentes = campos.filter(c => JSON.stringify(local[c]) !== JSON.stringify(doServidor[c]));
+    if (!diferentes.length) return true;
+    this.divergencias++;
+    this.ultimaDivergencia = {
+      assunto, campos: diferentes, em: Date.now(),
+      local: Object.fromEntries(diferentes.map(c => [c, local[c]])),
+      servidor: Object.fromEntries(diferentes.map(c => [c, doServidor[c]]))
+    };
+    /* Alto no console, e de propósito: isto quer dizer que o navegador
+       e o servidor discordam sobre a REGRA, e a causa mais provável é
+       um `.js` velho em cache — o defeito da §36. */
+    console.warn(`[ponte] o Árbitro do servidor discorda do navegador em "${assunto}":`,
+      diferentes.map(c => `${c} local=${JSON.stringify(local[c])} servidor=${JSON.stringify(doServidor[c])}`).join(' · '),
+      '— recarregue a página (Ctrl+F5); se persistir, o módulo está numa versão diferente.');
+    return false;
+  },
+
+  /* ==========================================================
      O CANAL EM TEMPO REAL
      Direto na porta do módulo: ele não passa pelo Gateway (§78.3).
      ========================================================== */
@@ -296,6 +406,12 @@ const Ponte = {
       c.onmessage = (ev) => {
         this.eventos++;
         const d = this._talvezJSON(ev.data);
+        /* §93 — o canal só AVISA (§78.3), mas o aviso também é conversa,
+           e sem ele o Debug mostraria só metade do que a Mesa recebe. */
+        if (typeof Trafego !== 'undefined') {
+          Trafego.registrar({ de: 'modulo', para: 'mesa', via: 'ws',
+            assunto: `canal — ${(d && d.tipo) || 'evento'}`, dados: d || ev.data });
+        }
         if (d && aoEvento) aoEvento(d);
       };
       /* Canal caído não é falha de jogo: ele só AVISA, e tudo o que ele
@@ -317,7 +433,8 @@ const Ponte = {
 
   /** Só para os testes: esquece o que sabia, sem tocar em nada. */
   _esquecer() {
-    this.ligada = false; this.fichaServer = false; this.portaMesa = 0;
+    this.ligada = false; this.fichaServer = false; this.arbitro = false; this.portaMesa = 0;
+    this.divergencias = 0; this.ultimaDivergencia = null;
     this.sessaoId = ''; this._turnosEnviados = 0; this.espelhadas = 0; this.eventos = 0;
     if (this._represa) { clearTimeout(this._represa); this._represa = null; }
     this.calar();

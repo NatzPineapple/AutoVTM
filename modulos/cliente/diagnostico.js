@@ -503,31 +503,36 @@ const Diagnostico = {
 
     const briga = () => {
       const eu = Object.assign(this.fichaDeTeste(), { nome: 'Eu' });
-      eu.atributos.destreza = 5; eu.atributos.raciocinio = 5;
+      eu.atributos.autocontrole = 5; eu.habilidades.consciencia = 5;
       const outro = Combate.gerarMortal('comum').ficha;
       outro.nome = 'Outro';
-      outro.atributos.destreza = 1; outro.atributos.raciocinio = 1;
+      outro.atributos.autocontrole = 1; outro.habilidades.consciencia = 0;
       return [{ ref: 'voce', nome: 'Eu', ficha: eu, estados: [] },
               { ref: 'op:1', nome: 'Outro', ficha: outro, estados: [] }];
     };
 
-    this.checar(G, 'Iniciativa usa Destreza + Raciocínio e um d10', () => {
+    /* Estas duas checagens guardavam a iniciativa INVENTADA — d10 +
+       Destreza + Raciocínio — que não está em livro nenhum. O livro dá
+       Autocontrole + Percepção, estática, na pág. 300. Viradas na §90. */
+    this.checar(G, 'Iniciativa é Autocontrole + Percepção, e é estática', () => {
       const f = this.fichaDeTeste();
-      f.atributos.destreza = 3; f.atributos.raciocinio = 4;
+      f.atributos.autocontrole = 3; f.habilidades.consciencia = 4;
       const i = Rodada.iniciativaDe(f, []);
       if (i.base !== 7) return `base ${i.base}, esperado 7`;
-      if (i.dado < 1 || i.dado > 10) return `d10 fora da faixa: ${i.dado}`;
-      return i.total === i.base + i.dado ? true : 'total não bate com base + dado';
+      if (i.dado !== undefined) return 'ainda há um dado na Iniciativa';
+      if (i.total !== i.base) return 'total não é a base';
+      const vistos = new Set();
+      for (let k = 0; k < 10; k++) vistos.add(Rodada.iniciativaDe(f, []).total);
+      return vistos.size === 1 ? true : 'a Iniciativa variou entre chamadas';
     });
 
-    this.checar(G, 'Estado que penaliza físico atrasa na iniciativa', () => {
+    this.checar(G, 'Estado NÃO mexe na Iniciativa — ela não é parada de dados', () => {
       const f = this.fichaDeTeste();
-      f.atributos.destreza = 3; f.atributos.raciocinio = 3;
-      const limpo = Rodada.iniciativaDe(f, []);
-      const ferido = Rodada.iniciativaDe(f, ['debilitado']);
+      f.atributos.autocontrole = 3; f.habilidades.consciencia = 3;
       if (!Arbitro.ESTADOS.debilitado) return 'estado debilitado não existe mais';
-      return ferido.penalidade < 0 && (limpo.base + ferido.penalidade) < limpo.base
-        ? true : `penalidade ${ferido.penalidade} não chegou à iniciativa`;
+      const limpo = Rodada.iniciativaDe(f, []).total;
+      const ferido = Rodada.iniciativaDe(f, ['debilitado']).total;
+      return ferido === limpo ? true : `Debilitado mudou a Iniciativa: ${limpo} → ${ferido}`;
     });
 
     this.checar(G, 'Ordem sai decrescente e todo mundo entra uma vez', () => {

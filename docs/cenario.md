@@ -50,7 +50,7 @@ Só o que muda o comportamento dos personagens. O resto existe e raramente alter
 | Anos 2010 | A SchreckNET é comprometida | Os Nosferatu perdem a rede que os tornava insubstituíveis |
 | **2017** | **Brasil:** o BOES ataca Vitória sob disfarce de greve da PM | Uma corte inteira destruída; ensaio para o Rio |
 | **2018** | Os Brujah deixam a Camarilla | O Movimento Anarquista ganha músculo e doutrina |
-| Noites atuais | Lasombra e Banu Haqim entram na Camarilla | Ódios de séculos convivendo no mesmo Elísio |
+| Noites atuais | Lasombra e Banu Haqim entram na Camarilla | Ódios de séculos convivendo no mesmo Elísio — ver §4.1 |
 | Noites atuais | Sangue Fraco surgem em número inédito | Sinal de Gehenna para uns, mão de obra descartável para outros |
 
 **Consequência de tudo isso:** as noites atuais são de **escassez e paranoia**. Poucos
@@ -185,6 +185,43 @@ antes do nome, antes do assunto. Um Ventrue não cumprimenta um Brujah; ele aval
 - **Pilares.** Os mortais que sustentam a Humanidade do personagem. São a coisa mais
   frágil da ficha e a mais fácil de o inimigo alcançar.
 - **Carniçais.** Leais porque bebem. A lealdade tem prazo, e o prazo pressiona.
+
+---
+
+## 4.1 A migração dos Lasombra — e o que ela deixa em aberto
+
+*Lido em `Livros/Regras/Sombras-na-Torre.pdf` (§96), que é **tradução livre de comunidade**
+de uma parte do* Chicago by Night *— o próprio autor declara isso na abertura. Vale como
+cenário; não vale como terminologia, que continua sendo a do manual básico.*
+
+A saída do Clã Lasombra do Sabá e o pedido de entrada na Camarilla é a maior mudança
+recente da linha do tempo. **E o livro a deixa deliberadamente vaga**, o que aqui é uma
+vantagem: a crônica escolhe.
+
+> "A linha do tempo para essa migração é **propositadamente vaga**, pois esse movimento
+> poderia ter ocorrido no início da Cruzada Gehenna, em seu auge ou quando ela atinge suas
+> profundezas devastadoras."
+
+**As três leituras que o livro oferece**, e nenhuma é a canônica:
+
+| Leitura | O que ela faz com a mesa |
+|---|---|
+| **Migração sincera** | Os Lasombra querem a Torre de Marfim e vão pagar o preço da etiqueta. O conflito é de adaptação |
+| **Manobra** | Toda a jogada é para desestabilizar uma seita cada vez mais elitista **antes de voltar à Espada de Caim** — *"com cabeças de príncipes em lanças e cintos"* |
+| **Sabá no coração** | Permanecem o que eram, e a Camarilla é território ocupado por dentro |
+
+**O caminho anarquista é explicitamente aberto**, e é o mais barato: *"nada impede que eles
+encontrem aliados no Movimento Anarquista. Certamente seria uma jogada mais fácil para o clã
+do que iniciar amizade com vampiros do Clã Ventrue."*
+
+**A Amici Noctis** — os Amigos da Noite — é o corpo do clã que negocia essa entrada, e ela
+não está inteira do mesmo lado: há Lasombra com títulos de Arcebispo do Sabá tentando o
+equivalente na Camarilla, e há quem procure os mesmos Guardiões junto aos Anarquistas.
+
+**Para o Rio**, isto casa com o que `data-brasil.js` já traz: o clã tem raiz colonial nas
+Américas e é o senhor de Inácia na campanha da Casa Vermelha. Um Lasombra que se apresenta
+na corte carioca **não precisa dizer qual das três leituras é a dele** — e essa dúvida é o
+material dramático.
 
 ---
 
@@ -400,16 +437,20 @@ jogador e um modelo. Então a trava muda de forma, e é honesto dizer como.
   Desde a §69, a doca também tem a **atenuante**: Mácula a serviço de uma Convicção vem
   reduzida (básico, pág. 239). Continua sendo o jogador que decide que houve atenuante.
 
-> **O que está incompleto aqui, e está anotado.** O primeiro item acima trata a trava de
-> assunto sensível como obrigação **minha**, autor — uma lista que eu escrevi e o jogador
-> herda. O Apêndice III do básico (págs. 419–423) manda o contrário: a lista de **Linhas e
-> Véus** é **do jogador**, montada antes do jogo e editável a qualquer momento, e Véus podem
-> virar Linhas e vice-versa.
+> **O teto chegou na §89.** O primeiro item acima trata a trava de assunto sensível como
+> obrigação **minha**, autor — uma lista que eu escrevi e o jogador herda. O Apêndice III do
+> básico (págs. 419–423) manda o contrário: a lista de **Linhas e Véus** é **do jogador**,
+> montada antes do jogo e editável a qualquer momento, e Véus podem virar Linhas e vice-versa.
 >
-> Não está errado como **piso** — um Narrador automático precisa de uma trava que não dependa
-> de o jogador ter pensado nisso antes. Está errado como **teto**: hoje é tudo o que existe, e
-> o jogador não tem onde dizer o que não quer ver. É o item **G9** do README §14.1, junto com
-> a **Carta X**, que num aplicativo é literalmente um botão.
+> O que estava aqui não estava errado como **piso** — um Narrador automático precisa de uma
+> trava que não dependa de o jogador ter pensado nisso antes, e por isso ela continua, e
+> continua valendo com a lista vazia. Estava errado como **teto**: era tudo o que existia, e o
+> jogador não tinha onde dizer o que não quer ver.
+>
+> Agora tem. A aba **Limites** da mesa é a lista dele, e ela sobe no prefixo do Narrador como
+> a seção que **vale sobre todas as outras, inclusive sobre esta**. A **Carta X** é um botão
+> sobre a caixa de texto, e retira a última narração sem pedir motivo. As regras estão em
+> `regras.md` §21; o que o apêndice tem e esta mesa não tem está lá também, com o motivo.
 
 ---
 

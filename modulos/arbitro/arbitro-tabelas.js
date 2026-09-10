@@ -102,14 +102,74 @@ const TabelasV5 = {
     return Escudo.MACULAS_POR_ATO.find(m => this.normalizar(m.ato).includes(n) && n) || null;
   },
 
+  /* §90 — passou a ler `nomes`, pelo mesmo motivo da armadura e das
+     armas: o texto de EXIBIÇÃO é o do livro e muda quando a tradução
+     é corrigida; o que o jogador escreve é outra lista. Ganha o nome
+     mais longo, para "mentor" não roubar de "seu mentor".
+
+     Sem correspondência, cai na primeira linha (+0) — que é o valor
+     seguro, mas é também o que escondia o defeito: escrever o nome do
+     livro devolvia zero e parecia funcionar. */
   danoSocialExtra(testemunhas) {
     const n = this.normalizar(testemunhas || '');
-    return Escudo.DANO_SOCIAL.find(d => this.normalizar(d.testemunhas).includes(n) && n)
-      || Escudo.DANO_SOCIAL[0];
+    if (!n) return Escudo.DANO_SOCIAL[0];
+    let achado = null, tamanho = -1;
+    for (const linha of Escudo.DANO_SOCIAL) {
+      const nomes = linha.nomes || [linha.testemunhas];
+      for (const cru of nomes) {
+        const alvo = this.normalizar(cru);
+        if (!alvo) continue;
+        if ((n.includes(alvo) || alvo.includes(n)) && alvo.length > tamanho) {
+          achado = linha; tamanho = alvo.length;
+        }
+      }
+    }
+    return achado || Escudo.DANO_SOCIAL[0];
   },
 
   alimentacaoPor(fonte) {
     const n = this.normalizar(fonte || '');
     return Escudo.ALIMENTACAO.find(a => this.normalizar(a.fonte).includes(n) && n) || null;
   },
+
+  /* MONTAR UM ANTAGONISTA A PARTIR DAS TABELAS  (§95)
+
+     Veio do `motor-combate`, onde estava por vizinhança. Ela lê
+     `MODELOS_MORTAIS` e `PROFISSOES` — as duas daqui — e não rola dado
+     nenhum: é construção, não arbitragem. */
+  gerarMortal(modelo = 'comum', profissao = null) {
+    const m = Escudo.MODELOS_MORTAIS[modelo] || Escudo.MODELOS_MORTAIS.comum;
+    const cotas = {
+      fraco:     { pares: [[2, 2]], resto: 1 },
+      comum:     { pares: [[3, 2], [2, 3]], resto: 1 },
+      talentoso: { pares: [[4, 1], [3, 2], [2, 2]], resto: 1 },
+      fatal:     { pares: [[5, 2], [4, 2], [3, 2]], resto: 2 }
+    }[modelo] || { pares: [[3, 2], [2, 3]], resto: 1 };
+
+    const atrs = Object.values(ATRIBUTOS).flatMap(g => g.lista).map(a => a.id);
+    const atributos = {};
+    let i = 0;
+    for (const [valor, quantos] of cotas.pares) {
+      for (let k = 0; k < quantos && i < atrs.length; k++, i++) atributos[atrs[i]] = valor;
+    }
+    for (; i < atrs.length; i++) atributos[atrs[i]] = cotas.resto;
+
+    const habilidades = {};
+    const prof = profissao ? Escudo.PROFISSOES[profissao] : null;
+    if (prof) prof.pericias.forEach(([id, v]) => { habilidades[id] = Math.max(habilidades[id] || 0, v); });
+
+    const ficha = {
+      nome: prof ? prof.nome : m.nome, modelo, atributos, habilidades,
+      especializacoes: {}, disciplinas: {}, poderes: {}, meritos: {}, defeitos: {},
+      antecedentes: {}, conviccoes: [], marcos: [], fome: 0, geracao: '0',
+      /* §90 — o crítico contra mortal ANÔNIMO incapacita sem calcular
+         dano (pág. 303). Quem sai daqui é anônimo por construção: um
+         modelo do Escudo, sem nome próprio. Quem recebe nome na cena
+         deixa de ser, e quem apaga esta marca é a mesa. */
+      anonimo: true,
+      danoSuperficial: 0, danoAgravado: 0, danoVontade: 0, maculas: 0, mortal: true
+    };
+    ficha.vitalidadeMortal = (atributos.vigor || 2) + 3;
+    return { ficha, descricao: m };
+  }
 };

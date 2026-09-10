@@ -398,6 +398,16 @@ export function corpoDoTurno(t) {
       : '',
     t.resultado ? `Resultado do teste, já rolado pelo motor: ${t.resultado}` : '',
     t.gancho ? `A campanha espera que esta cena caminhe para: ${t.gancho}` : '',
+    /* §89 — o fade (básico, pág. 421). O jogador pediu o corte, e ele
+       vale por este turno só. Não é censura de tema: é a câmera
+       saindo antes, e voltando depois. */
+    t.fade ? 'O JOGADOR PEDIU UM FADE. Não narre o que estava para acontecer: corte, '
+           + 'e comece de novo DEPOIS disso — no que ficou como consequência, ou na próxima cena. '
+           + 'Não descreva o que foi cortado, nem em resumo.' : '',
+    /* §89 — o Apêndice II. O Narrador não rola nada disso: ele precisa
+       saber o que este personagem vem tramando há meses, para que a
+       cidade reaja a isso. */
+    t.projetos ? `O QUE ELE VEM TRAMANDO HÁ MESES (não role nada disto; é pano de fundo):\n${t.projetos}` : '',
     t.legado ? `O QUE ESTE PERSONAGEM TRAZ DE CRÔNICAS ANTERIORES:
 ${t.legado}` : ''
   ].filter(Boolean).join('\n');
@@ -413,7 +423,10 @@ export async function narrar(turno, opcoes = {}) {
     camada: 'narrador',
     exemplos: comExemplos,
     seita: turno.seita || '', cidade: turno.cidade || '',
-    campanha: turno.arquivoCampanha || null, capitulo: turno.indiceCapitulo || 0
+    campanha: turno.arquivoCampanha || null, capitulo: turno.indiceCapitulo || 0,
+    /* §89 — Linhas e Véus. Entram no PREFIXO, e não no corpo do turno,
+       porque valem para a crônica inteira e não para um momento dela. */
+    limites: turno.limites || ''
   });
 
   const conhecidos = {

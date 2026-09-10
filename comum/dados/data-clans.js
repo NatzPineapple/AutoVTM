@@ -11,7 +11,9 @@ const CLAS = [
     disciplinas: ['celeridade', 'potencia', 'presenca'],
     maldicao: {
       nome: 'Sangue Fervente',
-      texto: 'Some sua Potência de Sangue à dificuldade de qualquer teste para resistir à fúria. A raiva chega antes do pensamento.'
+      texto: 'Subtraia da parada de qualquer teste para resistir a um frenesi de FÚRIA uma '
+           + 'quantidade de dados igual à sua Gravidade da Perdição. A parada nunca cai '
+           + 'abaixo de um dado. (básico, pág. 67)'
     },
     compulsao: {
       nome: 'Rebeldia',
@@ -28,7 +30,11 @@ const CLAS = [
     disciplinas: ['animalismo', 'fortitude', 'metamorfose'],
     maldicao: {
       nome: 'Marca da Besta',
-      texto: 'Ao entrar em frenesi você ganha de uma a três feições bestiais que duram a noite inteira. Cada feição reduz em 1 um Atributo relacionado.'
+      texto: 'Em frenesi você ganha aspectos animalescos — um traço físico, um odor, um '
+           + 'comportamento — em quantidade igual à sua Gravidade da Perdição. Cada '
+           + 'aspecto reduz um Atributo em 1, e eles duram por mais uma noite depois do '
+           + 'frenesi. Se você Curtir a Onda, escolhe manifestar apenas um. (básico, pág. '
+           + '73)'
     },
     compulsao: {
       nome: 'Feralidade',
@@ -45,7 +51,11 @@ const CLAS = [
     disciplinas: ['auspicios', 'dominacao', 'ofuscacao'],
     maldicao: {
       nome: 'Fissura',
-      texto: 'Todo Malkaviano carrega uma perturbação. Sob estresse ou Fome alta, sofra penalidade de dois dados nos testes que ela afeta.'
+      texto: 'Todo Malkaviano carrega um transtorno. Quando você sofre uma Falha Bestial '
+           + 'ou uma Compulsão, ele vem à tona: penalidade igual à sua Gravidade da '
+           + 'Perdição em UMA categoria de parada — Física, Social ou Mental — durante '
+           + 'toda a cena, somada às penalidades de Compulsão. A categoria e a aflição se '
+           + 'escolhem na criação. (básico, pág. 79)'
     },
     compulsao: {
       nome: 'Delírio',
@@ -62,7 +72,11 @@ const CLAS = [
     disciplinas: ['animalismo', 'ofuscacao', 'potencia'],
     maldicao: {
       nome: 'Repulsivo',
-      texto: 'Você é hediondo. Falha automática em qualquer tentativa de se passar por humano e em todo teste que dependa de aparência.'
+      texto: 'Você tem o Defeito Repulsivo (-2) e jamais pode aumentar a Qualidade Visual. '
+           + 'Toda tentativa de esconder suas deformidades sofre penalidade igual à sua '
+           + 'Gravidade da Perdição — inclusive por Disciplina, como Máscara de Mil Faces '
+           + 'e Disfarce do Impostor. Ser visto NÃO quebra a Máscara: você passa por '
+           + 'grotesco, não por sobrenatural. (básico, pág. 85)'
     },
     compulsao: {
       nome: 'Rastejar',
@@ -78,8 +92,11 @@ const CLAS = [
     resumo: 'Artistas, amantes e curadores. Escravos voluntários da beleza — e do tédio que vem logo depois dela.',
     disciplinas: ['auspicios', 'celeridade', 'presenca'],
     maldicao: {
-      nome: 'Êxtase Estético',
-      texto: 'Diante de algo genuinamente belo, perca dois dados em todos os testes enquanto não se afastar da fonte do êxtase.'
+      nome: 'Estética Ferida',
+      texto: 'Enquanto você estiver num ambiente MENOS do que belo, as paradas para '
+           + 'acionar Disciplinas sofrem redutor igual à sua Gravidade da Perdição. Quem '
+           + 'julga a beleza do lugar — roupas e bonecas de sangue incluídas — é o '
+           + 'Narrador, pelo senso estético do personagem. (básico, pág. 91)'
     },
     compulsao: {
       nome: 'Perfeccionismo',
@@ -95,8 +112,11 @@ const CLAS = [
     resumo: 'Feiticeiros que roubaram a imortalidade. A Pirâmide ruiu, mas os segredos continuam de pé.',
     disciplinas: ['auspicios', 'dominacao', 'feiticaria'],
     maldicao: {
-      nome: 'Vínculo Rompido',
-      texto: 'Seu sangue perdeu a hierarquia: o Vínculo que você impõe leva um gole extra para se firmar; o que impõem sobre você se firma em um a menos.'
+      nome: 'Vitae Corrompido',
+      texto: 'Seu Vitae não cria mais Laço de Sangue com outros Membros, embora você possa '
+           + 'ser Enlaçado por eles. Com mortais e carniçais o Laço ainda se forma, mas '
+           + 'exige um número de goles a mais igual à sua Gravidade da Perdição. (básico, '
+           + 'pág. 97)'
     },
     compulsao: {
       nome: 'Perfeccionismo Arcano',
@@ -113,7 +133,11 @@ const CLAS = [
     disciplinas: ['dominacao', 'fortitude', 'presenca'],
     maldicao: {
       nome: 'Paladar Refinado',
-      texto: 'Só um tipo específico de mortal alimenta você. Beber de outra fonte exige gastar Força de Vontade e provoca vômito imediato.'
+      texto: 'Só um tipo específico de mortal alimenta você; sangue de qualquer outro '
+           + 'volta em vômito escarlate a menos que você gaste pontos de Força de Vontade '
+           + 'em quantidade igual à sua Gravidade da Perdição. Determinação + Percepção '
+           + '(Dificuldade 4 ou maior) diz se um mortal tem o sangue que você quer. '
+           + '(básico, pág. 102)'
     },
     compulsao: {
       nome: 'Arrogância',
@@ -250,7 +274,11 @@ const CLAS = [
     disciplinasLivres: true,
     maldicao: {
       nome: 'Sem Herança',
-      texto: 'Você não tem maldição — nem respeito. Elevar Disciplinas custa mais experiência e a Camarilla não lhe concede Status.'
+      texto: 'Você não tem Perdição de clã — Antediluviano nenhum o tocou. Em troca começa '
+           + 'com o Defeito Suspeito (•), não pode adquirir Status na criação, e o '
+           + 'Narrador pode impor penalidade de um ou dois dados em testes Sociais contra '
+           + 'quem saiba que você é Caitiff. Aumentar uma Disciplina custa SEIS vezes o '
+           + 'nível. (básico, pág. 107)'
     },
     compulsao: {
       nome: 'Sem Compulsão',
@@ -268,7 +296,11 @@ const CLAS = [
     sangueFraco: true,
     maldicao: {
       nome: 'Sangue Ralo',
-      texto: 'Sem Disciplinas de clã, sem Vínculos confiáveis, sem Beijo que satisfaça. Em troca: você come, aguenta o sol fraco e às vezes sente o coração bater.'
+      texto: 'Potência do Sangue sempre 0, e Sem-Clã: você jamais sofre Perdição ou '
+           + 'Compulsão de clã. Em troca, sofre dano Agravado não só de fogo e sol, mas '
+           + 'também de armas cortantes e perfurantes; a estaca não o paralisa — causa '
+           + 'trauma maciço, e provavelmente Torpor. A cura segue as regras dos outros '
+           + 'vampiros. (básico, pág. 111)'
     },
     compulsao: {
       nome: 'Sem Compulsão',

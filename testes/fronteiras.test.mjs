@@ -26,6 +26,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+ import { spawn } from 'node:child_process';
 import { AREAS, ORDEM, ARQUIVOS, RAIZ, caminhoDe, carregar } from './carregar.mjs';
 
 const ORDEM_DAS_AREAS = ['data', 'ficha', 'arbitro', 'cronista', 'front'];
@@ -247,6 +249,100 @@ test('Fronteiras — o que cada área não pode saber', async (t) => {
 });
 
 /* ============================================================
+   O RELATOR TAMBÉM PRECISA SER CONFERIDO  (§94)
+
+   Ele é quem responde "passou?", e na §94 ele respondeu errado: um
+   grupo que estourou ANTES de rodar os filhos apareceu com ✖ na lista
+   e mesmo assim o resumo dizia "0 reprovaram". A regra "só as folhas
+   contam" estava certa para o caso comum e cega para esse.
+
+   Um relator que erra para menos é pior que nenhum: ele dá a
+   tranquilidade sem o fato. Este teste roda o relator de verdade, por
+   fora, sobre um arquivo de mentira com os três casos.
+   ============================================================ */
+test('Relator — ele conta o que reprovou, inclusive o grupo que estourou (§94)', async (t) => {
+  /* A pasta fica DENTRO do projeto, e não em os.tmpdir(): tanto o
+     reporter quanto o arquivo de teste são passados ao `node --test`
+     como caminho, e caminho absoluto do Windows não sobrevive nem ao
+     carregador de ESM nem ao casamento de arquivos do runner. Um nível
+     de pasta a mais também mantém o arquivo fora de `testes/*.test.mjs`,
+     que é o que o `npm test` varre. */
+  const relativa = 'testes/.relator-de-mentira';
+  const pasta = path.join(RAIZ, relativa);
+  fs.mkdirSync(pasta, { recursive: true });
+  const alvo = path.join(pasta, 'mentira.test.mjs');
+  fs.writeFileSync(alvo, [
+    "import test from 'node:test';",
+    "import assert from 'node:assert/strict';",
+    "test('grupo que estoura antes dos filhos', async (t) => {",
+    "  JSON.parse('{ quebrado');",
+    "  await t.test('nunca chega aqui', () => assert.ok(true));",
+    "});",
+    "test('grupo cujo filho reprova', async (t) => {",
+    "  await t.test('o filho que reprova', () => assert.equal(1, 2));",
+    "});",
+    "test('grupo que passa', async (t) => {",
+    "  await t.test('o filho que passa', () => assert.ok(true));",
+    "});"
+  ].join('\n'));
+
+  /* O FILHO NÃO PODE HERDAR O AMBIENTE DO PAI.
+
+     O runner marca `NODE_TEST_CONTEXT` no processo, e um `node --test`
+     que enxerga essa marca se recusa a rodar: "run() is being called
+     recursively within a test file. skipping running files". Ele avisa
+     no STDERR e sai com o stdout vazio — o que, com o stderr jogado
+     fora, aparece como um relator que não imprimiu nada. Foram duas
+     corridas até alguém ler o stderr, e é por isso que ele agora entra
+     na mensagem de falha. */
+  const ambiente = () => {
+    const e = Object.assign({}, process.env, { VITAE_SEM_REGISTRO: '1' });
+    delete e.NODE_TEST_CONTEXT;
+    delete e.NODE_OPTIONS;
+    return e;
+  };
+
+  const saida = await new Promise((ok) => {
+    const proc = spawn(process.execPath,
+      /* caminho RELATIVO de propósito: o carregador de ESM do Node recusa
+         caminho absoluto do Windows como reporter ('protocol c:'), e é por
+         isso que o package.json também usa './testes/relator.mjs'. */
+      ['--test', '--test-reporter=./testes/relator.mjs',
+       '--test-reporter-destination=stdout', `${relativa}/mentira.test.mjs`],
+      { cwd: RAIZ, env: ambiente() });
+    let txt = '', ruim = '';
+    proc.stdout.on('data', (b) => { txt += b; });
+    proc.stderr.on('data', (b) => { ruim += b; });
+    proc.on('close', () => ok(txt || `[nada no stdout] ${ruim.slice(0, 400)}`));
+  });
+
+  try {
+    await t.test('o grupo que estourou entra na conta', (t2) => {
+      t2.diagnostic(saida.trim().split('\n').slice(-6).join(' · '));
+      assert.match(saida, /grupo que estoura antes dos filhos/,
+        'o grupo que estourou não apareceu no resumo');
+    });
+
+    await t.test('e o filho que reprovou também', () => {
+      assert.match(saida, /o filho que reprova/);
+    });
+
+    await t.test('mas o grupo com filho ruim NÃO é contado duas vezes', (t2) => {
+      const n = (saida.match(/✖ (\d+) de (\d+) reprovaram/) || [])[1];
+      t2.diagnostic(`reprovaram: ${n}`);
+      assert.equal(n, '2', 'o grupo agregador virou uma reprovação a mais');
+    });
+
+    await t.test('e o que passou continua contado', () => {
+      assert.match(saida, /de 3 reprovaram/,
+        'o total perdeu o teste que passou');
+    });
+  } finally {
+    fs.rmSync(pasta, { recursive: true, force: true });
+  }
+});
+
+/* ============================================================
    X3 — TAMANHO DE ARQUIVO, CONFERIDO EM VEZ DE ESCRITO
    ============================================================ */
 
@@ -257,11 +353,27 @@ const TETO = 750;
    impede. Item X3: o README registrava contagens à mão, e as três
    estavam velhas quando foram conferidas. */
 const GRANDES_CONHECIDOS = {
-  'front/mesa.js': 'fluxo do turno, combate e persistência de estado',
+  /* A CONDUÇÃO DO COMBATE SAIU NA §100, e com ela o teto próprio que
+     este arquivo teve entre a §93 e a §100. A dívida tinha nome — o item
+     F1 — e foi paga: 1.747 linhas viraram 1.507, e o limite comum voltou
+     a servir.
+
+     O teto próprio saiu junto. Config que sobra depois de paga a dívida
+     é config morta, e este projeto já achou cinco tabelas mortas (§67,
+     §90 duas vezes, §91, §100) — esta não vira a sexta. */
+  'front/mesa.js': 'fluxo do turno e persistência de estado; a rodada mora em mesa-combate.js',
   'front/criador-paineis.js': 'nove painéis em template string; trava na decisão de framework (§16.1)',
   'front/mesa-render.js': 'todo o HTML da mesa; mesma trava',
-  'front/app.js': 'estado do criador, telas e importação/exportação; mesma trava'
+  'front/app.js': 'estado do criador, telas e importação/exportação; mesma trava',
+  /* Passou do teto na §89, com o Apêndice II e o Apêndice III. As duas
+     metades do §89 no front são ORQUESTRAÇÃO — chamam `Projetos` e
+     `Limites`, aplicam o resultado, mandam redesenhar —, que é
+     exatamente o que o cabeçalho deste arquivo diz ser o dono dele.
+     Partir o front em mais arquivos é a decisão N5/N6, e ela já foi
+     tomada: não entra. */
+  'front/mesa-acoes.js': 'o despachante e a orquestração de toda ação da mesa; mesma trava'
 };
+
 
 test('Tamanho — nenhum arquivo cresce sem alguém saber (X3)', async (t) => {
   const linhasDe = (rel) => fs.readFileSync(path.join(RAIZ, rel), 'utf8').split('\n').length;
@@ -289,7 +401,7 @@ test('Tamanho — nenhum arquivo cresce sem alguém saber (X3)', async (t) => {
     const estourando = [];
     for (const [curto, motivo] of Object.entries(GRANDES_CONHECIDOS)) {
       const n = linhasDe(caminhoCurto(curto));
-      if (n > LIMITE) estourando.push(`${curto}: ${n} linhas (${motivo})`);
+      if (n > LIMITE) estourando.push(`${curto}: ${n} linhas de ${LIMITE} (${motivo})`);
     }
     assert.deepEqual(estourando, [], `arquivo conhecido passou de ${LIMITE} linhas`);
   });
@@ -709,5 +821,106 @@ test('Estrutura — desligar avisa que há sessão em andamento (§86)', async (
     const semCampo = d.modulos.filter(m => typeof m.sessoesVivas !== 'number');
     t2.diagnostic(d.modulos.map(m => `${m.id}:${m.sessoesVivas}`).join(' · '));
     assert.deepEqual(semCampo, [], 'módulo sem a contagem de sessões');
+  });
+});
+
+/* ============================================================
+   AS DUAS LISTAS DE PENDÊNCIA CONTÊM OS MESMOS ITENS  (§87)
+
+   O cabeçalho de `docs/Organização de arquivos.txt` avisa, com
+   todas as letras: *"duas listas para o mesmo fato divergem em
+   silêncio"*. Elas divergiram — G1, G3 e G5 estavam na tabela por
+   peso do README e já não estavam no arquivo.
+
+   ------------------------------------------------------------
+   QUANDO ESTE TESTE FALHAR, REPARE PARA QUE LADO.
+   ------------------------------------------------------------
+   **O arquivo de pendências MANDA. O README segue.**
+
+   `docs/Organização de arquivos.txt` é onde o usuário mexe à mão,
+   e item que sumiu de lá sumiu porque ELE tirou. Isso não é perda
+   de dado: é decisão, e é a única forma que ele tem de dizer
+   "isto não é mais pendência".
+
+   Então o reparo certo é quase sempre **tirar do README**, e
+   nunca "restaurar no arquivo o que o README ainda cita". Este
+   comentário existe porque eu reparei para o lado errado na
+   primeira vez: repus três itens que tinham sido apagados de
+   propósito, e chamei isso de conserto.
+
+   O outro sentido — item no arquivo que a tabela não cita — é o
+   que de fato pede escrita no README: trabalho aberto que a
+   ordenação por peso não ordena.
+   ============================================================ */
+
+test('Documento — as duas listas de pendência não divergem (§87)', async (t) => {
+  const pend = fs.readFileSync(path.join(RAIZ, 'docs', 'Organização de arquivos.txt'), 'utf8');
+  const readme = fs.readFileSync(path.join(RAIZ, 'README.md'), 'utf8');
+
+  /* No arquivo de pendências, item aberto é uma linha `  X9. ...` antes
+     da seção FECHADO. */
+  const aberto = pend.slice(0, pend.indexOf('== FECHADO =='));
+  const naPendencia = new Set(
+    [...aberto.matchAll(/^ {2}([A-Z]\d+)\. /gm)].map(m => m[1]));
+
+  /* No README, a tabela por peso da §14.1.2 cita o id entre parênteses.
+
+     O RECORTE VAI ATÉ A PRIMEIRA LINHA EM BRANCO, e não até uma linha
+     específica. A primeira versão procurava `| 15 |` para achar o fim —
+     e no dia em que a tabela encolheu para doze itens, `indexOf`
+     devolveu -1, o recorte pegou metade do documento e o teste acusou
+     nove itens históricos (A1, F3, N7…) de estarem fora da pendência.
+     Delimitador que depende do CONTEÚDO da tabela quebra quando a
+     tabela muda, que é justamente quando ele precisa funcionar. */
+  const ini = readme.indexOf('| | Item | Área | Peso |');
+  assert.ok(ini > 0, 'não achei a tabela por peso no README');
+  const fim = readme.indexOf('\n\n', ini);
+  const noReadme = new Set(
+    [...readme.slice(ini, fim).matchAll(/\(([A-Z]\d+)\)/g)].map(m => m[1]));
+
+  await t.test('as duas listas têm os mesmos itens', (t2) => {
+    const soNaPendencia = [...naPendencia].filter(x => !noReadme.has(x)).sort();
+    const soNoReadme = [...noReadme].filter(x => !naPendencia.has(x)).sort();
+    t2.diagnostic(`${naPendencia.size} no arquivo · ${noReadme.size} na tabela do README`);
+
+    /* AQUI HAVIA UM PISO DE DEZ ITENS, e ele reprovou na §89 — não
+       porque algo quebrou, mas porque G8 e G9 foram PAGOS e a lista
+       caiu para oito. Um piso assim mede o tamanho da dívida e
+       chama isso de saúde do teste: quanto melhor o projeto fica,
+       mais perto ele chega de reprovar.
+
+       O que o piso queria proteger é outra coisa: que a varredura
+       ainda ENTENDA o formato do arquivo. E isso as duas asserções
+       abaixo já pegam melhor — regex que parou de casar devolve
+       zero, e aí os oito itens do README aparecem como órfãos, com
+       nome e tudo. O piso era, no melhor caso, redundante. */
+    assert.ok(aberto.includes('== ABERTO =='),
+      'o arquivo de pendências mudou de forma: não achei a seção ABERTO');
+    /* Os dois sentidos falham, e o reparo é diferente em cada um:
+
+         só na PENDÊNCIA  →  falta no README. Escreva lá.
+         só no README     →  o usuário TIROU da pendência. Tire do README
+                             também; não reponha no arquivo. */
+    assert.deepEqual(soNaPendencia, [],
+      'item aberto na pendência que a tabela por peso do README não cita');
+    assert.deepEqual(soNoReadme, [],
+      'o README ainda cita item que saiu da pendência — tire do README, não reponha no arquivo');
+  });
+
+  await t.test('nenhum item aberto aparece também como FECHADO', (t2) => {
+    const fechado = pend.slice(pend.indexOf('== FECHADO =='));
+    const fechados = new Set([...fechado.matchAll(/^ {2}([A-Z]\d+) \.+/gm)].map(m => m[1]));
+    const nosDois = [...naPendencia].filter(x => fechados.has(x)).sort();
+    t2.diagnostic(`${fechados.size} fechados · ${nosDois.length} em duplicidade`);
+    assert.deepEqual(nosDois, [], 'item listado como aberto E como pago');
+  });
+
+  await t.test('a tabela por peso é numerada em sequência', (t2) => {
+    const numeros = [...readme.slice(ini, fim).matchAll(/^\| (\d+) \| /gm)].map(m => Number(m[1]));
+    t2.diagnostic(numeros.join(', '));
+    /* Um `15` repetido passou despercebido nesta mesma seção, ao
+       renumerar a tabela à mão depois de fechar um item. */
+    assert.deepEqual(numeros, numeros.map((_, i) => i + 1),
+      'a numeração da tabela por peso pulou ou repetiu');
   });
 });

@@ -25,13 +25,14 @@
 export const AREAS = {
   data: ['data-traits', 'data-clans', 'data-disciplinas', 'data-predadores', 'data-vantagens',
          'data-brasil', 'data-sabbat', 'data-anarquistas', 'data-independentes', 'data-seitas',
-         'data-mesa', 'data-recombinacao', 'data-escudo', 'data-itens', 'data-ressonancia'],
+         'data-mesa', 'data-recombinacao', 'data-escudo', 'data-itens', 'data-ressonancia', 'data-limites', 'data-criacao', 'data-oblivio'],
   ficha: ['ficha-vocabulario', 'motor-ficha', 'motor-matilha', 'ficha-regras', 'ficha-oficial', 'fichas'],
-  arbitro: ['motor-dados', 'motor-arbitro', 'arbitro-lexico', 'arbitro-tabelas', 'motor-estado', 'motor-combate', 'motor-grafo',
-            'motor-especialista', 'motor-cadeia', 'motor-navegacao', 'motor-entrada', 'motor-intencao'],
+  arbitro: ['motor-dados', 'motor-arbitro', 'arbitro-lexico', 'arbitro-tabelas', 'motor-experiencia', 'motor-perdicoes', 'motor-oblivio', 'motor-estado', 'motor-combate', 'motor-grafo',
+            'motor-especialista', 'motor-cadeia', 'motor-navegacao', 'motor-entrada', 'motor-intencao', 'motor-projetos',
+            'motor-combate-avancado', 'motor-lacos'],
   cronista: ['compilador', 'diretor', 'recombinador', 'escada', 'narrador',
              'motor-cronica', 'cronista', 'legado'],
-  front: ['ponte', 'dados-ui', 'criador-paineis', 'app', 'sessoes', 'mesa-render', 'mesa', 'mesa-acoes']
+  front: ['trafego', 'ponte', 'dados-ui', 'criador-paineis', 'app', 'sessoes', 'mesa-render', 'mesa', 'mesa-combate', 'mesa-acoes']
 };
 
 export const ORDEM_DAS_AREAS = ['data', 'ficha', 'arbitro', 'cronista', 'front'];

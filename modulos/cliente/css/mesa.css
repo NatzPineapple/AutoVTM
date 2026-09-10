@@ -289,12 +289,17 @@
 
 /* ficha resumida na doca */
 .ficha-doca .bloco { margin-bottom: 1.1rem; }
-.ficha-doca .linha {
+/* O par rótulo/valor da doca. Ele nasceu dentro da ficha resumida e a
+   regra ficou presa a `.ficha-doca` — então toda aba nova que usasse
+   `.linha` saía com o rótulo e a legenda grudados no valor, numa linha
+   corrida. Foi o que aconteceu com Projetos na §89. A regra agora vale
+   em qualquer seção da doca. */
+.ficha-doca .linha, .doca-sec .linha, .combate-alvo .linha {
   display: flex; justify-content: space-between; align-items: center; gap: .6rem;
   padding: .2rem 0; border-bottom: 1px dotted rgba(182,145,63,.12); font-size: .92rem;
 }
-.ficha-doca .linha .rot { color: var(--osso-fosco); }
-.ficha-doca .linha .rot small {
+.ficha-doca .linha .rot, .doca-sec .linha .rot, .combate-alvo .linha .rot { color: var(--osso-fosco); }
+.ficha-doca .linha .rot small, .doca-sec .linha .rot small, .combate-alvo .linha .rot small {
   display: block; font-family: var(--sans); font-size: .52rem; letter-spacing: .1em;
   text-transform: uppercase; color: rgba(185,173,158,.35);
 }
@@ -515,6 +520,14 @@
 .combate-arma .rot {
   font-family: var(--sans); font-size: .58rem; letter-spacing: .14em;
   text-transform: uppercase; color: var(--carne-fria);
+  display: block;
+}
+/* A legenda embaixo do rótulo, e não grudada nele. É a mesma regra que
+   a doca já tinha, e que a §90 espalhou para as outras seções: rótulo
+   no .rot, explicação no small. */
+.combate-arma .rot small {
+  display: block; font-size: .52rem; letter-spacing: .1em;
+  color: rgba(185,173,158,.35); text-transform: uppercase;
 }
 .combate-alvos { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .6rem; }
 .combate-alvo {
@@ -634,4 +647,102 @@
 .msg-texto.fala.lida {
   font-style: italic; opacity: .82;
   border-left: 2px solid rgba(139,18,32,.45); padding-left: .7rem;
+}
+
+/* ---------- calibragem: a Carta X e o fade  (§89) ----------
+   O apêndice põe a carta NO CENTRO DA MESA, ao alcance de todos, e
+   não numa gaveta. Aqui isso é uma faixa acima da caixa de texto,
+   sempre visível — inclusive enquanto o Narrador escreve, que é
+   justamente quando ela mais serve. */
+.calibragem {
+  display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 .5rem;
+  align-items: center;
+}
+.calibragem .chip { font-size: .6rem; }
+.chip.carta-x {
+  border-color: rgba(139,18,32,.6); color: var(--carne);
+  letter-spacing: .12em;
+}
+.chip.carta-x:hover { background: var(--sangue); color: var(--osso); border-color: var(--sangue-viva); }
+
+/* A narração retirada não some da sessão: some da cena. Fica a
+   lacuna, para o jogador ver que a carta funcionou. */
+.msg.narrador.retirado {
+  opacity: .32; border-left: 2px dashed var(--borda-forte); padding-left: .9rem;
+}
+.msg.narrador.retirado .msg-autor { font-style: italic; }
+.msg.sistema.carta-x { color: var(--sangue-viva); letter-spacing: .14em; }
+.msg.sistema.carta-x span::before, .msg.sistema.carta-x span::after {
+  background: linear-gradient(90deg, transparent, var(--sangue-viva));
+}
+
+/* ------------------------------------------------------------
+   A ABA DE DEBUG — o tráfego  (§93)
+
+   Uma linha por mensagem, e as duas coisas que se lê primeiro em
+   qualquer log — QUEM falou com QUEM, e QUANTO demorou — ficam na
+   mesma altura, uma em cada ponta.
+
+   A carga fica fechada por padrão. Um turno inteiro tem alguns
+   milhares de caracteres, e vinte turnos abertos de uma vez seriam
+   uma parede de JSON no lugar da conversa.
+   ------------------------------------------------------------ */
+
+.trafego {
+  border: 1px solid var(--borda);
+  border-left: 3px solid var(--borda-forte);
+  border-radius: 3px;
+  padding: .4rem .55rem;
+  margin-bottom: .35rem;
+  cursor: pointer;
+  background: rgba(0,0,0,.18);
+  transition: border-color .15s, background .15s;
+}
+.trafego:hover { background: rgba(0,0,0,.32); border-color: var(--borda-forte); }
+.trafego.aberta { background: rgba(0,0,0,.42); }
+.trafego.falhou { border-left-color: var(--sangue-viva); }
+
+.trafego-topo {
+  display: flex; align-items: baseline; gap: .5rem;
+  font-family: var(--sans); font-size: .55rem;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.trafego-lados { flex: 1; }
+.trafego-lados i { font-style: normal; color: var(--osso-fosco); opacity: .6; margin: 0 .1rem; }
+.trafego-lados b { font-weight: 600; }
+.lado-mesa     { color: var(--osso-fosco); }
+.lado-arbitro  { color: var(--ouro-claro); }
+.lado-cronista { color: var(--carne); }
+.lado-modulo   { color: var(--fumaca); }
+
+.trafego-via {
+  color: var(--fumaca);
+  border: 1px solid var(--borda); border-radius: 2px;
+  padding: 0 .25rem; letter-spacing: .1em;
+}
+.trafego-hora { color: rgba(185,173,158,.45); letter-spacing: .08em; }
+
+.trafego-assunto {
+  font-family: var(--serif); font-size: .9rem;
+  color: var(--osso); margin-top: .25rem; line-height: 1.35;
+}
+.trafego-erro {
+  font-family: var(--sans); font-size: .7rem;
+  color: var(--sangue-viva); margin-top: .2rem;
+}
+.trafego-dica {
+  font-family: var(--sans); font-size: .55rem; letter-spacing: .14em;
+  text-transform: uppercase; color: rgba(185,173,158,.3); margin-top: .2rem;
+}
+.trafego-carga {
+  margin: .4rem 0 0;
+  max-height: 22rem; overflow: auto;
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: .68rem; line-height: 1.45;
+  color: var(--osso-fosco);
+  background: rgba(0,0,0,.45);
+  border: 1px solid var(--borda);
+  border-radius: 2px;
+  padding: .45rem .55rem;
+  white-space: pre-wrap; word-break: break-word;
 }

@@ -92,9 +92,21 @@ export default async function* relator(fonte) {
     if (evento.type === 'test:pass' || evento.type === 'test:fail') {
       /* O runner emite um evento por teste E um por grupo. O grupo tem
          `nesting: 0` e agrega os filhos; contá-lo dobraria o total. Só
-         os folhas são contados, e os grupos viram cabeçalho. */
+         as folhas são contadas, e os grupos viram cabeçalho.
+
+         COM UMA EXCEÇÃO, e ela custou caro para aparecer (§94). Um grupo
+         que estoura ANTES de rodar os filhos — um `JSON.parse` em cima
+         de arquivo quebrado, no corpo do grupo — não tem folha nenhuma
+         para reprovar. O relator imprimia o ✖ do grupo na lista e
+         mesmo assim dizia "0 reprovaram", porque ninguém contava.
+
+         O runner separa os dois casos: quando a falha é dos filhos, o
+         erro do grupo vem com `failureType: 'subtestsFailed'`. Sem
+         isso, o erro é DELE, e aí ele conta. */
       const ehGrupo = (d.nesting || 0) === 0;
       const ok = evento.type === 'test:pass';
+      const erroDele = !ok && ehGrupo
+        && !(d.details && d.details.error && d.details.error.failureType === 'subtestsFailed');
       const item = {
         nome: d.name || '(sem nome)',
         nivel: d.nesting || 0,
@@ -108,14 +120,15 @@ export default async function* relator(fonte) {
       /* o próximo diagnóstico deste arquivo pertence a este teste */
       if (!ehGrupo) ultimoDoArquivo.set(curto(d.file), item);
 
-      if (!ehGrupo) {
+      if (!ehGrupo || erroDele) {
         if (item.pulado) pulados++;
         else if (ok) passaram++;
         else reprovaram++;
       }
-      if (!ok && !ehGrupo) {
+      if (!ok && (!ehGrupo || erroDele)) {
         falhas.push({ arquivo: curto(d.file), nome: item.nome, erro: item.erro,
-                      linha: d.line, evidencias: item.evidencias });
+                      linha: d.line, evidencias: item.evidencias,
+                      grupoInteiro: erroDele });
       }
     }
   }
@@ -211,7 +224,12 @@ export default async function* relator(fonte) {
   L.push('e atualiza `ultimo.md`. Nada aqui entra no git.*');
 
   const texto = L.join('\n') + '\n';
-  try {
+
+  /* §94 — o relator passou a ser testado rodando o relator, e o de
+     dentro não pode escrever por cima do registro do de fora: o teste
+     apagaria justamente o arquivo da corrida que o está rodando. */
+  const semRegistro = !!process.env.VITAE_SEM_REGISTRO;
+  if (!semRegistro) try {
     fs.mkdirSync(PASTA, { recursive: true });
     fs.writeFileSync(path.join(PASTA, nomeDoArquivo(inicio)), texto);
     fs.writeFileSync(path.join(PASTA, 'ultimo.md'), texto);
@@ -229,7 +247,7 @@ export default async function* relator(fonte) {
   for (const f of falhas) {
     yield `  ✖ ${f.nome}\n    ${String((f.erro && f.erro.message) || '').split('\n')[0]}\n`;
   }
-  yield `\nRegistro: testes/registro/ultimo.md\n`;
+  if (!semRegistro) yield `\nRegistro: testes/registro/ultimo.md\n`;
 }
 
 /* Guarda os vinte últimos. Sem isso, a pasta vira um cemitério e

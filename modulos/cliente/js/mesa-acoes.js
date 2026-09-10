@@ -30,6 +30,22 @@ const ACOES_MESA = {
      escreve "Ação de mesa sem dono: nada" no console a cada clique, e
      aviso que aparece sempre é aviso que ninguém lê. */
   'nada'() {},
+  /* A LOGO VOLTA PARA A TELA INICIAL. SEMPRE.  (§92)
+
+     Os três cabeçalhos da Mesa tinham logo, e nenhum dos três ia para
+     a capa: dois levavam ao saguão — e o do próprio saguão levava a
+     ele mesmo, um clique morto — e o terceiro chamava `sair`, que
+     chama o `render()` DO CRIADOR. E o `render()` do criador desenha
+     o passo em que ele parou, seja qual for: era isso que fazia a
+     logo cair "numa página aleatória".
+
+     Logo de topo é o botão mais previsível de qualquer interface, e
+     o destino dela é um só. Os botões ao lado continuam levando ao
+     saguão e ao criador, com o nome escrito. */
+  'capa'(id, alvo) {
+        salvarMesa(); renderCapa(); return;
+  },
+
   'sair'(id, alvo) {
         salvarMesa(); render(); return;
   },
@@ -92,6 +108,169 @@ const ACOES_MESA = {
         salvarMesa(); renderMesa(); return;
   },
 
+  /* ----------------------------------------------------------
+     JOGO PONDERADO — Apêndice III  (§89)
+
+     A Carta X NÃO PERGUNTA NADA. Nem "tem certeza?", nem "por quê?".
+     O livro dispensa a explicação com todas as letras (pág. 422), e
+     a §37.4 já proíbe o `confirm()` — aqui as duas coisas apontam
+     para o mesmo lugar: o toque age.
+     ---------------------------------------------------------- */
+  'carta-x'(id, alvo) {
+        usarCartaX(); return;
+  },
+
+  'desvanecer'(id, alvo) {
+        pedirFade(); return;
+  },
+
+  'declarar-limite'(id, alvo) {
+        const campo = $(`#limite-${id === 'veu' ? 'veu' : 'linha'}`);
+        const texto = campo ? campo.value.trim() : '';
+        if (!texto) { toast('Escreva o que esta crônica não vai encostar.'); return; }
+        adicionarLimite(id, texto);
+        return;
+  },
+
+  /* `id` chega como "tipo:texto". O texto pode ter dois-pontos dentro,
+     então o corte é no PRIMEIRO — o mesmo cuidado que a ação
+     `esquecer-legado` já tomava. */
+  'sugerir-limite'(id, alvo) {
+        const corte = id.indexOf(':');
+        adicionarLimite(id.slice(0, corte), id.slice(corte + 1));
+        return;
+  },
+
+  /* Virar Véu ou virar Linha é a mesma operação de declarar: entrar de
+     um lado tira do outro. O livro deixa a troca nos dois sentidos. */
+  'mover-limite'(id, alvo) {
+        const corte = id.indexOf(':');
+        adicionarLimite(id.slice(0, corte), id.slice(corte + 1));
+        return;
+  },
+
+  'tirar-limite'(id, alvo) {
+        removerLimite(id); return;
+  },
+
+  'declarar-retirada'(id, alvo) {
+        const corte = id.indexOf(':');
+        adicionarLimite(id.slice(0, corte), id.slice(corte + 1));
+        return;
+  },
+
+  /* ----------------------------------------------------------
+     PROJETOS — Apêndice II  (§89)
+     ---------------------------------------------------------- */
+  'criar-projeto'(id, alvo) {
+        const v = (sel) => { const c = $(sel); return c ? c.value.trim() : ''; };
+        const nome = v('#prj-nome');
+        if (!nome) { toast('Escreva o que você quer, em termos de história.'); return; }
+        criarProjeto({
+          nome,
+          objetivo: v('#prj-objetivo'),
+          antecedente: v('#prj-antecedente'),
+          escopo: Number(v('#prj-escopo')) || 1,
+          parada: v('#prj-parada'),
+          piscina: Number(v('#prj-piscina')) || 1,
+          incremento: v('#prj-incremento') || 'meses'
+        });
+        return;
+  },
+
+  /* Cultivar uma bolsa é um projeto, e o preço mora no Apêndice II e
+     não no capítulo de Ressonância — é o buraco que a §67 deixou
+     aberto. O chip só PREENCHE o formulário: quem anota é o jogador. */
+  'projeto-de-bolsa'(id, alvo) {
+        const r = Projetos.ESCOPO_DA_RESSONANCIA.find(x => x.id === id);
+        if (!r) return;
+        const por = (sel, valor) => { const c = $(sel); if (c) c.value = valor; };
+        por('#prj-nome', r.rotulo);
+        por('#prj-objetivo', 'Alimentar-se da mesma bolsa por meses, até o sangue dela mudar de humor.');
+        por('#prj-antecedente', 'Rebanho');
+        por('#prj-escopo', String(r.escopo));
+        por('#prj-parada', 'Manha + Rebanho');
+        toast(`Escopo ${r.escopo}: Dificuldade ${r.escopo + Projetos.DIFICULDADE_EXTRA} no Lançamento.`);
+        return;
+  },
+
+  /* ----------------------------------------------------------
+     CONFLITO AVANÇADO E ESTADOS DE CONDENAÇÃO  (§90)
+     ---------------------------------------------------------- */
+  'opcao-combate'(id, alvo)  { alternarOpcaoDeCombate(id); return; },
+  'mirar'(id, alvo)          { mirarEm(id === 'nada' ? '' : id); return; },
+  'mirar-onde'(id, alvo) {
+        const campo = $('#mirar-onde');
+        mirarEm(campo ? campo.value : ''); return;
+  },
+  'agarrar'(id, alvo)        { agarrarOponente(id); return; },
+  'agarramento'(id, alvo)    { turnoDeAgarramento(id); return; },
+  'duelo-social'(id, alvo)   { duelarSocialmente(id); return; },
+  'conceder-social'(id, alvo){ concederSocialmente(); return; },
+  'plateia'(id, alvo) {
+        const campo = $('#plateia');
+        definirTestemunhas(campo ? campo.value : ''); return;
+  },
+
+  'reinante'(id, alvo) {
+        const campo = $('#laco-reinante');
+        definirReinante(campo ? campo.value : ''); return;
+  },
+  'beber-do-reinante'(id, alvo) { beberDoReinante(id !== 'bolsa'); return; },
+  'resistir-ao-laco'(id, alvo)  { resistirAoLaco(id === 'presenca'); return; },
+  'partir-o-laco'(id, alvo)     { tentarPartirOLaco(); return; },
+  'meses-do-laco'(id, alvo)     { passarMesesDoLaco(Number(id) || 1); return; },
+
+  'comecar-diablerie'(id, alvo) {
+        const v = (sel) => { const c = $(sel); return c ? c.value.trim() : ''; };
+        comecarDiablerie({ potencia: v('#dbl-potencia'), geracao: v('#dbl-geracao'),
+                           determinacao: v('#dbl-determinacao'), disciplinas: v('#dbl-disciplinas') });
+        return;
+  },
+  'rolar-diablerie'(id, alvo)    { rolarDiablerie(); return; },
+  'consumar-diablerie'(id, alvo) { consumarDiablerie(); return; },
+  'abandonar-diablerie'(id, alvo){ abandonarDiablerie(); return; },
+
+  /* ----------------------------------------------------------
+     EXPERIÊNCIA  (§91, pág. 151)
+     ---------------------------------------------------------- */
+  'xp-classe'(id, alvo) {
+        M.compraXP = { classe: id, id: '', para: 0 };
+        salvarMesa(); renderMesa(); return;
+  },
+
+  'xp-nivel'(id, alvo) {
+        const c = M.compraXP || (M.compraXP = { classe: 'atributo', id: '', para: 0 });
+        const atual = nivelAtualDaCompra();
+        c.para = Math.max(atual + 1, (c.para || atual + 1) + (Number(id) || 0));
+        salvarMesa(); renderMesa(); return;
+  },
+
+  'xp-comprar'(id, alvo) {
+        const c = M.compraXP;
+        if (!c || !c.classe) return;
+        const r = Experiencia.comprar(M.ficha, {
+          classe: c.classe, id: c.id, para: c.para || (nivelAtualDaCompra() + 1) });
+        anunciar(r.eventos);
+        if (r.comprou) M.compraXP = { classe: c.classe, id: '', para: 0 };
+        salvarMesa(); renderMesa(); return;
+  },
+
+  'xp-especializacao'(id, alvo) {
+        const hab = $('#xp-esp-hab');
+        const txt = $('#xp-esp-texto');
+        if (!hab || !hab.value) { toast('Escolha uma Habilidade com pontos.'); return; }
+        if (!txt || !txt.value.trim()) { toast('Escreva a especialização.'); return; }
+        anunciar(Experiencia.comprarEspecializacao(M.ficha, hab.value, txt.value).eventos);
+        salvarMesa(); renderMesa(); return;
+  },
+
+  'lancar-projeto'(id, alvo)   { lancarProjeto(id); return; },
+  'objetivo-projeto'(id, alvo) { rolarObjetivoDoProjeto(id); return; },
+  'avancar-projeto'(id, alvo)  { avancarProjeto(id); return; },
+  'encerrar-projeto'(id, alvo) { encerrarProjeto(id); return; },
+  'apagar-projeto'(id, alvo)   { apagarProjeto(id); return; },
+
   /* Quem sobe o ollama DEPOIS de abrir a mesa não precisa recarregar
      a página para o modelo entrar. A detecção era feita uma vez só,
      em `abrirMesa`. (§75) */
@@ -151,8 +330,12 @@ const ACOES_MESA = {
           anunciar([{ tipo: 'nota', texto: 'Não é a sua vez.' }]);
           salvarMesa(); renderMesa(); return;
         }
-        anunciar([{ tipo: 'combate', texto: 'Você deixa a vez passar.' }]);
-        avancarVez();
+        /* §90 — passar a vez põe no FIM da ordem, e mantém lá pelo
+           resto do conflito (pág. 300). Antes isto era só um avanço de
+           índice: o jogador passava e voltava a agir no lugar de
+           sempre na rodada seguinte, que é o contrário do que a regra
+           oferece como troca. */
+        anunciar(Rodada.passar(rod, 'voce').eventos);
         correrTurnosDosOponentes(); return;
   },
 
@@ -203,7 +386,7 @@ const ACOES_MESA = {
         const r = golpe({ atacante: o.ficha, defensor: M.ficha, tipo: escolha.tipo,
           arma: escolha.arma, armadura: null,
           estadosAtacante: o.estados, estadosDefensor: estadosAtuais(), alvoVampiro: true,
-          terreno: terrenoDoOponente(o) });
+          terreno: terrenoDoOponente(o), doJogador: false });
         if (r.queima) pegarFogo(M.combate, r.queima, 'Você');
         if (r.torpor) anunciar([{ tipo: 'critico', texto: 'Você caiu em torpor.' }]);
         salvarMesa(); renderMesa(); return;
@@ -430,7 +613,12 @@ const ACOES_MESA = {
   },
 
   'aba'(id, alvo) {
-        M.aba = id; M.itemAberto = ''; renderDoca(); return;
+        M.aba = id; M.itemAberto = '';
+        /* Sair da aba desarma o Limpar. Sem isto, voltar depois e dar
+           um clique apagaria o registro de primeira — que é justamente
+           o que os dois cliques existem para impedir. */
+        if (typeof Trafego !== 'undefined') Trafego.vista.armado = false;
+        renderDoca(); return;
   },
 
   'doca'(id, alvo) {
@@ -440,6 +628,43 @@ const ACOES_MESA = {
   'fechar-doca'(id, alvo) {
         M.docaAberta = false; renderDoca(); return;
   },
+
+  /* ----------------------------------------------------------
+     A ABA DE DEBUG  (§93)
+
+     Quatro ações, e nenhuma delas toca em `M`: o filtro, a linha
+     aberta e as próprias linhas moram no `Trafego`. Por isso
+     nenhuma chama `salvarMesa()` — não há o que salvar, e salvar
+     seria justamente o que o cabeçalho do `trafego.js` promete não
+     fazer.
+
+     As duas que têm regra — limpar e copiar — moram em funções com
+     nome, fora do `switch`. É a lição da §91 e da §92: regra
+     escondida num `case` não tem como ser testada sem simular
+     clique, e a mutação passa em verde.
+     ---------------------------------------------------------- */
+
+  'debug-par'(id, alvo) {
+        Trafego.vista.par = id;
+        Trafego.vista.aberta = 0;
+        Trafego.vista.armado = false;
+        renderDoca(); return;
+  },
+
+  'debug-linha'(id, alvo) {
+        Trafego.vista.aberta = (Trafego.vista.aberta === +id) ? 0 : +id;
+        Trafego.vista.armado = false;
+        renderDoca(); return;
+  },
+
+  'debug-limpar'(id, alvo) {
+        limparTrafego(); renderDoca(); return;
+  },
+
+  'debug-copiar'(id, alvo) {
+        copiarTrafego(); return;
+  },
+
 
   /* §57 — correção à mão do que foi LIDO do texto. Vale por
      esta mensagem: enviarTurno zera os dois depois de enviar. */
@@ -499,4 +724,472 @@ function armarOuPerderPilar(id, porSuasAcoes) {
   }
   M.pilarParaPerder = null;
   aplicarNoEstado(f => Estado.perderPilar(f, i, { porSuasAcoes }));
+}
+
+/* ------------------------------------------------------------
+   LIMPAR E COPIAR O TRÁFEGO  (§93)
+   ------------------------------------------------------------ */
+
+/* Dois cliques para apagar, e aqui isso não é zelo excessivo: a
+   evidência que se perde é exatamente a que fez a pessoa abrir a aba,
+   e ela não volta. É o idioma da §37.4, o mesmo de `perder-pilar` —
+   a confirmação vive na interface, nunca num `confirm()`.
+
+   Devolve `true` quando apagou de verdade, para o teste não precisar
+   ler a tela para saber qual dos dois cliques foi. */
+function limparTrafego() {
+  if (!Trafego.vista.armado && Trafego.linhas.length) {
+    Trafego.vista.armado = true;
+    toast(`Apagar as ${Trafego.linhas.length} linhas do registro? Clique de novo.`);
+    return false;
+  }
+  Trafego.vista.armado = false;
+  Trafego.limpar();
+  return true;
+}
+
+/* Copia o que está À VISTA, e não o registro inteiro: quem filtrou por
+   "só o que falhou" quer colar as falhas, não as duzentas linhas.
+
+   A área de transferência recusa em contexto inseguro e quando a aba
+   não está em foco, e recusar não pode virar erro de turno — daí o
+   `catch` que avisa e devolve, como manda o `fronteiras.test.mjs`. */
+async function copiarTrafego() {
+  Trafego.vista.armado = false;
+  const texto = Trafego.comoTexto(Trafego.vista.par);
+  if (!texto) { toast('Não há nada à vista para copiar.'); return false; }
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast(`${Trafego.filtrar(Trafego.vista.par).length} linhas copiadas.`);
+    return true;
+  } catch (e) {
+    console.warn('[trafego] a área de transferência recusou:', e);
+    toast('O navegador não deixou copiar. O registro está no console.');
+    console.log(texto);
+    return false;
+  }
+}
+
+/* ------------------------------------------------------------
+   JOGO PONDERADO — Apêndice III  (§89)
+
+   Três coisas, e a mais importante é a que não tem código: NADA
+   AQUI PERGUNTA POR QUÊ. O livro é explícito na Carta X — "caso
+   queiram se explicar, podem fazê-lo, mas isso não é necessário"
+   (pág. 422) — e uma tela que exige motivo para retirar uma cena
+   é uma tela que cobra o preço que o livro mandou não cobrar.
+
+   Pelo mesmo motivo não há confirmação: a §37.4 já diz que a
+   confirmação vive na interface e nunca num `confirm()`, e aqui
+   ela nem na interface deve viver. O botão faz na hora. Desfazer
+   é que precisa de esforço, não fazer.
+   ------------------------------------------------------------ */
+
+/* O trecho que vai para a lista de retiradas — e daí para o
+   prefixo do Narrador, como "isto não aconteceu". Curto de
+   propósito: é para ele reconhecer o assunto, não relê-lo. */
+function trechoRetirado(m) {
+  return String((m && m.texto) || '')
+    .replace(/\[\[(?:pessoa|local):([a-z0-9_]+)(?:\|([^\]]+))?\]\]/gi, (_, id, rot) => rot || id)
+    .replace(/\*\*|\*/g, '').replace(/\s+/g, ' ').trim().slice(0, 90);
+}
+
+function usarCartaX() {
+  /* A carta pega a última narração que ainda está de pé. Se a última
+     coisa na tela já foi retirada, ela sobe para a anterior — apertar
+     duas vezes desfaz duas passagens, que é o que a mesa física faz. */
+  const alvo = [...M.mensagens].reverse()
+    .find(m => m.autor === 'narrador' && !m.retirado);
+
+  if (!alvo) {
+    anunciar([{ tipo: 'nota', texto:
+      'Carta X: não há narração para retirar. O jogo segue de onde estava.' }]);
+    salvarMesa(); renderMesa(); return null;
+  }
+
+  alvo.retirado = true;
+  M.limites = Limites.normalizar(M.limites);
+  M.limites.retiradas.push({ ts: Date.now(), trecho: trechoRetirado(alvo) });
+  M.limites = Limites.normalizar(M.limites);
+
+  M.mensagens.push({ id: msgId(), autor: 'sistema', cartaX: true, ts: Date.now(),
+    texto: 'Carta X. Aquilo não aconteceu, e o Narrador não volta a isso. '
+         + 'Você não precisa dizer por quê — mas, se quiser, a aba Limites transforma '
+         + 'isto numa Linha ou num Véu.' });
+  registrar('Carta X — uma passagem foi retirada.');
+  salvarMesa(); renderMesa();
+  return alvo;
+}
+
+/* O fade (pág. 421). Vale por um turno: o jogador pede o corte, o
+   próximo turno corta. Sem modelo de pé, o Narrador simulado ignora
+   o pedido — mas a mensagem na tela já cortou a cena para quem lê,
+   que é metade do que a técnica faz. */
+function pedirFade() {
+  M.pedidoDeFade = true;
+  M.mensagens.push({ id: msgId(), autor: 'sistema', ts: Date.now(),
+    texto: 'A cena desvanece. O que vier agora começa depois — sem o meio.' });
+  registrar('Fade pedido pelo jogador.');
+  salvarMesa(); renderMesa();
+}
+
+function adicionarLimite(tipo, texto) {
+  const t = String(texto || '').replace(/\s+/g, ' ').trim();
+  if (!t) return;
+  M.limites = Limites.normalizar(M.limites);
+  /* Entrar de um lado é sair do outro: o livro deixa um Véu virar
+     Linha e vice-versa, e "vice-versa" é uma troca, não uma cópia. */
+  M.limites.linhas = M.limites.linhas.filter(x => x !== t);
+  M.limites.veus = M.limites.veus.filter(x => x !== t);
+  (tipo === 'veu' ? M.limites.veus : M.limites.linhas).push(t);
+  M.limites = Limites.normalizar(M.limites);
+  registrar(`${tipo === 'veu' ? 'Véu' : 'Linha'} declarado: ${t}`);
+  salvarMesa(); renderMesa();
+}
+
+function removerLimite(texto) {
+  const t = String(texto || '');
+  M.limites = Limites.normalizar(M.limites);
+  M.limites.linhas = M.limites.linhas.filter(x => x !== t);
+  M.limites.veus = M.limites.veus.filter(x => x !== t);
+  registrar(`Limite retirado da lista: ${t}`);
+  salvarMesa(); renderMesa();
+}
+
+/* ------------------------------------------------------------
+   PROJETOS — Apêndice II  (§89)
+
+   A mesa guarda e rola; quem sabe a regra é `Projetos`. As duas
+   rolagens seguem o caminho síncrono da §82, como o frenesi e o
+   Remorso — o que a pendência M10 já declara: só a rolagem de AÇÃO
+   passa pelo Módulo 3 hoje.
+   ------------------------------------------------------------ */
+function projetoPor(id) { return (M.projetos || []).find(p => p.id === id) || null; }
+
+function criarProjeto(campos) {
+  const p = Projetos.novo(campos || {});
+  if (!p.nome) return null;
+  M.projetos = (M.projetos || []).concat([p]);
+  anunciar([{ tipo: 'nota', texto:
+    `Projeto anotado: "${p.nome}". Escopo ${p.escopo}, logo Dificuldade `
+    + `${Projetos.dificuldadeDeLancamento(p)} no Lançamento. Ele só começa a correr quando for lançado.` }]);
+  salvarMesa(); renderMesa();
+  return p;
+}
+
+function apagarProjeto(id) {
+  M.projetos = (M.projetos || []).filter(p => p.id !== id);
+  registrar('Projeto apagado da lista.');
+  salvarMesa(); renderMesa();
+}
+
+/* A parada de um projeto é "Habilidade + Antecedente" (pág. 415).
+   O Antecedente não é Atributo nem Perícia — ele não tem uma
+   piscina que a ficha saiba montar —, então quem soma é o jogador,
+   e o campo guarda o número escolhido. Isso é honesto: o livro faz
+   o Narrador determinar a parada caso a caso. */
+function piscinaDoProjeto(p) {
+  return Math.max(1, Number(p && p.piscina) || 1);
+}
+
+function lancarProjeto(id) {
+  const p = projetoPor(id);
+  if (!p || p.estado === 'lancado') return;
+  const pedido = Projetos.pedidoDeLancamento(p, {
+    piscina: piscinaDoProjeto(p), fome: M.ficha ? (M.ficha.fome || 0) : 0
+  });
+  const r = Dados.apurar(pedido, Dados.rodar(pedido));
+  M.rolagens[`prj_lanc_${p.id}_${Date.now()}`] = r;
+  anunciar([{ tipo: 'nota', texto: `${r.rotulo} — ${Dados.descrever(r)}` }]);
+  anunciar(Projetos.apurarLancamento(p, r).eventos);
+  salvarMesa(); renderMesa();
+}
+
+function rolarObjetivoDoProjeto(id) {
+  const p = projetoPor(id);
+  if (!p || p.estado !== 'lancado') return;
+
+  const meuPedido = Projetos.pedidoDeObjetivo(p, {
+    piscina: piscinaDoProjeto(p), fome: M.ficha ? (M.ficha.fome || 0) : 0
+  });
+  const meu = Projetos.semCritico(Dados.apurar(meuPedido, Dados.rodar(meuPedido)));
+
+  const opPedido = Projetos.pedidoDaOposicao(p);
+  const oposicao = Dados.apurar(opPedido, Dados.rodar(opPedido));
+
+  anunciar([{ tipo: 'nota', texto:
+    `${meu.rotulo} — ${meu.sucessos} sucesso(s), sem crítico possível. `
+    + `A oposição rolou ${oposicao.piscina} dado(s) e fez ${oposicao.sucessos}`
+    + `${oposicao.critico ? ', com crítico' : ''}.` }]);
+  anunciar(Projetos.apurarObjetivo(p, meu, oposicao).eventos);
+  salvarMesa(); renderMesa();
+}
+
+function avancarProjeto(id) {
+  const p = projetoPor(id);
+  if (!p) return;
+  anunciar(Projetos.passarIncremento(p).eventos);
+  salvarMesa(); renderMesa();
+}
+
+function encerrarProjeto(id) {
+  const p = projetoPor(id);
+  if (!p) return;
+  anunciar(Projetos.encerrar(p).eventos);
+  salvarMesa(); renderMesa();
+}
+
+
+/* ------------------------------------------------------------
+   CONFLITO AVANÇADO — as opções na mesa  (§90)
+
+   Elas moram em `M.combate.opcoes` e não em argumentos de clique
+   porque são ESTADO DO TURNO: o jogador liga "Ataque Total" e
+   depois escolhe em quem bater. Ligar e bater no mesmo clique
+   tiraria dele a chance de olhar a parada antes.
+   ------------------------------------------------------------ */
+function alternarOpcaoDeCombate(id) {
+  const op = M.combate.opcoes;
+  if (!(id in op) || id === 'localizado') return;
+  op[id] = !op[id];
+
+  /* O livro proíbe a dupla, e a interface diz isso quando ela é
+     tentada — em vez de deixar as duas acesas e ignorar uma na hora
+     de rolar (pág. 298). */
+  if (id === 'ataqueTotal' && op.ataqueTotal && op.surpresa) {
+    op.surpresa = false;
+    anunciar([{ tipo: 'nota', texto:
+      'Ataque Total e ataque surpresa não valem juntos (pág. 298): a surpresa saiu.' }]);
+  }
+  if (id === 'surpresa' && op.surpresa && op.ataqueTotal) {
+    op.ataqueTotal = false;
+    anunciar([{ tipo: 'nota', texto:
+      'Ataque surpresa e Ataque Total não valem juntos (pág. 298): o Ataque Total saiu.' }]);
+  }
+  if (id === 'ferimentos') {
+    anunciar([{ tipo: 'nota', texto: op.ferimentos
+      ? 'Ferimentos Incapacitantes ligados: quem for ferido já Debilitado rola 1d10 na tabela '
+        + 'da pág. 303. O 13+ é torpor imediato.'
+      : 'Ferimentos Incapacitantes desligados.' }]);
+  }
+  salvarMesa(); renderMesa();
+}
+
+function mirarEm(onde) {
+  M.combate.opcoes.localizado = String(onde || '').trim();
+  if (M.combate.opcoes.localizado) {
+    anunciar([{ tipo: 'nota', texto:
+      `Mirando ${M.combate.opcoes.localizado}: o próximo golpe perde ${
+        Combate.CUSTO_LOCALIZADO} sucessos, e vale por um golpe só (pág. 302).` }]);
+  }
+  salvarMesa(); renderMesa();
+}
+
+/* ------------------------------------------------------------
+   AGARRAMENTO  (§90, pág. 301)
+   ------------------------------------------------------------ */
+function agarrarOponente(ref) {
+  const o = oponentePorRef(ref);
+  if (!o) return;
+  const r = Agarramento.agarrar({ atacante: M.ficha, defensor: o.ficha,
+    estadosAtacante: estadosAtuais(), estadosDefensor: o.estados });
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.meu, ts: Date.now() });
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.dele, ts: Date.now() });
+  anunciar(r.eventos);
+  if (r.agarrou) {
+    M.combate.agarrados[ref] = true;
+    /* O estado `agarrado` já existia em `motor-arbitro.js` e só podia
+       ser marcado à mão. Agora há um caminho até ele jogando. */
+    if (!o.estados.includes('agarrado')) o.estados.push('agarrado');
+  }
+  if (M.combate.rodada && !M.combate.rodada.encerrada) {
+    avancarVez(); correrTurnosDosOponentes(); return;
+  }
+  salvarMesa(); renderMesa();
+}
+
+function turnoDeAgarramento(id) {
+  const corte = id.lastIndexOf(':');
+  const ref = id.slice(0, corte);
+  const escolha = id.slice(corte + 1);
+  const o = oponentePorRef(ref);
+  if (!o) return;
+  const r = Agarramento.resolverTurno({ atacante: M.ficha, defensor: o.ficha, escolha,
+    estadosAtacante: estadosAtuais(), estadosDefensor: o.estados, alvoVampiro: false });
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.meu, ts: Date.now() });
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.dele, ts: Date.now() });
+  anunciar(r.eventos);
+  if (r.escapou) {
+    delete M.combate.agarrados[ref];
+    o.estados = o.estados.filter(e => e !== 'agarrado');
+  }
+  if (r.destruido) anunciar([{ tipo: 'critico', texto: `${o.nome} não levanta mais.` }]);
+  if (M.combate.rodada && !M.combate.rodada.encerrada) {
+    avancarVez(); correrTurnosDosOponentes(); return;
+  }
+  conferirFimDoCombate();
+  salvarMesa(); renderMesa();
+}
+
+/* ------------------------------------------------------------
+   COMBATE SOCIAL  (§90, págs. 304–305)
+
+   Ele usa o mesmo oponente do combate físico — a mesma ficha, com
+   a mesma trilha de Força de Vontade. É o que o livro pede ao dizer
+   "resolva conflitos sociais com as mesmas mecânicas".
+   ------------------------------------------------------------ */
+function duelarSocialmente(id) {
+  const corte = id.lastIndexOf(':');
+  const ref = id.slice(0, corte);
+  const rota = id.slice(corte + 1);
+  const o = oponentePorRef(ref);
+  if (!o) return;
+  const r = CombateSocial.resolver({ atacante: M.ficha, defensor: o.ficha, rota,
+    testemunhas: M.combate.testemunhas || '',
+    estadosAtacante: estadosAtuais(), estadosDefensor: o.estados });
+  if (r.possivel === false) { anunciar(r.eventos); salvarMesa(); renderMesa(); return; }
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.meu, ts: Date.now() });
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.seu, ts: Date.now() });
+  anunciar(r.eventos);
+  salvarMesa(); renderMesa();
+}
+
+function concederSocialmente() {
+  anunciar(CombateSocial.conceder({ quem: 'Você' }).eventos);
+  salvarMesa(); renderMesa();
+}
+
+function definirTestemunhas(texto) {
+  M.combate.testemunhas = String(texto || '').trim();
+  const aud = CombateSocial.extraDaAudiencia(M.combate.testemunhas);
+  anunciar([{ tipo: 'nota', texto:
+    `Plateia: ${aud.testemunhas} — ${aud.extra ? `+${aud.extra}` : 'nenhum'} de dano extra à `
+    + `Força de Vontade. Só conta quem está interessado no resultado (pág. 305).` }]);
+  salvarMesa(); renderMesa();
+}
+
+/* ------------------------------------------------------------
+   ESTADOS DE CONDENAÇÃO — o Laço e a Diablerie  (§90)
+   ------------------------------------------------------------ */
+function beberDoReinante(daVeia) {
+  const nome = (M.laco && M.laco.reinante) || '';
+  if (!nome) { toast('Diga primeiro de quem você bebeu.'); return; }
+  const r = Lacos.beber(M.laco, { daVeia });
+  M.laco = r.laco;
+  anunciar(r.eventos);
+  salvarMesa(); renderMesa();
+}
+
+function definirReinante(nome) {
+  M.laco = Lacos.normalizar(Object.assign({}, M.laco, { reinante: String(nome || '').trim() }));
+  salvarMesa(); renderMesa();
+}
+
+function resistirAoLaco(naPresenca) {
+  const r = Lacos.resistir(M.ficha, M.laco, { naPresenca, estados: estadosAtuais() });
+  if (r.meu) {
+    M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.meu, ts: Date.now() });
+    M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.dele, ts: Date.now() });
+  }
+  anunciar(r.eventos);
+  salvarMesa(); renderMesa();
+}
+
+function tentarPartirOLaco() {
+  const r = Lacos.tentarPartir(M.ficha, M.laco, { estados: estadosAtuais() });
+  M.laco = r.laco;
+  if (r.meu) {
+    M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.meu, ts: Date.now() });
+    M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.dele, ts: Date.now() });
+  }
+  anunciar(r.eventos);
+  /* Vencer o desafio da sessão é o mês passado longe dele. */
+  if (r.venceu) {
+    const p = Lacos.passarTempo(M.laco, Lacos.DIAS_POR_QUEDA);
+    M.laco = p.laco;
+    anunciar(p.eventos);
+  }
+  salvarMesa(); renderMesa();
+}
+
+function passarMesesDoLaco(meses) {
+  const r = Lacos.passarTempo(M.laco, Math.max(1, meses | 0) * Lacos.DIAS_POR_QUEDA);
+  M.laco = r.laco;
+  anunciar(r.eventos);
+  salvarMesa(); renderMesa();
+}
+
+/* A DIABLERIE, EM DOIS PASSOS E COM UM PONTO DE NÃO-RETORNO.
+
+   O primeiro passo é uma sequência: uma rolagem por turno, tantas
+   quanto a Potência de Sangue da vítima, e UMA falha perde tudo. Por
+   isso ela vive em `M.diablerie` e não numa chamada só — o jogador
+   tem de poder olhar para o que já rolou antes de rolar de novo. */
+function comecarDiablerie({ potencia, geracao, determinacao, disciplinas }) {
+  M.diablerie = {
+    potenciaDaVitima: Math.max(1, Number(potencia) || 1),
+    geracaoDaVitima: Number(geracao) || null,
+    determinacaoDaVitima: Math.max(0, Number(determinacao) || 0),
+    disciplinasDaVitima: String(disciplinas || '').split(',').map(x => x.trim()).filter(Boolean),
+    rolagens: [], concluida: false, frustrada: false
+  };
+  anunciar([{ tipo: 'perigo', texto:
+    `Diablerie começada. São ${M.diablerie.potenciaDaVitima} rolagem(ns) de Força + Determinação `
+    + `contra Dificuldade ${Lacos.DIABLERIE.dificuldade}, uma por turno — e uma falha apaga a `
+    + `centelha sem consumi-la (pág. 235).` }]);
+  salvarMesa(); renderMesa();
+}
+
+function rolarDiablerie() {
+  const d = M.diablerie;
+  if (!d || d.concluida || d.frustrada) return;
+  const pedido = Lacos.pedidoDaCentelha(M.ficha);
+  const r = Dados.apurar(pedido, Dados.rodar(pedido));
+  d.rolagens.push({ passou: r.passou, sucessos: r.sucessos, tipo: r.tipo });
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r, ts: Date.now() });
+
+  const passo = Lacos.tomarACentelha(d.potenciaDaVitima, d.rolagens);
+  anunciar(passo.eventos);
+  if (passo.completou) d.concluida = true;
+  else if (!passo.emCurso) d.frustrada = true;
+  salvarMesa(); renderMesa();
+}
+
+function consumarDiablerie() {
+  const d = M.diablerie;
+  if (!d || !d.concluida) return;
+  const meuPedido = Lacos.pedidoDoControle(M.ficha);
+  const meu = Dados.apurar(meuPedido, Dados.rodar(meuPedido));
+  const delaPedido = Lacos.pedidoDaVitima({ determinacao: d.determinacaoDaVitima,
+                                            potenciaSangue: d.potenciaDaVitima });
+  const dela = Dados.apurar(delaPedido, Dados.rodar(delaPedido));
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: meu, ts: Date.now() });
+  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: dela, ts: Date.now() });
+
+  const r = Lacos.efeitos(M.ficha, { meu, dela,
+    potenciaDaVitima: d.potenciaDaVitima, geracaoDaVitima: d.geracaoDaVitima,
+    disciplinasDaVitima: d.disciplinasDaVitima });
+  anunciar(r.eventos);
+  M.diablerie = null;
+  salvarMesa(); renderMesa();
+}
+
+function abandonarDiablerie() {
+  M.diablerie = null;
+  anunciar([{ tipo: 'nota', texto: 'Você recua. O corpo se decompõe na Morte Final do mesmo jeito.' }]);
+  salvarMesa(); renderMesa();
+}
+
+
+/* O nível atual do que está selecionado para compra. Ele mora aqui, e
+   não no render, porque quem precisa dele é a ação que muda o alvo —
+   e o render já sabe pedir a cotação inteira ao motor. (§91) */
+function nivelAtualDaCompra() {
+  const c = M.compraXP;
+  if (!c || !c.classe) return 0;
+  const f = M.ficha;
+  if (c.classe === 'potenciaSangue') return derivados(f).potencia;
+  const onde = { atributo: 'atributos', habilidade: 'habilidades',
+                 disciplina: 'disciplinas', vantagem: 'antecedentes' }[c.classe];
+  return ((f[onde] || {})[c.id]) || 0;
 }

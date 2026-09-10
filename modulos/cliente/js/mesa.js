@@ -37,7 +37,15 @@ const MESA_VAZIA = () => ({
   cronicas: [],
   recombinados: [],
   combate: { ativo: false, motivo: '', oponentes: [], arma: 'Desarmado', profissao: '',
-             rodada: null, proximoId: 1 },
+             rodada: null, proximoId: 1,
+             /* §90 — as opções do Conflito Avançado (págs. 298–303).
+                `ferimentos` é de MESA e fica ligado até alguém desligar;
+                as outras três valem por UM ataque, como o pedido de fade
+                da §89, e o motor as apaga depois de usar. */
+             opcoes: { ataqueTotal: false, defesaTotal: false, surpresa: false,
+                       ferimentos: false, localizado: '' },
+             /* ref do oponente → true, enquanto ele estiver agarrado. */
+             agarrados: {} },
   bolsa: [],
   rolagens: {},
   estados: [],
@@ -58,7 +66,30 @@ const MESA_VAZIA = () => ({
   docaAberta: false,
   /* §85 — a sessão do Módulo 3, quando o checkout deu certo, e a
      prévia do checkin enquanto ela está na tela. */
-  sessaoServidor: '', origemDaFicha: '', checkinPrevia: null
+  sessaoServidor: '', origemDaFicha: '', checkinPrevia: null,
+
+  /* §89 — o Apêndice III. A lista é do JOGADOR e vive na crônica,
+     porque é isso que o livro manda (pág. 421): montada antes do
+     jogo e editável a qualquer momento. */
+  limites: Limites.vazio(),
+  /* O pedido de fade vale por UM turno, como a correção de volume
+     da §57: o jogador pede o corte, o próximo turno corta, e o
+     pedido some. Deixá-lo grudado cortaria a cena seguinte também. */
+  pedidoDeFade: false,
+
+  /* §89 — o Apêndice II. O que corre ENTRE as noites. */
+  projetos: [],
+
+  /* §91 — o que está selecionado na aba de Experiência. */
+  compraXP: { classe: 'atributo', id: '', para: 0 },
+
+  /* §90 — os Estados de Condenação (págs. 233–235). O Laço que PESA
+     sobre este personagem: ele é o escravo, e `reinante` é quem o
+     enlaçou. Enlaçar os outros é assunto de PN, e não tem ficha aqui. */
+  laco: Lacos.novo({}),
+  /* A Diablerie em curso, quando há uma: uma sequência de testes que
+     uma falha perde. */
+  diablerie: null
 });
 
 let M = MESA_VAZIA();
@@ -73,8 +104,20 @@ let sessaoParaApagar = '';
 /* ------------------------------------------------------------
    ABERTURA
    ------------------------------------------------------------ */
+/* O PREDADOR NÃO É OBRIGATÓRIO PARA TODO MUNDO.  (§91, pág. 149)
+
+   "Os sugadores de sangue mais recentes, como os sangues-ralos e
+    diversas Crianças da Noite, NÃO SELECIONAM um tipo de Predador,
+    pois ainda estão descobrindo esse aspecto da sua existência
+    noturna."
+
+   A mesa exigia Predador de todos, e com isso um sangue-ralo — que o
+   livro diz não escolher — não conseguia abrir mesa. */
 function fichaJogavel(f) {
-  return !!(f && f.nome && f.cla && f.predador);
+  if (!(f && f.nome && f.cla)) return false;
+  if (f.predador) return true;
+  const c = claDe(f.cla);
+  return !!(c && (c.sangueFraco || f.idadeDaCoterie === 'crianca'));
 }
 
 function iniciarMesa(ficha) {
@@ -229,7 +272,15 @@ async function enviarTurno(texto) {
 
   const turno = turnoDaMesa({ texto: limpo, leitura, veredito, estados, seg: refinado });
   const passo = await escadaDaMesa().descer(turno);
+
+  /* §93 — qual dos cinco degraus respondeu. */
+  if (typeof Trafego !== 'undefined') Trafego.degrauQueRespondeu(passo);
+
   aplicarPasso(passo, turno);
+
+  /* O fade vale por um turno só (§89). O corte já foi pedido; deixá-lo
+     ligado cortaria também a cena que vem depois do corte. */
+  M.pedidoDeFade = false;
 
   mesaOcupada = false;
   salvarMesa();
@@ -270,21 +321,35 @@ async function interpretadorDaMesa() {
 async function arbitrarTurno({ texto, estados, fala }) {
   const alvo = fala ? fala.alvo : null;
   const entrada = { ficha: M.ficha, estados, texto, modo: M.modo, mesa: M, alvo, fala };
+
+  /* §93 — a pergunta e as duas voltas possíveis. A forma de cada linha
+     está no `trafego.js`, junto do resto do registro. */
+  const anota = (typeof Trafego !== 'undefined');
+  const t0 = Date.now();
+  if (anota) Trafego.perguntaAoArbitro({ texto, modo: M.modo, estados, fala,
+    personagem: M.ficha && M.ficha.nome });
+
   try {
     const qual = await interpretadorDaMesa();
     const saida = qual === 'llm'
       ? await Cadeia.arbitrarComModelo(Object.assign({ interpretador: 'llm' }, entrada))
       : Cadeia.arbitrar(entrada);
     M.ultimaCadeia = saida.elos;
-    return Cadeia.comoVeredito(saida);
+    const veredito = Cadeia.comoVeredito(saida);
+    if (anota) Trafego.vereditoDoArbitro(veredito,
+      { qual, ms: Date.now() - t0, elos: M.ultimaCadeia });
+    return veredito;
   } catch (e) {
     console.warn('Cadeia falhou; caindo no Árbitro direto:', e && e.message);
     M.ultimaCadeia = { erro: (e && e.message) || 'falhou', interpretador: 'nenhum' };
-    return Arbitro.avaliar({ ficha: M.ficha, estados, texto, fala });
+    const veredito = Arbitro.avaliar({ ficha: M.ficha, estados, texto, fala });
+    if (anota) Trafego.vereditoDoArbitro(veredito, { qual: 'cadeia falhou',
+      ms: Date.now() - t0, elos: M.ultimaCadeia, erro: (e && e.message) || 'falhou' });
+    return veredito;
   }
 }
 
-function turnoDaMesa({ texto, leitura, veredito, estados, seg }) {
+function turnoDaMesa({ texto, leitura, veredito, estados, seg, resultado = '' }) {
   return {
     texto, leitura, veredito, estados,
     /* O texto INTEIRO vai para o Narrador — ele precisa da fala. Os
@@ -305,10 +370,46 @@ function turnoDaMesa({ texto, leitura, veredito, estados, seg }) {
         arquivoCampanha: M.campanha && M.campanha.arquivo ? M.campanha.arquivo.split('/').pop() : null,
         indiceCapitulo: (M.diretor && M.diretor.capitulo) || 0,
         arbitro: veredito.avisos && veredito.avisos.length ? veredito.avisos.join(' ') : '',
-        gancho: ganchoDaCena()
+
+        /* §100 — O CAMPO QUE NINGUÉM PREENCHIA.
+
+           O prefixo do Narrador manda, e mandava desde sempre: "você
+           NÃO decide se uma ação deu certo. Se o resultado do teste
+           vier no pedido, narre esse resultado. Se não vier, narre até
+           onde a ação chega e PARE."
+
+           `resultado` sempre chegava vazio, então o Narrador parava —
+           todo turno, obedecendo. O jogador rolava o teste pedido e a
+           ação nunca concluía, e não havia como culpar o modelo: ele
+           fazia o que o contrato dizia.
+
+           É a quinta vez que este projeto acha o mesmo padrão: o dado
+           existe, o leitor existe, e nada no meio chama. §67, §90 (duas
+           vezes), §91 — e agora aqui. */
+        resultado: resultado || '',
+        gancho: ganchoDaCena(),
+        /* §89 — o que o jogador declarou que não quer ver, e o que ele
+           está tramando há meses. Os dois viajam com o TURNO e não com
+           o prefixo dos `.md`, porque nenhum dos dois é meu: são dele. */
+        limites: M.limites,
+        projetos: M.projetos,
+        fade: !!M.pedidoDeFade
       };
     }
   };
+}
+
+/* O NARRADOR, OBSERVADO.  (§93)
+
+   Quem envelopa é o `Trafego`; a Mesa só escolhe QUEM vai dentro do
+   envelope e como montar o corpo — as duas coisas que ela sabe e ele
+   não. O porquê do envelope está lá, em `Trafego.envelopar`. */
+function narradorObservado() {
+  if (typeof Trafego === 'undefined') return Narrador;
+  const daProxy = (typeof NarradorProxy !== 'undefined'
+                   && Narrador.nome === NarradorProxy.nome
+                   && typeof NarradorProxy.montar === 'function');
+  return Trafego.envelopar(Narrador, daProxy ? (t) => NarradorProxy.montar(t) : null);
 }
 
 let _escada = null;
@@ -318,7 +419,7 @@ function escadaDaMesa() {
       new DegrauArbitro(),
       new DegrauCampanha(Diretor),
       new DegrauRecombinacao(Recombinador),
-      new DegrauNarrador(Narrador)
+      new DegrauNarrador(narradorObservado())
     ]);
   }
   return _escada;
@@ -435,17 +536,62 @@ function mesclar(lista, item, prefixo) {
    o que torna a noite repetível.
 
    Sem sessão no servidor, roda local — como rodou até agora. */
-async function rolarPelaMesa(opcoes) {
-  const pedido = Dados.pedir(opcoes);
-  const doServidor = await Ponte.rolar(pedido);
-  if (doServidor && doServidor.valores) {
-    const r = Dados.apurar(doServidor.pedido || pedido, doServidor.valores);
-    r.ondeRolou = 'mesa';
-    return r;
+/* A CADEIA INTEIRA, QUANDO OS MÓDULOS ESTÃO DE PÉ.  (§87, item M8)
+
+   O Árbitro diz quais dados (5176) · a Mesa roda e grava (5175) · o
+   Árbitro apura e confere a quantidade (5176). O navegador desenha.
+
+   E em cada uma das duas pontas ele CONFERE contra a resposta local.
+   As duas cópias são o mesmo código — a §84 carrega os mesmos arquivos
+   num `vm` —, então elas devem concordar sempre. Quando não concordam,
+   não é regra diferente: é `.js` velho no cache do navegador (a §36),
+   ou um módulo subido antes de uma correção. Nada notava isso antes.
+
+   `situacao` é o que o servidor precisa para montar o pedido sozinho.
+   Sem ela — ou com o Módulo 4 fora — vale o pedido local. */
+async function rolarPelaMesa(opcoes, situacao = null) {
+  const local = Dados.pedir(opcoes);
+
+  let pedido = local;
+  if (situacao) {
+    const doArbitro = await Ponte.pedidoDoArbitro(situacao);
+    if (doArbitro && doArbitro.pedido) {
+      Ponte.conferir('pedido', local, doArbitro.pedido,
+        ['normais', 'fome', 'dificuldade', 'piscina']);
+      /* O RÓTULO FICA O LOCAL, e só ele.
+
+         O do servidor é `Destreza + Ladroagem`; o daqui pode trazer
+         `(+2 de Dificuldade)`, que é a cobrança da ROTA (§63, A4) e não
+         da piscina — o Módulo 4 não recebe a rota inteira, então não
+         tem como saber. Adotar o pedido inteiro apagaria da tela a
+         razão de a dificuldade ter subido.
+
+         Por isso `rotulo` também não entra na conferência: ele difere
+         de propósito, e comparar o que difere de propósito é como
+         escrever um teste que falha sempre. */
+      pedido = Object.assign({}, doArbitro.pedido, { rotulo: local.rotulo });
+    }
   }
-  const r = Dados.apurar(pedido, Dados.rodar(pedido));
-  r.ondeRolou = 'local';
-  return r;
+
+  const daMesa = await Ponte.rolar(pedido);
+  const valores = (daMesa && daMesa.valores) ? daMesa.valores : Dados.rodar(pedido);
+
+  const aqui = Dados.apurar(pedido, valores);
+  const doArbitro = await Ponte.apurarNoArbitro(pedido, valores);
+  if (doArbitro && doArbitro.veredito) {
+    Ponte.conferir('veredito', aqui, doArbitro.veredito, ['tipo', 'sucessos', 'passou']);
+  }
+
+  /* De onde veio cada metade, para o registro e para o teste. O veredito
+     mostrado é o LOCAL mesmo quando o servidor respondeu: eles são
+     iguais — e quando não são, a divergência já foi registrada e trocar
+     de fonte no meio esconderia o problema em vez de mostrá-lo. */
+  aqui.ondeRolou = (daMesa && daMesa.valores) ? 'mesa' : 'local';
+  aqui.ondePensou = (pedido !== local || doArbitro) ? 'arbitro' : 'local';
+
+  /* §93 — os três passos da §82 numa linha só. */
+  if (typeof Trafego !== 'undefined') Trafego.rolagem(aqui, { pedido, valores, doArbitro });
+  return aqui;
 }
 
 async function rolarDoJogador(idMensagem, indiceRota) {
@@ -461,11 +607,23 @@ async function rolarDoJogador(idMensagem, indiceRota) {
   /* §63 (A4): a rota pode cobrar Dificuldade a mais. Hoje só o caminho
      eletrônico do arrombamento cobra, e o livro é quem cobra (pág. 410). */
   const extra = rota.dificuldadeExtra || 0;
+  /* A MESMA situação que `piscinaDaRota` usou aqui, agora também no
+     formato que o Módulo 4 entende. Ela é montada UMA vez e serve às
+     duas pontas — se as duas fossem montadas separadamente, elas
+     divergiriam e a conferência acusaria a si mesma. (§87) */
+  const acao = Arbitro.ACOES[(pedido && pedido.intencao) || ''];
   const resultado = await rolarPelaMesa({
     piscina: p.total,
     fome: M.ficha.fome || 0,
     dificuldade: (pedido.dificuldade || 0) + extra,
     rotulo: p.rotulo + (extra ? ` (+${extra} de Dificuldade)` : '')
+  }, {
+    ficha: M.ficha, rota,
+    estados: estadosAtuais(),
+    dominio: acao ? acao.dominio : null,
+    intencao: (pedido && pedido.intencao) || null,
+    disciplina: acao && acao.disciplina ? acao.disciplina.id : null,
+    dificuldade: (pedido.dificuldade || 0) + extra
   });
   resultado.composicao = { base: p.base, especializacao: p.especializacao,
     modificadores: p.modificadores, penalidadeEstado: p.penalidadeEstado };
@@ -498,6 +656,85 @@ async function rolarDoJogador(idMensagem, indiceRota) {
   if (guardado) guardado.animar = false;
   salvarMesa();
   renderDoca();
+
+  /* §100 — e agora a metade que faltava: contar como foi. */
+  await narrarDesfecho(pedido, resultado);
+}
+
+/* ------------------------------------------------------------
+   O TURNO DE DESFECHO  (§100)
+
+   O jogador pede uma ação, o Narrador pede um teste, o jogador rola —
+   e acabava aí. Faltava a metade que fecha: **contar como foi**.
+
+   Não é um turno do jogador; é a segunda metade do turno dele. Por isso
+   o texto não vem da caixa: vem do que foi tentado e do que os dados
+   disseram. E por isso ele desce a MESMA escada — um desfecho é
+   narração como qualquer outra, e os degraus de cima podem respondê-lo
+   de graça.
+
+   Mora fora do ouvinte de clique, e com nome, porque é regra: a lição
+   da §91 e da §92 é que o que fica escondido num `case` não tem como
+   ser testado sem simular clique.
+   ------------------------------------------------------------ */
+
+/* A frase que o Narrador lê como "o que foi tentado". O pedido do
+   Narrador (`descricao`) é melhor do que o rótulo da parada, porque foi
+   ele que escreveu o que estava em jogo — "ouvir se Bia está falando
+   com alguém" diz mais do que "Inteligência + Investigação". */
+function textoDoDesfecho(pedido, resultado) {
+  const oQue = (pedido && (pedido.descricao || pedido.texto || pedido.rotulo))
+    || (resultado && resultado.rotulo) || 'a ação';
+  return String(oQue).trim();
+}
+
+/* O resultado em UMA linha, do jeito que o prefixo do Narrador espera
+   lê-lo: já apurado, sem deixar nada para ele decidir.
+
+   QUEM FRASEIA UMA ROLAGEM É `Dados.descrever`, e só ela. A primeira
+   versão desta função somava "dificuldade N" e "N sucesso(s)" por cima
+   — e `descrever` já devolve "Sucesso — 3 sucessos contra dificuldade
+   2.". A linha saía com a mesma informação três vezes.
+
+   Quem mostrou foi a mutação: apagar o "dificuldade" daqui não derrubou
+   teste nenhum, porque a palavra continuava vindo de `descrever`. Teste
+   que passa com e sem a linha estava afirmando o texto errado. */
+function resultadoParaNarrador(resultado) {
+  if (!resultado) return '';
+  return `${resultado.rotulo}: ${Dados.descrever(resultado)}`;
+}
+
+async function narrarDesfecho(pedido, resultado) {
+  /* Combate tem narração própria (`golpe`), e chamar o Narrador aqui
+     dobraria a descrição do mesmo golpe. */
+  if (combateAtivo()) return null;
+  if (mesaOcupada || !resultado) return null;
+
+  mesaOcupada = true;
+  renderFluxo();
+  try {
+    const texto = textoDoDesfecho(pedido, resultado);
+    const turno = turnoDaMesa({
+      texto,
+      leitura: { acao: null },
+      /* O Árbitro já falou neste turno: o veredito dele virou a parada
+         que acabou de ser rolada. Repetir os avisos faria o Narrador
+         reclamar duas vezes da mesma coisa. */
+      veredito: { possivel: true, avisos: [] },
+      estados: estadosAtuais(),
+      seg: { segmentos: [] },
+      resultado: resultadoParaNarrador(resultado)
+    });
+
+    const passo = await escadaDaMesa().descer(turno);
+    if (typeof Trafego !== 'undefined') Trafego.degrauQueRespondeu(passo);
+    aplicarPasso(passo, turno);
+    return passo;
+  } finally {
+    mesaOcupada = false;
+    salvarMesa();
+    renderFluxo(); renderTopo(); renderDoca(); renderCombate(); atualizarCompositor();
+  }
 }
 
 function vontadeDisponivel() {
@@ -590,7 +827,10 @@ function gerarOponente(modelo, nomeDado = null, { silencioso = false } = {}) {
   M.combate.proximoId = M.combate.proximoId || 1;
   M.combate.oponentes.push({
     ref: `op:${M.combate.proximoId++}`,
-    nome, ficha: Object.assign(gerado.ficha, { nome }),
+    /* §90 — nome dado pela cena tira o anonimato, e com ele a regra do
+       crítico que incapacita sem calcular dano (pág. 303). "Mortal
+       comum 3" é figurante; "Beatriz" não é. */
+    nome, ficha: Object.assign(gerado.ficha, { nome, anonimo: !nomeDado }),
     modelo, armadura: 'Sem armadura', armaDele: '', estados: []
   });
   if (silencioso) return;
@@ -609,231 +849,25 @@ function normalizarMesa() {
     M[chave] = Object.assign({}, padrao[chave], M[chave] || {});
   }
   if (!Array.isArray(M.bolsa)) M.bolsa = [];
+  /* §89 — sessão gravada antes do Apêndice III não tem os limites, e
+     uma vinda do Módulo 3 pode ter qualquer coisa no lugar deles. */
+  M.limites = Limites.normalizar(M.limites);
+  if (!Array.isArray(M.projetos)) M.projetos = [];
+  /* §90 — sessão de antes dos Estados de Condenação. */
+  M.laco = Lacos.normalizar(M.laco);
+  M.combate.opcoes = Object.assign({}, padrao.combate.opcoes, M.combate.opcoes || {});
+  if (!M.combate.agarrados || typeof M.combate.agarrados !== 'object') M.combate.agarrados = {};
   normalizarOponentes();
 }
 
-const INTENCOES_DE_COMBATE = ['lutar', 'atirar'];
+/* A CONDUÇÃO DO COMBATE SAIU DAQUI.  (F1, §100)
 
-function combateAtivo() {
-  return !!(M.combate && M.combate.ativo);
-}
+   De `combateAtivo` a `golpe`, tudo mora em `mesa-combate.js` desde a
+   §100. O motivo está no cabeçalho de lá, e ele foi escrito na §93:
+   este arquivo tem teto próprio no `fronteiras.test.mjs`, e o bloco
+   que sairia quando o teto não coubesse já estava escolhido.
 
-function abrirCombate({ motivo = '', oponentes = [], modelo = 'comum' } = {}) {
-  if (combateAtivo()) return false;
-  M.combate.ativo = true;
-  M.combate.motivo = motivo;
-
-  if (!oponentes.length && !M.combate.oponentes.length) oponentes = [{ modelo }];
-  for (const o of oponentes) {
-    gerarOponente(o.modelo || modelo, o.nome || null, { silencioso: true });
-  }
-
-  anunciar([{ tipo: 'critico',
-    texto: motivo ? `Começou briga: ${motivo}` : 'Começou briga.' }]);
-  anunciar([{ tipo: 'combate',
-    texto: `Na briga: ${M.combate.oponentes.map(o => o.nome).join(', ')}.` }]);
-
-  const lista = combatentes();
-  if (lista.filter(c => !Rodada.foraDeCombate(c)).length >= 2) {
-    const r = Rodada.abrir(lista);
-    M.combate.rodada = r;
-    anunciar([{ tipo: 'combate', texto: `Rodada ${r.numero}. ${Rodada.descreverOrdem(r)}` }]);
-  }
-  return true;
-}
-
-function fecharCombate(texto) {
-  if (!combateAtivo()) return;
-  M.combate.ativo = false;
-  M.combate.rodada = null;
-  M.combate.oponentes = [];
-  M.combate.motivo = '';
-  anunciar([{ tipo: 'nota', texto: texto || 'A briga acabou. Você volta a agir por turno.' }]);
-}
-
-function conferirFimDoCombate() {
-  if (!combateAtivo()) return;
-  const dePe = (M.combate.oponentes || []).filter(o => !Rodada.foraDeCombate(o));
-  if (!dePe.length) { fecharCombate('Ninguém de pé contra você. A briga acabou.'); return; }
-  if (Rodada.foraDeCombate({ ficha: M.ficha })) {
-    fecharCombate('Você caiu. A briga acabou sem você.');
-  }
-}
-
-function normalizarOponentes() {
-  M.combate.proximoId = M.combate.proximoId || 1;
-  for (const o of M.combate.oponentes || []) {
-    if (!o.ref) o.ref = `op:${M.combate.proximoId++}`;
-    if (o.armaDele === undefined) o.armaDele = '';
-    if (!Array.isArray(o.estados)) o.estados = [];
-  }
-}
-
-function combatentes() {
-  normalizarOponentes();
-  const lista = [{ ref: 'voce', nome: M.ficha ? M.ficha.nome : 'Você',
-                   ficha: M.ficha, estados: estadosAtuais(), vampiro: true }];
-  for (const o of M.combate.oponentes || []) {
-    lista.push({ ref: o.ref, nome: o.nome, ficha: o.ficha, estados: o.estados, oponente: o });
-  }
-  return lista;
-}
-
-function oponentePorRef(ref) {
-  return (M.combate.oponentes || []).find(o => o.ref === ref) || null;
-}
-
-function abrirRodada() {
-  const lista = combatentes();
-  if (lista.filter(c => !Rodada.foraDeCombate(c)).length < 2) {
-    anunciar([{ tipo: 'nota', texto: 'Não há briga: falta com quem trocar golpe.' }]);
-    salvarMesa(); renderMesa(); return;
-  }
-  const r = Rodada.abrir(lista);
-  M.combate.rodada = r;
-  anunciar([{ tipo: 'combate', texto: `Rodada ${r.numero}. ${Rodada.descreverOrdem(r)}` }]);
-  correrTurnosDosOponentes();
-}
-
-function encerrarRodada() {
-  M.combate.rodada = null;
-  anunciar([{ tipo: 'nota', texto: 'A ordem de iniciativa foi desfeita. Os golpes voltam a ser avulsos.' }]);
-  salvarMesa(); renderMesa();
-}
-
-/* ------------------------------------------------------------
-   O FOGO NÃO APAGA SOZINHO  (§66)
-
-   As armas incendiárias das págs. 379–381 causam dano POR TURNO
-   até serem apagadas. `Combate.resolver` devolve isso em `queima`;
-   a mesa guarda a queima em quem pegou fogo e cobra a cada volta
-   da rodada. Quem apaga é o jogador — cada item diz com o quê.
-   ------------------------------------------------------------ */
-function pegarFogo(registro, queima, nome) {
-  if (!registro || !queima) return;
-  registro.queimas = registro.queimas || [];
-  registro.queimas.push(queima);
-  M.combate.estado = 'ativo';
-  anunciar([{ tipo: 'critico', texto: `${nome} está em chamas.` }]);
-}
-
-function arderNoTurno(registro, ficha, nome) {
-  const queimas = (registro && registro.queimas) || [];
-  if (!queimas.length || !ficha) return;
-  const r = Combate.queimar(ficha, queimas);
-  anunciar([{ tipo: 'perigo', texto: `${nome} ainda queima.` }, ...r.eventos]);
-}
-
-function avancarVez() {
-  const r = Rodada.avancar(M.combate.rodada, combatentes());
-  M.combate.rodada = r.fim && r.rodada && r.rodada.encerrada ? null : r.rodada;
-  anunciar(r.eventos);
-  const vez = M.combate.rodada && Rodada.atual(M.combate.rodada);
-  if (vez) {
-    if (vez.ref === 'voce') arderNoTurno(M.combate, M.ficha, 'Você');
-    else {
-      const o = oponentePorRef(vez.ref);
-      if (o) arderNoTurno(o, o.ficha, o.nome);
-    }
-  }
-  return r;
-}
-
-function correrTurnosDosOponentes() {
-  let voltas = 0;
-  while (M.combate.rodada && !M.combate.rodada.encerrada && voltas++ < 40) {
-    const vez = Rodada.atual(M.combate.rodada);
-    if (!vez) { if (avancarVez().fim) break; continue; }
-    if (vez.ref === 'voce') break;
-
-    const o = oponentePorRef(vez.ref);
-    if (!o) { if (avancarVez().fim) break; continue; }
-
-    const escolha = Rodada.escolhaDoOponente(o, { ref: 'voce' });
-    if (!escolha.possivel) {
-      anunciar([{ tipo: 'nota', texto: escolha.motivo }]);
-    } else {
-      anunciar([{ tipo: 'combate', texto: `É a vez de ${o.nome}.` }]);
-      const g = golpe({ atacante: o.ficha, defensor: M.ficha, tipo: escolha.tipo,
-        arma: escolha.arma, armadura: null,
-        estadosAtacante: o.estados, estadosDefensor: estadosAtuais(), alvoVampiro: true,
-        terreno: terrenoDoOponente(o) });
-      if (g.queima) pegarFogo(M.combate, g.queima, 'Você');
-      if (g.torpor) anunciar([{ tipo: 'critico', texto: 'Você caiu em torpor. A briga acabou para você.' }]);
-    }
-    if (Rodada.foraDeCombate({ ficha: M.ficha })) {
-      M.combate.rodada = null;
-      anunciar([{ tipo: 'critico', texto: 'Você não fica mais de pé. A rodada para aqui.' }]);
-      break;
-    }
-    if (avancarVez().fim) break;
-  }
-  conferirFimDoCombate();
-  salvarMesa();
-  renderMesa();
-}
-
-/* A navegação do oponente, traduzida para o que o combate entende.
-   Sem isto o elo 3 seria decorativo: ele descreveria a distância e o
-   dado continuaria sendo rolado como se todo mundo estivesse coladinho.
-
-   Desde a §49 o oponente é nó do grafo (item A7), com o `ref` de id, e
-   por isso a navegação enxerga onde ele está de verdade: no local da
-   cena, ou no que a cena declarar. Antes disto ele era invisível ao
-   elo 3, e o que se sabia era só o que viesse declarado no objeto. */
-function terrenoDoOponente(oponente) {
-  if (!oponente || typeof Navegacao === 'undefined') return { distancia: null, cobertura: null };
-  try {
-    const grafo = Grafo.de(M);
-    const nav = Navegacao.navegar({
-      grafo, contexto: Grafo.contexto(grafo, 'voce'),
-      plano: { acoes: [{ alvo: oponente.ref || null }] }, mesa: M,
-      alvo: { id: oponente.ref || null, distancia: oponente.distancia,
-              cobertura: oponente.cobertura }
-    });
-    return Navegacao.paraCombate(nav);
-  } catch (e) {
-    console.warn('navegação do combate falhou:', e && e.message);
-    return { distancia: null, cobertura: null };
-  }
-}
-
-/* Como a briga se apresenta ao jogador: "mesmo ambiente", "ambiente ao
-   lado · −2 dados", "cobertura: parede de concreto". É o elo 3 virando
-   texto — sem isso ele decide e ninguém sabe por quê. */
-function terrenoDescrito(oponente) {
-  if (!oponente || typeof Navegacao === 'undefined') return '';
-  try {
-    const grafo = Grafo.de(M);
-    return Navegacao.descrever(Navegacao.navegar({
-      grafo, contexto: Grafo.contexto(grafo, 'voce'),
-      plano: { acoes: [{ alvo: oponente.ref || null }] }, mesa: M,
-      alvo: { id: oponente.ref || null, distancia: oponente.distancia,
-              cobertura: oponente.cobertura }
-    }));
-  } catch (e) { return ''; }
-}
-
-function golpe({ atacante, defensor, tipo, arma, armadura, estadosAtacante, estadosDefensor,
-                 alvoVampiro, terreno = null }) {
-  const t = terreno || { distancia: null, cobertura: null, penalidade: 0 };
-  const r = Combate.resolver({
-    atacante, defensor, tipo,
-    arma: arma === 'Desarmado' ? null : arma,
-    armadura: armadura === 'Sem armadura' ? null : armadura,
-    estadosAtacante, estadosDefensor, alvoVampiro,
-    distancia: t.distancia, cobertura: t.cobertura, penalidadeTerreno: t.penalidade || 0
-  });
-  if (r.possivel === false) {
-    anunciar(r.bloqueios.map(b => ({ tipo: 'critico', texto: b })));
-    return r;
-  }
-  M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.rolAtq, ts: Date.now() });
-  if (r.rolDef) M.mensagens.push({ id: msgId(), autor: 'rolagem', resultado: r.rolDef, ts: Date.now() });
-  anunciar(r.eventos);
-  return r;
-}
-
+   `mesa.js` continua dono do TURNO; a RODADA é de lá. */
 
 function anunciar(eventos) {
   for (const e of eventos || []) {
@@ -922,7 +956,7 @@ function renderMesa() {
   $('#app').innerHTML = `
   <div class="mesa">
     <header class="mesa-topo">
-      <div class="topo-marca" data-mesa="saguao" title="Suas noites">VIT<span>Æ</span></div>
+      <div class="topo-marca" data-mesa="capa" title="Tela inicial">VIT<span>Æ</span></div>
       <div class="mesa-cena">
         <div class="local">${esc(loc?.nome || M.cena.local || 'Em algum lugar')}</div>
         <div class="hora">${esc(M.cena.hora || '')}</div>
@@ -1104,7 +1138,7 @@ function renderSaguao() {
   $('#app').innerHTML = `
   <div class="saguao">
     <header class="saguao-cabeca">
-      <div class="topo-marca" data-mesa="sair">VIT<span>Æ</span></div>
+      <div class="topo-marca" data-mesa="capa" title="Tela inicial">VIT<span>Æ</span></div>
       <div>
         <div class="sub">A Mesa</div>
         <h1>Suas noites</h1>
@@ -1154,7 +1188,7 @@ function renderNovaHistoria() {
   $('#app').innerHTML = `
   <div class="saguao">
     <header class="saguao-cabeca">
-      <div class="topo-marca" data-mesa="saguao">VIT<span>Æ</span></div>
+      <div class="topo-marca" data-mesa="capa" title="Tela inicial">VIT<span>Æ</span></div>
       <div>
         <div class="sub">Nova noite</div>
         <h1>História e personagem</h1>
@@ -1452,6 +1486,11 @@ document.addEventListener('change', (e) => {
     if (o) o[campo.slice(corte + 1)] = valor;
   } else if (campo.startsWith('combate:')) {
     M.combate[campo.split(':')[1]] = valor;
+  } else if (campo === 'compraXPId') {
+    /* §91 — escolher O QUE comprar zera o nível-alvo: a cotação passa
+       a valer para o traço novo, e não para o degrau do anterior. */
+    M.compraXP = Object.assign({ classe: 'atributo' }, M.compraXP, { id: valor, para: 0 });
+    salvarMesa(); renderDoca(); return;
   } else {
     M[campo] = valor;
   }

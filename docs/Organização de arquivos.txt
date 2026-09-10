@@ -1,5 +1,5 @@
 PENDÊNCIAS — VITÆ
-Atualizado em 07/09/2026, depois da §86.
+Atualizado em 09/09/2026, depois da §100.
 
 ESTE ARQUIVO É SÓ A LISTA DE PENDÊNCIAS. Nada mais.
 Nada de relato do que foi feito, nada de explicação de defeito, nada de
@@ -47,44 +47,63 @@ GERAL
 
   G2. Reler Livros/Regras e Livros/Adição-Narrativa ........... médio
       EM ANDAMENTO, E É O QUE MAIS ESTÁ RENDENDO.
-      Fila do que ainda não foi aberto, por peso (mapa em README §61.2):
-        1. Clãs (63-114) -> data-clans.js ..................... alto
-        3. Combate avançado (295-305) ........................ médio
-        4. Laço de Sangue e Diablerie (233-235) .............. médio
-        5. Criação e Experiência (135-154) ................... médio
-      Faltam ainda as Partes III e IV do meu documento e os 12 outros
-      livros.
+      A FILA DO BÁSICO ACABOU NA §91. Os dez itens do mapa do README
+      §61.2 estão todos lidos e pagos, do §62 ao §91.
+      Falta ainda o que nunca esteve nessa fila: as Partes III e IV do
+      meu documento, e os outros 9 livros de Livros/Regras — o Guia
+      do Jogador é o mais rentável deles, e a parte dele que já está
+      isolada é o G10.
+      DOIS LIDOS NA §96, e agora há txts_extraidos/ com texto limpo,
+      o que barateou o resto da fila: Oblivio.pdf (as regras gerais da
+      Disciplina e as Cerimônias, que não existiam no motor) e
+      Sombras-na-Torre.pdf (a migração dos Lasombra, em cenario.md).
+      Sobram 7: Anarquistas, Camarilla, Escudo-Do-Mestre, SABBAT,
+      Sigilos-de-Sangue, Companion e o Guia do Jogador.
+      CLÃS LIDO NA §88: o básico tem SETE clãs, mais Caitiff e Sangue-Ralo.
+      As nove Perdições estavam erradas e foram corrigidas; só a Brujah
+      chega ao dado, as outras oito estão declaradas em regras.md §19.3.
+      Os nove clãs de outros livros (Banu Haqim, Hecata, Lasombra,
+      Ministério, Ravnos, Salubri, Tzimisce) seguem SEM CONFERIR.
+      CONFLITO AVANÇADO LIDO NA §90 (295-305, e não 295-305 só de
+      combate: o capítulo é de conflito). A iniciativa do motor não era
+      de livro nenhum, e a armadura subtraía onde o livro converte.
+      Seis sistemas do capítulo seguem SEM IMPLEMENTAR, declarados em
+      regras.md §15.12 — o maior deles é o Conflito de Rolagem Única.
+      ESTADOS DE CONDENAÇÃO LIDOS NA §90 (233-235): Laço, carniçais e
+      Diablerie não existiam e agora existem, em regras.md §22.
+      CRIAÇÃO E EXPERIÊNCIA LIDAS NA §91 (135-154). O gastador de
+      experiência não existia — a tabela estava lá e ninguém a chamava.
+      O método narrativo das Habilidades (145-146) também não existia,
+      e é o TEXTO PRINCIPAL do livro. Ficaram de fora as Qualidades e
+      Defeitos de Sangue-Ralo, que estão nas págs. 182-183.
 
-  G4. O extrator erra o arremesso ............................. baixo
-      "jogo o cinzeiro na cabeça dela" vira melee_attack.
-      MITIGADO, NÃO MEDIDO DE NOVO. O ollama agora sobe pelo botão da
-      capa (§75), então a medição virou barata: falta fazê-la.
+  G11. Seis erros de documento, achados no levantamento ...... médio
+      Todos do mesmo tipo: documento que envelheceu enquanto o código
+      andava. O primeiro é o pior — as duas afirmações estão no mesmo
+      arquivo.
+      1. regras.md:1711 diz que o Laço de Sangue não é mecanizado e
+         regras.md:2029 diz que é. A §90 fez o Laço; falta a exceção
+         Tremere.
+      2. Quatro caminhos de Livros/ quebrados nos docs, e o cabeçalho
+         da regras.md afirma que foram consertados.
+      3. regras.md:32 diz "Na Parte II, 3 das 15". A Parte II tem 17
+         seções, e as com marca explícita são 2.
+      4. glossario-traducao.md:480 diz que Projetos e Jogo Ponderado
+         não estão implementados. Foram pagos na §89.
+      5. "os 12 outros livros" aqui e no README §61.3. Livros/Regras
+         tem 10 PDFs: 9 além do básico.
+      6. regras.md Parte IV §9 diz que o app só modela um personagem.
+         A Parte III §10 diz que motor-matilha.js resolveu isso.
 
-  G6. A leitura de fala pelo modelo não foi medida ............ baixo
-      speech e speech_volume têm esquema e normalizar em teste, mas
-      nenhuma medição com modelo de verdade. O caminho determinístico
-      (pontuação) é o padrão e está verificado.
-
-  G7. O gasto de experiência não exige a Ressonância .......... médio
-      Básico, pág. 231: para gastar XP numa Disciplina o personagem
-      deve ter se alimentado da Ressonância correspondente. O motor não
-      cobra. Declarado como pendência em regras.md §11.6.
-
-  G8. O Apêndice II (Projetos) não existe no motor ............ médio
-      Básico, págs. 415-417. Subsistema de planos de longo prazo:
-      Escopo, Incremento, Dado do Projeto, rolagem de Lançamento e de
-      Objetivo, pontos comprometidos como risco, Longue Durée em
-      Memoriam. Cabe bem numa mesa solo porque corre ENTRE sessões —
-      hoje a mesa só tem a noite atual. Traz também o preço mecânico de
-      mudar a Ressonância de uma bolsa, que a §67 deixou como
-      julgamento do Narrador.
-
-  H2. Uma especialização por perícia ......................... baixo
-      `f.especializacoes` guarda um nome só por perícia. O livro
-      (pág. 159) permite tantas quanto o valor na Habilidade, e mais
-      que isso em Ofícios (pág. 164). Não muda dado numa rolagem —
-      muda o modelo de dado, e atravessa criador, ficha impressa e
-      fichas salvas. Declarada em regras.md §17.6.
+  G12. As Partes III e IV, e o livro que não está aqui ....... médio
+      Zero páginas conferidas nas duas, e elas não se leem igual.
+      A Parte III é DOCUMENTO DE DESENHO, não regra de livro: reler é
+      conferir contra o código, não contra a página.
+      A Parte IV depende de dois livros de peso diferente, e o que
+      carrega os SISTEMAS - Vaulderie, Vinculum, matilhas, Ritae com
+      efeito, os 8 Predadores - é de comunidade e NÃO ESTÁ NA MÁQUINA.
+      Dá para reler contra o SABBAT.pdf oficial, que está: §1, a
+      metade de cenário da §2, os nomes da §5 e a parte oficial da §7.
 
   G10. Os seis Predadores do Guia do Jogador ................. médio
       Extorsionista, Ladrão de Túmulos, Montero, Perseguidor,
@@ -93,18 +112,7 @@ GERAL
       traduz mal (Oblívio vira "Esquecimento"). Há ainda um sétimo,
       o Ceifador, que o projeto não tem. §77.7
 
-  G9. O Apêndice III (Jogo Ponderado) não tem contraparte ..... médio
-      Básico, págs. 419-423. Quase tudo é de mesa física, mas dois
-      itens traduzem direto:
-        . Carta X — num aplicativo é literalmente um botão, e é o item
-          mais barato e mais valioso do apêndice;
-        . Linhas e Véus DECLARADAS PELO JOGADOR, por crônica, injetadas
-          no prefixo do Narrador. Isto corrige cenario.md §9.1, que hoje
-          trata a trava de assunto sensível como obrigação do autor
-          quando o livro manda a lista ser do jogador e editável a
-          qualquer momento.
-
-  ---- ARQUITETURA MODULAR (§78-§86) ----
+  ---- ARQUITETURA MODULAR (§78-§87) ----
   Cinco módulos, cada um em sua PASTA (§79), em seu processo e em sua porta
   (comum/portas.mjs).
   OS CINCO MÓDULOS EXISTEM. Mesa na §78, as pastas na §79, ligar e
@@ -113,14 +121,8 @@ GERAL
   E O CLIENTE JÁ USA (§85): guarda ficha no Módulo 2, faz checkout e
   checkin no Módulo 3, rola pela Mesa e ouve o canal. Com os módulos
   fora, o jogo continua local e a tela diz por quê.
-  O QUE FALTA é levar o desenho ao fim: M4, M8, M9 e M10. Nada disso
+  O QUE FALTA é levar o desenho ao fim: M4, M9 e M10. Nada disso
   bloqueia jogar.
-
-  M8. O ArbitroServer está de pé e ninguém o consulta ........ médio
-      O Árbitro que decide o turno é o do navegador. É o MESMO código
-      do módulo (a §84 carrega os mesmos arquivos num vm), então não há
-      divergência de regra — o que há é um processo que existe e não é
-      usado. Nasceu na §85.
 
   M9. A sessão é espelhada, não autoritativa ................. médio
       O localStorage continua sendo a fonte imediata; o Módulo 3 tem a
@@ -149,6 +151,7 @@ Uma linha por item. O relato está no README, na seção citada.
 ARQUITETURA MODULAR
   M1 ..... o FichaServer (Módulo 2) ............... §83
   M6 ..... a regra de origem, num lugar só ....... §86
+  M8 ..... o Árbitro do servidor, e a conferência  §87
   M7 ..... o aviso de sessão viva ao desligar .... §86
   M2 ..... o Cliente passou a usar os módulos .... §85
   M3 ..... Árbitro e Cronista viraram processos ... §84
@@ -158,6 +161,8 @@ FICHA
   F1-F5 .. os cinco itens da área ................ §47
 
 ÁRBITRO
+  A10 .... seis Perdições de clã eram só texto ... §95
+  A11 .... o Conflito de Rolagem Única ........... §95
   A1 ..... parada de dados podia chegar a zero ... §63.1
   A2 ..... reteste de Vontade só aceitava falha .. §63.2
   A3 ..... empate em combate e a esquiva ......... §63.3
@@ -173,15 +178,25 @@ FRONT
   N1-N4 .. os itens de front .................. §47, §50, §54
   N5, N6 . tamanho dos arquivos de front ...... decisão sua: não entra
   N7 ..... o item restante .................... §54
+  F1 ..... condução do combate fora de mesa.js  §100
   N8 ..... nove funções sem teste direto ...... §54.3
   ....... faixa dizia "simulado" com a IA ligada §75.2
   ....... ids de sessão colidiam sozinhos ..... §75.5
+  ....... aba de Debug: Mesa, Árbitro, Cronista §93
 
 CRONISTA
   ....... teto de tamanho no Cronista ......... §55, removido
   ....... teto de tamanho no Narrador ......... §56, removido
 
 GERAL
+  G4 ..... o extrator erra o arremesso .......... §94, medido: 20/20
+  G6 ..... a leitura de fala não medida ......... §94, medida
+  ....... o relator dizia "0 reprovaram" ........ §94.6
+  ....... Criação e Experiência (135-154) ....... §91
+  ....... Conflito Avançado (295-305) ........... §90
+  ....... Estados de Condenação (233-235) ....... §90
+  ....... Apêndice II: Projetos ................. §89
+  ....... Apêndice III: Linhas, Véus e Carta X .. §89
   ....... testes mostrarem os valores .......... §54.1
   ....... entrada única do jogador ............. §57
   ....... Parte I de regras.md contra o livro .. §58, §59, §60

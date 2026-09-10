@@ -35,7 +35,8 @@ function msgHTML(m) {
     </div>`;
   }
   if (m.autor === 'sistema') {
-    return `<div class="msg sistema${m.critico ? ' critico' : ''}"><span>${esc(m.texto)}</span></div>`;
+    return `<div class="msg sistema${m.critico ? ' critico' : ''}${m.cartaX ? ' carta-x' : ''}">
+      <span>${esc(m.texto)}</span></div>`;
   }
   if (m.autor === 'jogador') return jogadorHTML(m);
 
@@ -56,6 +57,19 @@ function msgHTML(m) {
     return `<div class="msg rolagem-msg">
       <div class="msg-autor" style="color:var(--sangue-viva)">${esc(M.ficha?.nome || 'Você')} rola</div>
       ${DadosUI.cartao(m.resultado, { animar: !!m.animar, id: m.id })}
+    </div>`;
+  }
+
+  /* RETIRADO PELA CARTA X  (§89)
+
+     O texto não some da sessão — some da CENA. Ele continua no
+     registro porque apagá-lo de vez tiraria do jogador a chance de
+     voltar atrás, e porque a sessão é um documento. O que ele deixa
+     de fazer é aparecer, e deixa de viajar para o modelo: quem corta
+     essa metade é `resumirMensagem` em `narrador.js`. */
+  if (m.retirado) {
+    return `<div class="msg narrador retirado">
+      <div class="msg-autor">Narrador <span style="opacity:.5">· retirado pela Carta X</span></div>
     </div>`;
   }
 
@@ -249,7 +263,18 @@ const ABAS_DOCA = [
   { id: 'locais',   rotulo: 'Locais',  conta: () => M.locais.length },
   { id: 'pessoas',  rotulo: 'Pessoas', conta: () => M.pessoas.length },
   { id: 'historia', rotulo: 'História', conta: () => M.fatos.length + M.fios.length },
-  { id: 'registro', rotulo: 'Registro' }
+  { id: 'projetos', rotulo: 'Projetos', conta: () => Projetos.emCurso(M.projetos).length || null },
+  { id: 'xp',       rotulo: 'Experiência',
+    conta: () => Experiencia.carteira(M.ficha).livre || null },
+  { id: 'sangue',   rotulo: 'Sangue',
+    conta: () => (Lacos.normalizar(M.laco).forca || (M.diablerie ? '!' : null)) || null },
+  { id: 'limites',  rotulo: 'Limites',
+    conta: () => {
+      const l = Limites.normalizar(M.limites);
+      return (l.linhas.length + l.veus.length) || null;
+    } },
+  { id: 'registro', rotulo: 'Registro' },
+  { id: 'debug',    rotulo: 'Debug', conta: () => Trafego.linhas.length || null }
 ];
 
 function docaFicha() {
@@ -538,7 +563,11 @@ const GATILHOS_FRENESI = [
 
 const ARMAS_RAPIDAS = ['Desarmado', 'Canivete', 'Bastão', 'Estaca', 'Espada', 'Pistola .22', '9 mm', 'Espingarda'];
 
-const ARMADURAS_RAPIDAS = ['Sem armadura', 'Couro', 'Colete balístico', 'Jaqueta de Kevlar', 'Armadura tática'];
+/* Os nomes do LIVRO (pág. 304). Os que estavam aqui vinham do Escudo e
+   dois deles não casavam com linha nenhuma de `Escudo.ARMADURA` — quem
+   escolhesse "Jaqueta de Kevlar" ficava com armadura zero (§90). */
+const ARMADURAS_RAPIDAS = ['Sem armadura', 'Couro pesado', 'Tecido balístico',
+                           'Colete Kevlar', 'Armadura tática'];
 
 function painelCombateHTML() {
   if (!combateAtivo()) return '';
@@ -582,9 +611,70 @@ function painelCombateHTML() {
         ${Object.entries(Combate.ATAQUES).map(([tipo, a]) =>
           `<span class="chip ${minhaVez ? '' : 'apagado'}" data-mesa="atacar"
             data-id="${o.ref}:${tipo}">${esc(a.nome)}</span>`).join('')}
+        ${M.combate.agarrados[o.ref] ? '' :
+          `<span class="chip ${minhaVez ? '' : 'apagado'}" data-mesa="agarrar"
+            data-id="${o.ref}" title="Força + Briga. Vencendo, você CONTÉM — e não fere (pág. 301).">Agarrar</span>`}
+      </div>
+      ${M.combate.agarrados[o.ref] ? `
+      <div class="chips" style="margin-top:.35rem">
+        <span class="rot" style="width:100%;font-size:.55rem">Agarrado — no seu turno, escolha:</span>
+        ${Agarramento.ESCOLHAS.map(e =>
+          `<span class="chip ${minhaVez ? '' : 'apagado'}" data-mesa="agarramento"
+            data-id="${o.ref}:${e.id}" title="${esc(e.nota)}">${esc(e.nome)}</span>`).join('')}
+      </div>` : ''}
+      <div class="chips" style="margin-top:.35rem">
+        <span class="rot" style="width:100%;font-size:.55rem">Facas em seus sorrisos — pág. 305</span>
+        ${CombateSocial.ROTAS.slice(0, 4).map(r =>
+          `<span class="chip" data-mesa="duelo-social" data-id="${o.ref}:${r.id}"
+            title="${esc(r.nome)} — ${esc(nomeAtributo(r.atributo))} + ${esc(nomeHabilidade(r.pericia))}. Fere a Força de Vontade.">${
+            esc(r.nome.split(' ').slice(0, 3).join(' '))}</span>`).join('')}
       </div>`}
     </div>`;
   }).join('');
+
+  /* AS OPÇÕES DO CONFLITO AVANÇADO  (§90, págs. 298–303)
+
+     Ligadas antes de escolher o alvo, e não junto com ele: o jogador
+     precisa poder olhar o preço antes de bater. As três de cima valem
+     por UM golpe e se apagam sozinhas depois dele; `Ferimentos` é da
+     mesa e fica até alguém desligar. */
+  const op = M.combate.opcoes;
+  const OPCOES = [
+    { id: 'ataqueTotal', nome: 'Ataque Total',
+      nota: '+1 de dano, e você não se defende de nada neste turno. Não vale com surpresa.' },
+    { id: 'defesaTotal', nome: 'Defesa Total',
+      nota: '+1 dado nas suas defesas do turno. Nada além de uma ação menor.' },
+    { id: 'surpresa', nome: 'Surpresa',
+      nota: 'O primeiro ataque surpresa é contra Dificuldade 1 fixa.' },
+    { id: 'ferimentos', nome: 'Ferimentos Incapacitantes',
+      nota: 'Quem for ferido já Debilitado rola 1d10 na tabela da pág. 303. O 13+ é torpor.' }
+  ];
+  const opcoes = `
+    <div class="combate-arma">
+      <span class="rot">Conflito avançado<small>opções do livro, págs. 298–303</small></span>
+      <div class="chips">${OPCOES.map(o =>
+        `<span class="chip ${op[o.id] ? 'on' : ''}" data-mesa="opcao-combate"
+          data-id="${o.id}" title="${esc(o.nota)}">${esc(o.nome)}</span>`).join('')}</div>
+      <div class="campo" style="margin-top:.4rem">
+        <label>Mirar em quê — custa ${Combate.CUSTO_LOCALIZADO} sucessos</label>
+        <input id="mirar-onde" value="${esc(op.localizado || '')}"
+          placeholder="Ex.: o coração · a mão · o pneu">
+      </div>
+      <div class="chips">
+        <span class="chip" data-mesa="mirar-onde" data-id="ok">Mirar</span>
+        <span class="chip" data-mesa="mirar" data-id="o coração">No coração</span>
+        ${op.localizado ? '<span class="chip" data-mesa="mirar" data-id="nada">Parar de mirar</span>' : ''}
+      </div>
+      <div class="campo" style="margin-top:.4rem">
+        <label>Quem está olhando — vale só no combate social</label>
+        <input id="plateia" value="${esc(M.combate.testemunhas || '')}"
+          placeholder="Ex.: O Príncipe · sua coterie · Primogênito">
+      </div>
+      <div class="chips">
+        <span class="chip" data-mesa="plateia" data-id="ok">Anotar a plateia</span>
+        <span class="chip" data-mesa="conceder-social" data-id="x">Conceder o duelo social</span>
+      </div>
+    </div>`;
 
   const ordem = rodada ? `
     <ol class="combate-ordem">
@@ -608,6 +698,7 @@ function painelCombateHTML() {
         `<span class="chip ${suaArma === a ? 'on' : ''}" data-mesa="minha-arma"
           data-id="${esc(a)}">${esc(a)}</span>`).join('')}</div>
     </div>
+    ${opcoes}
     <div class="combate-alvos">${cartoes}</div>
     <div class="chips" style="margin-top:.6rem">
       ${rodada && minhaVez ? '<span class="chip" data-mesa="passar-vez">Passar a vez</span>' : ''}
@@ -845,6 +936,422 @@ function docaEstado() {
   </div>`;
 }
 
+/* ------------------------------------------------------------
+   A DOCA DOS PROJETOS — Apêndice II  (§89)
+   ------------------------------------------------------------ */
+function docaProjetos() {
+  const lista = M.projetos || [];
+
+  const ROTULO_DO_ESTADO = {
+    rascunho:   'anotado, ainda não lançado',
+    lancado:    'em curso',
+    concluido:  'deu certo',
+    fracassado: 'fracassou',
+    encerrado:  'encerrado por você'
+  };
+
+  const cartoes = lista.map(p => {
+    const inc = Projetos.incrementoPor(p.incremento);
+    const emCurso = p.estado === 'lancado';
+    const acabou = p.estado === 'concluido' || p.estado === 'fracassado' || p.estado === 'encerrado';
+    return `
+    <div class="doca-sec">
+      <div class="linha-traco" style="align-items:flex-start">
+        <span class="traco-nome">${esc(p.nome)}
+          <small>${esc(ROTULO_DO_ESTADO[p.estado] || p.estado)}</small></span>
+        <button class="btn fantasma" data-mesa="apagar-projeto" data-id="${esc(p.id)}"
+          title="Tirar da lista">Apagar</button>
+      </div>
+      ${p.objetivo ? `<p class="quiet" style="margin:.3rem 0 .4rem;font-size:.84rem">${esc(p.objetivo)}</p>` : ''}
+      <div class="linha"><span class="rot">Escopo<small>o que ele entrega, e o que ele custa</small></span>
+        <span>${p.escopo} ponto(s)${p.antecedente ? ` em ${esc(p.antecedente)}` : ''}</span></div>
+      <div class="linha"><span class="rot">Parada<small>${esc(p.parada || 'Habilidade + Antecedente')}</small></span>
+        <span>${p.piscina} dado(s)</span></div>
+      ${emCurso ? `
+        <div class="linha"><span class="rot">Dado do Projeto<small>a oposição na rolagem de Objetivo</small></span>
+          <span>${p.dado}</span></div>
+        <div class="linha"><span class="rot">Retido<small>${
+          p.criticoNoLancamento ? 'lançado em crítico: nada foi retido' : 'volta a ser seu quando ele terminar'
+        }</small></span><span>${p.comprometidos} ponto(s)</span></div>
+        <div class="linha"><span class="rot">${esc(inc ? inc.nome : 'Incrementos')} corridos</span>
+          <span>${p.incrementosCorridos}</span></div>
+      ` : `
+        <div class="linha"><span class="rot">Dificuldade do Lançamento<small>Escopo + 2${
+          p.reinicios ? `, mais ${p.reinicios} recomeço(s)` : ''}</small></span>
+          <span>${Projetos.dificuldadeDeLancamento(p)}</span></div>
+      `}
+      ${p.perdidosAlemDoRisco ? `<p class="quiet" style="margin:.3rem 0 0;font-size:.8rem">
+        ${p.perdidosAlemDoRisco} ponto(s) já saíram do Antecedente, além do que estava retido.</p>` : ''}
+      ${acabou ? '' : `<div class="chips" style="margin-top:.5rem">
+        ${emCurso ? `
+          <span class="chip" data-mesa="objetivo-projeto" data-id="${esc(p.id)}">Rolar Objetivo</span>
+          <span class="chip" data-mesa="avancar-projeto" data-id="${esc(p.id)}">Passar um ${
+            esc(inc ? inc.um : 'incremento')}</span>
+        ` : `<span class="chip" data-mesa="lancar-projeto" data-id="${esc(p.id)}">Lançar</span>`}
+        <span class="chip" data-mesa="encerrar-projeto" data-id="${esc(p.id)}">Encerrar</span>
+      </div>`}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="doca-sec">
+    <h4>O que corre entre as noites</h4>
+    <p class="quiet" style="margin:0 0 .6rem;font-size:.82rem">Apêndice II do básico, págs. 415–418.
+    Um plano longo demais para caber numa cena: comprar a Harpia, quebrar o banco, cultivar uma
+    bolsa. O <strong>Escopo</strong> é quantos pontos ele entrega — e é ele que fixa a Dificuldade
+    do Lançamento (Escopo + 2) e o quanto você arrisca. O <strong>Dado do Projeto</strong> começa
+    em 10 e cai um por incremento; quando ele passa de 1, o plano deu certo.</p>
+    <p class="quiet" style="margin:0 0 .6rem;font-size:.8rem">Na rolagem de Objetivo você
+    <strong>não faz crítico</strong> e a oposição faz. O livro chama isso de vantagem da casa do
+    <em>status quo</em>.</p>
+  </div>
+
+  ${cartoes || '<div class="doca-sec"><p class="quiet">Nenhum projeto. Nada seu está correndo entre as noites.</p></div>'}
+
+  <div class="doca-sec">
+    <h4>Anotar um projeto</h4>
+    <div class="campo"><label>O que você quer, em termos de história</label>
+      <input id="prj-nome" placeholder="Ex.: ganhar o coração da Harpia líder"></div>
+    <div class="campo"><label>O que isso muda na cidade</label>
+      <input id="prj-objetivo" placeholder="Ex.: ela passa a dever favores em vez de cobrá-los"></div>
+    <div class="campo"><label>Antecedente que o projeto entrega</label>
+      <input id="prj-antecedente" list="prj-antecedentes" placeholder="Ex.: Status">
+      <datalist id="prj-antecedentes">
+        ${ANTECEDENTES.map(a => `<option value="${esc(a.nome)}"></option>`).join('')}
+      </datalist></div>
+    <div class="campo"><label>Escopo — quantos pontos</label>
+      <input id="prj-escopo" type="number" min="1" max="10" value="1"></div>
+    <div class="campo"><label>A parada, e quantos dados ela dá</label>
+      <input id="prj-parada" placeholder="Ex.: Subterfúgio + Status">
+      <input id="prj-piscina" type="number" min="1" max="20" value="5"></div>
+    <div class="campo"><label>Incremento — quanto tempo passa por rolagem</label>
+      <select id="prj-incremento">
+        ${Projetos.INCREMENTOS.map(i =>
+          `<option value="${esc(i.id)}"${i.id === 'meses' ? ' selected' : ''}>${esc(i.nome)}</option>`).join('')}
+      </select></div>
+    <p class="quiet" style="margin:.3rem 0 .4rem;font-size:.78rem">O incremento é a duração provável
+    dividida por dez. Abaixo de dez dias não é projeto: é teste estendido.</p>
+    <div class="chips"><span class="chip" data-mesa="criar-projeto" data-id="novo">Anotar</span></div>
+  </div>
+
+  <div class="doca-sec">
+    <h4>Cultivar uma bolsa</h4>
+    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">Mudar a Ressonância de uma bolsa é um
+    projeto, e o preço está aqui — não no capítulo de Ressonância. Um toque preenche o formulário
+    acima com o Escopo certo.</p>
+    <div class="chips">
+      ${Projetos.ESCOPO_DA_RESSONANCIA.map(r => `<span class="chip" data-mesa="projeto-de-bolsa"
+        data-id="${esc(r.id)}">${esc(r.rotulo)} — Escopo ${r.escopo}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ------------------------------------------------------------
+   A DOCA DOS LIMITES — Apêndice III  (§89)
+
+   A lista é do jogador. Esta tela é a única do projeto em que o
+   que ele escreve VALE SOBRE o que eu escrevi: o bloco daqui sobe
+   no prefixo do Narrador acima da campanha e acima do cenário.
+   ------------------------------------------------------------ */
+function docaLimites() {
+  const l = Limites.normalizar(M.limites);
+
+  const item = (texto, tipo) => `
+    <div class="linha-traco" style="align-items:flex-start">
+      <span class="traco-nome">${esc(texto)}</span>
+      <span class="chips" style="margin:0">
+        <span class="chip" data-mesa="mover-limite"
+          data-id="${tipo === 'linha' ? 'veu' : 'linha'}:${esc(texto)}">Virar ${
+          tipo === 'linha' ? 'Véu' : 'Linha'}</span>
+        <span class="chip" data-mesa="tirar-limite" data-id="${esc(texto)}">Tirar</span>
+      </span>
+    </div>`;
+
+  const bloco = (tipo, titulo, def, itens) => `
+    <div class="doca-sec">
+      <h4>${esc(titulo)} <small style="font-family:var(--sans);font-size:.6rem;opacity:.5">pág. ${def.pagina}</small></h4>
+      <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">${esc(def.curto)}</p>
+      ${itens.length ? itens.map(x => item(x, tipo)).join('')
+        : '<p class="quiet" style="font-size:.82rem">Nada declarado.</p>'}
+      <div class="campo" style="margin-top:.5rem">
+        <input id="limite-${tipo}" placeholder="Escreva e toque em Declarar">
+      </div>
+      <div class="chips">
+        <span class="chip" data-mesa="declarar-limite" data-id="${tipo}">Declarar como ${esc(def.nome)}</span>
+      </div>
+      ${Limites.sugestoes(l, tipo).length ? `
+        <p class="quiet" style="margin:.5rem 0 .3rem;font-size:.78rem">Sugestões do livro — um toque
+        põe na lista, e nada entra sozinho:</p>
+        <div class="chips">${Limites.sugestoes(l, tipo).map(s =>
+          `<span class="chip" data-mesa="sugerir-limite" data-id="${tipo}:${esc(s)}">${esc(s)}</span>`).join('')}
+        </div>` : ''}
+    </div>`;
+
+  const retiradas = l.retiradas.slice().reverse();
+
+  return `
+  <div class="doca-sec">
+    <h4>O que esta crônica não vai encostar</h4>
+    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">Apêndice III do básico, págs. 419–423.
+    Esta lista é <strong>sua</strong>, vale para esta crônica, e você pode mexer nela a qualquer
+    momento — inclusive no meio de uma cena. Um Véu pode virar Linha, e o contrário também.</p>
+    <p class="quiet" style="margin:0;font-size:.8rem">Deixar tudo vazio não deixa nada solto: o
+    Narrador já tem um piso que não sai daqui, e que ele não pode baixar.</p>
+  </div>
+
+  ${bloco('linha', 'Linhas', Limites.DEFINICAO.linha, l.linhas)}
+  ${bloco('veu', 'Véus', Limites.DEFINICAO.veu, l.veus)}
+
+  <div class="doca-sec">
+    <h4>A Carta X</h4>
+    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">O botão fica sobre a caixa de texto.
+    Ele retira a última narração na hora, sem perguntar por quê — e o Narrador não volta àquilo.
+    Você não deve explicação a ninguém; se quiser, transforme numa Linha ou num Véu abaixo.</p>
+    ${retiradas.length ? retiradas.map(r => `
+      <div class="linha-traco" style="align-items:flex-start">
+        <span class="traco-nome quiet" style="font-weight:400">${esc(r.trecho)}…</span>
+        <span class="chips" style="margin:0">
+          <span class="chip" data-mesa="declarar-retirada" data-id="linha:${esc(r.trecho)}">Vira Linha</span>
+          <span class="chip" data-mesa="declarar-retirada" data-id="veu:${esc(r.trecho)}">Vira Véu</span>
+        </span>
+      </div>`).join('')
+      : '<p class="quiet" style="font-size:.82rem">A carta ainda não foi usada nesta crônica.</p>'}
+  </div>
+
+  <div class="doca-sec">
+    <h4>O que o apêndice tem e esta mesa não</h4>
+    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">São sete técnicas no livro. Três estão
+    aqui; as outras quatro pressupõem gente em volta da mesa, e um jogador só não tem para quem
+    sinalizar. Estão escritas para não parecerem esquecidas:</p>
+    ${Limites.tecnicasFora().map(t => `
+      <div class="linha"><span class="rot">${esc(t.nome)}<small>pág. ${t.pagina}</small></span></div>
+      <p class="quiet" style="margin:0 0 .5rem;font-size:.78rem">${esc(t.porque)}</p>`).join('')}
+  </div>`;
+}
+
+/* ------------------------------------------------------------
+   A DOCA DO SANGUE — Estados de Condenação  (§90, págs. 233–235)
+
+   Três coisas que o sangue de vampiro faz em quem o bebe, e que
+   este projeto não tinha de forma alguma até a §90. Elas estão
+   juntas numa aba só porque o livro as põe juntas num capítulo só,
+   e porque as três se medem em TEMPO: noites, meses, anos.
+   ------------------------------------------------------------ */
+function docaSangue() {
+  const l = Lacos.normalizar(M.laco);
+  const d = M.diablerie;
+  const pontos = (v, max) => `<span class="pontos-mini">${
+    Array.from({ length: max }, (_, i) => `<i class="${i < v ? 'on' : ''}"></i>`).join('')}</span>`;
+
+  const laco = `
+  <div class="doca-sec">
+    <h4>O Laço de Sangue <small style="font-family:var(--sans);font-size:.6rem;opacity:.5">págs. 233–234</small></h4>
+    <p class="quiet" style="margin:0 0 .6rem;font-size:.82rem">Quem bebe fica preso a quem doou.
+    Três noites bastam, e o sangue tem de vir <strong>direto da veia</strong> — de bolsa ele
+    perde o poder de enlaçar em segundos. Quem prende é o <strong>reinante</strong>; quem fica
+    preso é o <strong>escravo</strong>. São as palavras do livro.</p>
+
+    <div class="campo">
+      <label>De quem você bebeu</label>
+      <input id="laco-reinante" value="${esc(l.reinante)}" placeholder="Ex.: Beatriz &quot;Bia&quot; Coutinho">
+    </div>
+    <div class="chips"><span class="chip" data-mesa="reinante" data-id="ok">Anotar</span></div>
+
+    ${l.reinante ? `
+      <div class="linha" style="margin-top:.6rem">
+        <span class="rot">Força do Laço<small>${
+          l.forca >= Lacos.GOLES_PARA_COMPLETO ? 'completo — você é escravo dele'
+          : l.forca ? 'ainda não é um Laço completo' : 'nenhum'}</small></span>
+        <span>${pontos(l.forca, Lacos.FORCA_MAXIMA)}</span>
+      </div>
+      <div class="chips" style="margin-top:.5rem">
+        <span class="chip" data-mesa="beber-do-reinante" data-id="veia">Beber da veia</span>
+        <span class="chip" data-mesa="beber-do-reinante" data-id="bolsa">Beber de bolsa</span>
+      </div>
+      <div class="chips" style="margin-top:.35rem">
+        <span class="chip" data-mesa="resistir-ao-laco" data-id="longe">Agir contra ele — longe</span>
+        <span class="chip" data-mesa="resistir-ao-laco" data-id="presenca">Agir contra ele — na frente dele</span>
+      </div>
+      <p class="quiet" style="margin:.35rem 0 0;font-size:.78rem">Determinação + Inteligência contra
+      a Força do Laço. Longe dele o teste é <strong>um por cena</strong>; na frente dele é
+      <strong>um por turno</strong>, e é isso que torna a presença dele insuportável.</p>
+      <div class="chips" style="margin-top:.5rem">
+        <span class="chip" data-mesa="partir-o-laco" data-id="sessao">Tentar partir (uma vez por sessão)</span>
+        <span class="chip" data-mesa="meses-do-laco" data-id="1">Passou um mês longe</span>
+      </div>
+      <p class="quiet" style="margin:.35rem 0 0;font-size:.78rem">Partir exige evitá-lo por um
+      longo período até a Força chegar a zero. Cada mês inteiro sem uma gota tira um ponto.</p>
+    ` : '<p class="quiet" style="margin-top:.5rem;font-size:.82rem">Nenhum Laço pesa sobre você.</p>'}
+  </div>`;
+
+  const carnical = `
+  <div class="doca-sec">
+    <h4>Carniçais <small style="font-family:var(--sans);font-size:.6rem;opacity:.5">pág. 234</small></h4>
+    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">Uma quantidade de Vitae igual a uma
+    Checagem de Sangue sustenta um mortal ou animal por cerca de <strong>${
+      Lacos.CARNICAL.duracaoEmDias} dias</strong>:</p>
+    ${Lacos.CARNICAL.beneficios.map(b =>
+      `<p class="quiet" style="margin:0 0 .3rem;font-size:.8rem">· ${esc(b)}</p>`).join('')}
+    <p class="quiet" style="margin:.5rem 0 0;font-size:.8rem"><strong>O preço de um poder:</strong>
+    nível 1 é Checagem de Sangue normal; <strong>acima do nível 1</strong> o carniçal sofre
+    ${Lacos.CARNICAL.danoAcimaDoNivel1} de dano Agravado à
+    Vitalidade <em>em vez</em> da Checagem. É troca, não acréscimo.</p>
+    <p class="quiet" style="margin:.4rem 0 0;font-size:.8rem">Vitae guardada em recipiente hermético
+    e longe do sol ainda alimenta carniçal por alguns dias — mas continua sem enlaçar ninguém.</p>
+  </div>`;
+
+  const diablerie = `
+  <div class="doca-sec">
+    <h4>Diablerie <small style="font-family:var(--sans);font-size:.6rem;opacity:.5">págs. 234–235</small></h4>
+    <p class="quiet" style="margin:0 0 .6rem;font-size:.82rem">Beber o vampiro inteiro, e não só o
+    sangue. São duas provas: tomar a centelha — <strong>uma rolagem por turno, e uma falha perde
+    tudo</strong> — e depois segurar o que se tomou. Falhar na primeira custa a vítima; falhar na
+    segunda custa você.</p>
+
+    ${d ? `
+      <div class="linha"><span class="rot">Rolagens<small>Força + Determinação, Dificuldade ${
+        Lacos.DIABLERIE.dificuldade}</small></span>
+        <span>${d.rolagens.length} de ${d.potenciaDaVitima}</span></div>
+      <div class="linha"><span class="rot">Estado</span><span>${
+        d.frustrada ? 'a centelha se apagou' : d.concluida ? 'centelha tomada' : 'em curso'}</span></div>
+      <div class="chips" style="margin-top:.5rem">
+        ${(!d.concluida && !d.frustrada)
+          ? '<span class="chip" data-mesa="rolar-diablerie" data-id="x">Rolar mais uma</span>' : ''}
+        ${d.concluida ? '<span class="chip" data-mesa="consumar-diablerie" data-id="x">Segurar o que tomou</span>' : ''}
+        <span class="chip" data-mesa="abandonar-diablerie" data-id="x">Largar</span>
+      </div>
+    ` : `
+      <div class="campo"><label>Potência de Sangue da vítima</label>
+        <input id="dbl-potencia" type="number" min="1" max="10" value="1"></div>
+      <div class="campo"><label>Geração dela</label>
+        <input id="dbl-geracao" type="number" min="4" max="16" placeholder="Ex.: 10"></div>
+      <div class="campo"><label>Determinação dela</label>
+        <input id="dbl-determinacao" type="number" min="0" max="5" value="2"></div>
+      <div class="campo"><label>Disciplinas que ela conhecia</label>
+        <input id="dbl-disciplinas" placeholder="Presença, Dominação"></div>
+      <div class="chips"><span class="chip" data-mesa="comecar-diablerie" data-id="x">Começar</span></div>
+      <p class="quiet" style="margin:.4rem 0 0;font-size:.78rem">A vítima já tem de estar imobilizada
+      e drenada — isso é cena, não rolagem.</p>
+    `}
+  </div>`;
+
+  return laco + carnical + diablerie;
+}
+
+/* ------------------------------------------------------------
+   A DOCA DA EXPERIÊNCIA  (§91, pág. 151)
+
+   A tabela de custos existia desde sempre e ninguém a chamava; a
+   ficha tinha dois campos de texto — `xpTotal` e `xpGasta` — que o
+   jogador preenchia à mão. Aqui é o caminho que faltava.
+
+   A tela mostra a CONTA ABERTA de propósito. É nela que a regra da
+   pág. 151 fica visível: subir um Atributo de 2 para 4 custa
+   15 + 20 = 35, e não 20, porque não se salta etapa.
+   ------------------------------------------------------------ */
+function docaExperiencia() {
+  const f = M.ficha;
+  const c = Experiencia.carteira(f);
+
+  const alvo = M.compraXP || { classe: 'atributo', id: '', para: 0 };
+  const CLASSES = [
+    { id: 'atributo',       rotulo: 'Atributo' },
+    { id: 'habilidade',     rotulo: 'Habilidade' },
+    { id: 'disciplina',     rotulo: 'Disciplina' },
+    { id: 'vantagem',       rotulo: 'Antecedente' },
+    { id: 'potenciaSangue', rotulo: 'Potência de Sangue' }
+  ];
+
+  /* O que dá para comprar em cada classe, com o nível atual. */
+  const opcoes = {
+    atributo: Object.values(ATRIBUTOS).flatMap(gr => gr.lista)
+      .map(a => ({ id: a.id, nome: a.nome, nivel: (f.atributos || {})[a.id] || 0 })),
+    habilidade: todasHabilidades()
+      .map(h => ({ id: h.id, nome: nomeHabilidade(h.id), nivel: (f.habilidades || {})[h.id] || 0 })),
+    disciplina: Object.keys(DISCIPLINAS)
+      .map(d => ({ id: d, nome: DISCIPLINAS[d].nome, nivel: (f.disciplinas || {})[d] || 0 })),
+    vantagem: ANTECEDENTES
+      .map(a => ({ id: a.id, nome: a.nome, nivel: (f.antecedentes || {})[a.id] || 0 })),
+    potenciaSangue: [{ id: '', nome: 'Potência de Sangue', nivel: derivados(f).potencia }]
+  }[alvo.classe] || [];
+
+  const escolhido = opcoes.find(o => o.id === alvo.id)
+    || (alvo.classe === 'potenciaSangue' ? opcoes[0] : null);
+  const cot = escolhido
+    ? Experiencia.cotar(f, { classe: alvo.classe, id: escolhido.id,
+                             para: alvo.para || (escolhido.nivel + 1) })
+    : null;
+
+  const tabela = Object.entries(Experiencia.CUSTOS).map(([id, x]) => `
+    <div class="linha"><span class="rot">${esc(x.nome)}${x.nota ? `<small>${esc(x.nota)}</small>` : ''}</span>
+      <span>${x.porNivel ? `novo nível × ${x.fator}` : (x.fixo != null ? x.fixo : x.fator)}</span></div>`).join('');
+
+  return `
+  <div class="doca-sec">
+    <h4>Experiência <small style="font-family:var(--sans);font-size:.6rem;opacity:.5">pág. 151</small></h4>
+    <div class="linha"><span class="rot">Ganha<small>uma por sessão, mais Ambição cumprida</small></span>
+      <span>${c.total}</span></div>
+    <div class="linha"><span class="rot">Gasta</span><span>${c.gasta}</span></div>
+    <div class="linha"><span class="rot">Livre<small>o que dá para gastar agora</small></span>
+      <span><b class="gold">${c.livre}</b></span></div>
+  </div>
+
+  <div class="doca-sec">
+    <h4>Comprar</h4>
+    <div class="chips">${CLASSES.map(x =>
+      `<span class="chip ${alvo.classe === x.id ? 'on' : ''}" data-mesa="xp-classe"
+        data-id="${x.id}">${esc(x.rotulo)}</span>`).join('')}</div>
+
+    ${opcoes.length > 1 ? `
+      <div class="campo" style="margin-top:.5rem">
+        <label>O quê</label>
+        <select id="xp-alvo" data-mesa-campo="compraXPId">
+          <option value="">—</option>
+          ${opcoes.map(o => `<option value="${esc(o.id)}" ${o.id === alvo.id ? 'selected' : ''}>${
+            esc(o.nome)} · ${o.nivel}</option>`).join('')}
+        </select>
+      </div>` : ''}
+
+    ${cot ? `
+      <div class="linha" style="margin-top:.5rem">
+        <span class="rot">${esc(cot.nome)}<small>${cot.de} → ${cot.para}</small></span>
+        <span>${cot.custo != null ? `${cot.custo} de experiência` : '—'}</span>
+      </div>
+      ${cot.explicacao && cot.salto ? `<p class="quiet" style="margin:.2rem 0 0;font-size:.8rem">
+        <b>${esc(cot.explicacao)}</b> — não se salta etapa (pág. 151).</p>` : ''}
+      ${cot.motivo ? `<p class="quiet" style="margin:.3rem 0 0;font-size:.82rem">${esc(cot.motivo)}</p>` : ''}
+      <div class="chips" style="margin-top:.45rem">
+        <span class="chip" data-mesa="xp-nivel" data-id="-1">− um nível</span>
+        <span class="chip" data-mesa="xp-nivel" data-id="1">+ um nível</span>
+        <span class="chip ${cot.possivel ? '' : 'apagado'}" data-mesa="xp-comprar" data-id="ok">Comprar</span>
+      </div>
+    ` : '<p class="quiet" style="margin-top:.5rem;font-size:.82rem">Escolha o que comprar.</p>'}
+  </div>
+
+  <div class="doca-sec">
+    <h4>Especialização</h4>
+    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">Custo fixo de
+    ${Experiencia.custoDe('especializacao')}, e ela precisa de pelo menos um ponto na Habilidade.</p>
+    <div class="campo"><label>Em qual Habilidade</label>
+      <select id="xp-esp-hab">
+        ${todasHabilidades().filter(h => (f.habilidades || {})[h.id] > 0)
+          .map(h => `<option value="${esc(h.id)}">${esc(nomeHabilidade(h.id))}</option>`).join('')
+          || '<option value="">— nenhuma Habilidade com pontos —</option>'}
+      </select></div>
+    <div class="campo"><label>Qual especialização</label>
+      <input id="xp-esp-texto" placeholder="Ex.: Facas"></div>
+    <div class="chips"><span class="chip" data-mesa="xp-especializacao" data-id="ok">Comprar</span></div>
+  </div>
+
+  <div class="doca-sec">
+    <h4>A tabela do livro</h4>
+    ${tabela}
+    <p class="quiet" style="margin:.5rem 0 0;font-size:.8rem">"Novo nível" é o nível que você
+    <b>deseja comprar</b>, e não o que você tem. E não se salta etapa: para chegar ao quarto ponto
+    é preciso comprar o terceiro antes, e pagar os dois.</p>
+  </div>`;
+}
+
 function docaRegistro() {
   return cronistaHTML() + (!M.registro.length ? '<p class="quiet">Sem registros.</p>'
     : registroHTML());
@@ -918,6 +1425,76 @@ function hudHTML() {
     <div class="hud-item"><span class="rot">Humanidade</span>${pips(d.humanidade, 10, 'hum')}</div>`;
 }
 
+/* ------------------------------------------------------------
+   A DOCA DE DEBUG — o que foi de um lado para o outro  (§93)
+
+   As outras dez abas mostram ESTADO: a ficha como está, os
+   estados ligados, os projetos em curso. Esta mostra CONVERSA —
+   o que a Mesa perguntou, para quem, com que carga, e o que
+   voltou.
+
+   Mais recente em cima, porque quem abre esta aba está atrás do
+   último turno, e não do primeiro.
+
+   Nada aqui vem de `M`: as linhas e o filtro moram no `Trafego`,
+   pelas razões escritas no cabeçalho dele.
+   ------------------------------------------------------------ */
+function docaDebug() {
+  const v = Trafego.vista;
+  const linhas = Trafego.filtrar(v.par).slice().reverse();
+
+  const hora = (ts) => new Date(ts).toLocaleTimeString('pt-BR', { hour12: false });
+
+  const cartoes = linhas.map(l => {
+    const de = Trafego.LADOS[l.de], para = Trafego.LADOS[l.para];
+    const aberta = v.aberta === l.id;
+    return `
+    <div class="trafego${l.erro ? ' falhou' : ''}${aberta ? ' aberta' : ''}"
+         data-mesa="debug-linha" data-id="${l.id}">
+      <div class="trafego-topo">
+        <span class="trafego-lados"><b class="lado-${de.cor}">${esc(de.nome)}</b>
+          <i>→</i> <b class="lado-${para.cor}">${esc(para.nome)}</b></span>
+        <span class="trafego-via">${esc(l.via)}</span>
+        <span class="trafego-hora">${hora(l.ts)}${l.ms != null ? ` · ${l.ms} ms` : ''}</span>
+      </div>
+      <div class="trafego-assunto">${esc(l.assunto)}</div>
+      ${l.erro ? `<div class="trafego-erro">${esc(l.erro)}</div>` : ''}
+      ${!l.carga ? ''
+        : aberta ? `<pre class="trafego-carga">${esc(l.carga)}</pre>`
+        : '<div class="trafego-dica">clique para ver a carga</div>'}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="doca-sec">
+    <h4>O que foi de um lado para o outro</h4>
+    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">A conversa entre a <b>Mesa</b>, o
+    <b>Árbitro</b> e o <b>Cronista</b>, na ordem em que aconteceu — a mais recente em cima.
+    Clique numa linha para abrir a carga que ela levou.</p>
+    <p class="quiet" style="margin:0 0 .6rem;font-size:.78rem">Este registro fica só na memória
+    desta aba: não entra na sessão salva, não sobe para servidor nenhum e some ao recarregar a
+    página. É de propósito — um registro de cargas dentro da sessão estouraria o armazenamento do
+    navegador e mandaria a ficha ao Módulo 3 mais uma vez por turno.</p>
+    <div class="chips">${Trafego.PARES.map(p =>
+      `<span class="chip${v.par === p.id ? ' on' : ''}" data-mesa="debug-par"
+        data-id="${p.id}">${esc(p.rotulo)}</span>`).join('')}</div>
+    <div class="linha" style="margin-top:.5rem">
+      <span class="rot">À vista<small>de ${Trafego.total} que já passaram · o registro guarda as
+        últimas ${Trafego.LIMITE}</small></span>
+      <span>${linhas.length}</span>
+    </div>
+    <div class="chips">
+      <span class="chip" data-mesa="debug-copiar" data-id="ok">${
+        v.copiado ? 'Copiado' : 'Copiar o que está à vista'}</span>
+      <span class="chip${v.armado ? ' on' : ''}" data-mesa="debug-limpar" data-id="ok">${
+        v.armado ? 'Apagar mesmo?' : 'Limpar'}</span>
+    </div>
+  </div>
+
+  ${cartoes || `<div class="doca-sec"><p class="quiet">Nada${
+    v.par === 'tudo' ? ' ainda' : ' neste filtro'}. Jogue um turno.</p></div>`}`;
+}
+
 function abasHTML() {
   return ABAS_DOCA.map(a => {
     const n = a.conta ? a.conta() : null;
@@ -932,7 +1509,9 @@ function corpoDocaHTML() {
   return ({
     ficha: docaFicha, estado: docaEstado, bolsa: docaBolsa,
     locais: docaLocais, pessoas: docaPessoas,
-    historia: docaHistoria, registro: docaRegistro
+    historia: docaHistoria, projetos: docaProjetos, xp: docaExperiencia,
+    sangue: docaSangue, limites: docaLimites,
+    registro: docaRegistro, debug: docaDebug
   }[M.aba] || docaFicha)();
 }
 
@@ -1015,6 +1594,20 @@ function leituraHTML() {
 
 function compositorHTML() {
   return `
+    <!-- A CARTA X FICA NO CENTRO DA MESA  (§89, básico pág. 422)
+
+         O livro põe a carta no meio, ao alcance de todo mundo, e não
+         numa gaveta. Aqui isso quer dizer: em cima da caixa de texto,
+         sempre visível, e nunca dentro de um menu. Ela age no toque —
+         sem confirmação e sem pedir motivo. -->
+    <div class="calibragem">
+      <span class="chip carta-x" data-mesa="carta-x" data-id="x"
+        title="Retira a última narração. Você não precisa dizer por quê.">✕ Carta X</span>
+      <span class="chip ${M.pedidoDeFade ? 'on' : ''}" data-mesa="desvanecer" data-id="fade"
+        title="A cena corta aqui e o jogo segue depois dela.">Desvanecer</span>
+      <span class="chip" data-mesa="aba" data-id="limites"
+        title="Linhas e Véus desta crônica">Limites</span>
+    </div>
     <div class="caixa-envio">
       <textarea id="entrada" rows="1" placeholder="${esc(DICA_ENTRADA)}"
         ${mesaOcupada ? 'disabled' : ''}>${esc(M.rascunho)}</textarea>

@@ -237,9 +237,103 @@ function render() {
 /* ------------------------------------------------------------
    CAPA E LORE
    ------------------------------------------------------------ */
+/* A FICHA EM ANDAMENTO, SE HOUVER.  (§92)
+
+   `carregar()` restaura `{S, passo}` do `localStorage` e existia desde
+   sempre — com uma ação `continuar` para chamá-la e **nenhum botão que
+   a acionasse**. Era uma ação morta, do mesmo tipo das tabelas que a
+   §67, a §90 e a §91 acharam: o caminho existia até a metade.
+
+   Sem esse botão, "Criar personagem" era o único jeito de entrar no
+   criador, e por isso ele não podia limpar nada. Com ele, os dois
+   caminhos ficam separados e cada um faz o que o nome diz. */
+function fichaEmAndamento() {
+  try {
+    const raw = localStorage.getItem('vitae:ficha');
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    const f = d && d.S;
+    /* Ficha sem nome e sem clã é criador aberto e não preenchido: não
+       vale oferecer "continuar" o nada. */
+    if (!f || (!f.nome && !f.cla)) return null;
+    return { nome: f.nome, cla: f.cla, passo: d.passo || 0 };
+  } catch (e) {
+    console.warn('não deu para ler a ficha em andamento:', e && e.message);
+    return null;
+  }
+}
+
+/* ------------------------------------------------------------
+   OS TRÊS VERBOS DO CRIADOR  (§92)
+
+   Eles moram aqui fora, e não dentro do `switch` do ouvinte de
+   clique, pela lição da §91: regra escondida num `case` não tem como
+   ser testada sem simular clique — e a mutação passa em verde.
+   ------------------------------------------------------------ */
+
+/* COMEÇAR. Um personagem novo é uma ficha nova — e o criador tem UMA
+   vaga, então começar outro descarta o que estava nela.
+
+   A primeira versão desta correção zerava e salvava por cima, e assim
+   apagava a ficha em andamento em silêncio: pior do que o defeito que
+   ela veio consertar. Quem mostrou foi o teste no navegador — depois
+   de "começar de novo", a capa parava de oferecer "Continuar", porque
+   não havia mais o que continuar.
+
+   Dois cliques, como a §37.4 manda e como já fazem `reiniciar`,
+   `apagar-sessao` e `desligar-tudo`. Sem ficha em andamento não há
+   pergunta: o caso comum não paga por isto. */
+function comecarNovaFicha() {
+  const emAndamento = fichaEmAndamento();
+  if (emAndamento && !novaArmada) {
+    novaArmada = true;
+    return { armou: true, criou: false,
+      aviso: `Há uma ficha em andamento${emAndamento.nome ? ` — ${emAndamento.nome}` : ''}. `
+           + 'Clique de novo para descartá-la, ou use Continuar.' };
+  }
+  novaArmada = false;
+  novaFicha();
+  return { armou: false, criou: true, aviso: '' };
+}
+
+function novaFicha() {
+  S = FICHA_VAZIA();
+  passo = 0;
+  salvar();
+  return S;
+}
+
+/* FINALIZAR. Guarda na biblioteca **e** limpa o criador. Só limpa se
+   guardou: perder a ficha porque o armazenamento recusou seria trocar
+   um incômodo por um estrago. */
+function finalizarFicha() {
+  if (!S.nome || !S.cla) {
+    return { finalizou: false, aviso: 'Dê um nome e um clã antes de finalizar.' };
+  }
+  const { problemas } = pendenciasDaFicha(S);
+  const nome = S.nome;
+  if (!guardarFicha(S)) {
+    return { finalizou: false, aviso: 'Não consegui guardar — o armazenamento recusou.' };
+  }
+  if (typeof Ponte !== 'undefined') Ponte.guardarFicha(S);
+
+  S = FICHA_VAZIA();
+  passo = 0;
+  /* O criador zera de verdade: sem isto, "Continuar" na capa
+     ofereceria a ficha que acabou de ser finalizada. */
+  try { localStorage.removeItem('vitae:ficha'); }
+  catch (e) { console.warn('não deu para limpar o criador:', e && e.message); }
+
+  return { finalizou: true, nome, pendencias: problemas.length,
+    aviso: problemas.length
+      ? `${nome} foi para a biblioteca com ${problemas.length} pendência(s). O criador está limpo.`
+      : `${nome} foi para a biblioteca. O criador está limpo.` };
+}
+
 function renderCapa() {
   /* Sai da trilha do criador: o próximo render() reconstrói tudo (§71). */
   ultimoPassoRenderizado = null;
+  const emAndamento = fichaEmAndamento();
   $('#app').innerHTML = `
   <div class="capa">
     <div class="sub">Vampiro: A Máscara — 5ª Edição</div>
@@ -250,7 +344,10 @@ function renderCapa() {
     te trazer de volta com fome. Agora escolha o que restou de você — e a cidade brasileira
     que vai assistir enquanto você se perde.</p>
     <div style="display:flex;gap:.8rem;flex-wrap:wrap;justify-content:center">
-      <button class="btn primario" data-acao="comecar">Criar personagem</button>
+      <button class="btn primario" data-acao="comecar">${novaArmada
+        ? 'Descartar a em andamento e criar?' : 'Criar personagem'}</button>
+      ${emAndamento ? `<button class="btn" data-acao="continuar">Continuar ${
+        esc(emAndamento.nome || 'a ficha em andamento')}</button>` : ''}
       <button class="btn" data-acao="fichas">Fichas</button>
       <button class="btn" data-acao="mesa">Jogar uma noite</button>
       <button class="btn" data-acao="lore">O Brasil das Trevas</button>
@@ -289,6 +386,19 @@ function painelSistemasHTML() {
       <span class="sis-detalhe">${esc(l.detalhe || '')}</span>
     </div>`;
 
+  /* A CONFERÊNCIA APARECE NA LINHA DO ÁRBITRO.  (§87, item M8)
+
+     O Módulo 4 devolve a mesma resposta que o navegador calcula — é o
+     mesmo código. Então o que vale mostrar dele não é "respondeu": é se
+     as duas cópias CONCORDARAM. Divergência aqui quer dizer `.js` velho
+     em cache (a §36) ou módulo numa versão diferente, e é a única coisa
+     que o jogador precisa saber sobre este módulo. */
+  const detalheDoModulo = (m) => {
+    if (m.id !== 'arbitro' || !m.ligado) return m.detalhe || '';
+    const d = (typeof Ponte !== 'undefined') ? Ponte.divergencias : 0;
+    return d ? `${d} divergência(s) — recarregue` : m.detalhe || '';
+  };
+
   /* Dois estados, e não três. A luz oca da §80 existia para os módulos
      que eram porta reservada sem processo atrás; desde a §84 os cinco
      existem, e um estado que nunca ocorre é folclore. */
@@ -296,7 +406,7 @@ function painelSistemasHTML() {
     <div class="sis-linha ${m.ligado ? 'on' : 'off'}" title="${esc(m.nota || '')}">
       <span class="sis-luz"></span>
       <span class="sis-nome">${esc(m.numero)}. ${esc(m.nome)}</span>
-      <span class="sis-detalhe">${esc(m.detalhe || '')}</span>
+      <span class="sis-detalhe">${esc(detalheDoModulo(m))}</span>
     </div>`;
 
   if (sistemas.estado === 'sondando') {
@@ -556,6 +666,9 @@ async function desligarSistemas({ servidor = false } = {}) {
 let fichaAberta = '';
 let fichaParaApagar = '';
 let reiniciarArmado = false;
+/* §92 — "Criar personagem" pergunta uma vez quando há ficha em
+   andamento, e só então descarta. */
+let novaArmada = false;
 
 function renderFichas() {
   /* Sai da trilha do criador: o próximo render() reconstrói tudo (§71). */
@@ -698,9 +811,34 @@ document.addEventListener('click', (e) => {
 
   if (fichaParaApagar && acao !== 'apagar-ficha') fichaParaApagar = '';
   if (reiniciarArmado && acao !== 'reiniciar') reiniciarArmado = false;
+  if (novaArmada && acao !== 'comecar') novaArmada = false;
 
   switch (true) {
-    case acao === 'comecar':   passo = 0; render(); return;
+    /* "CRIAR PERSONAGEM" CRIA UM PERSONAGEM.  (§92)
+
+       Ele só mexia no `passo`, e deixava o `S` de pé — então quem
+       guardasse uma ficha e clicasse aqui de novo continuava editando
+       a mesma, sem aviso. A ficha em andamento não se perde: ela
+       continua no `localStorage`, e a capa oferece "Continuar" quando
+       existe uma. */
+    /* E ele PERGUNTA quando há trabalho em andamento.
+
+       A primeira versão desta correção zerava o `S` e salvava por cima
+       — e com isso "Criar personagem" apagava a ficha em andamento em
+       silêncio, que é pior do que o defeito que ela veio consertar. O
+       teste no navegador mostrou: depois de começar de novo, a capa
+       parava de oferecer "Continuar", porque não havia mais o que
+       continuar.
+
+       Dois cliques, como manda a §37.4 e como já fazem `reiniciar`,
+       `apagar-sessao` e `desligar-tudo`. Sem ficha em andamento não há
+       pergunta: o caso comum não paga por isto. */
+    case acao === 'comecar': {
+      const r = comecarNovaFicha();
+      if (r.armou) { renderCapa(); toast(r.aviso); return; }
+      render(); return;
+    }
+
     case acao === 'continuar': carregar(); render(); return;
     case acao === 'capa':      renderCapa(); return;
 
@@ -734,6 +872,28 @@ document.addEventListener('click', (e) => {
         ? `Guardada com ${problemas.length} pendência(s).`
         : 'Ficha guardada na biblioteca.');
       render(); return;
+    }
+
+    /* FINALIZAR = GUARDAR **E** SAIR.  (§92)
+
+       O criador tinha dois botões e faltava o do meio:
+
+         "Guardar na biblioteca"  grava e continua editando;
+         "Começar de novo"        limpa e NÃO grava.
+
+       Não havia como dizer "terminei" — e como guardar não limpava, a
+       ficha ficava aberta no criador depois de pronta. O próximo
+       personagem começava por cima do anterior, o que é o defeito
+       que se via: "a ficha editada está ficando salva no criador".
+
+       Aqui não há duplo clique de confirmação, e é de propósito: isto
+       não destrói nada. A ficha vai para a biblioteca ANTES de o
+       criador ser limpo, e só é limpo se a gravação deu certo. */
+    case acao === 'finalizar-ficha': {
+      const r = finalizarFicha();
+      toast(r.aviso);
+      if (r.finalizou) renderCapa();
+      return;
     }
 
     case acao === 'abrir-ficha': {
@@ -914,6 +1074,62 @@ document.addEventListener('click', (e) => {
       if (!id) { S.habilidades = {}; S.especializacoes = {}; }
       render(); return;
 
+    /* ----------------------------------------------------------
+       A VIDA HUMANA  (§91, págs. 145–146)
+
+       Enquanto o jogador monta, nada é escrito na ficha: `S.vidaHumana`
+       guarda as escolhas e `Criacao.montar` faz a conta. Só o botão
+       "Levar isto para a ficha" grava — e é aí que a distribuição
+       correspondente é ligada, porque é ela que o resto do criador
+       usa para contar cotas.
+       ---------------------------------------------------------- */
+    case acao === 'vida-prof':
+      S.vidaHumana.profissao = S.vidaHumana.profissao === id ? '' : id;
+      S.vidaHumana.opcoes = {};
+      render(); return;
+
+    case acao === 'vida-evento':
+      S.vidaHumana.evento = S.vidaHumana.evento === id ? '' : id;
+      delete S.vidaHumana.opcoes.evento;
+      render(); return;
+
+    case acao === 'vida-hobby': {
+      const lista = S.vidaHumana.passatempos;
+      const i = lista.indexOf(id);
+      if (i >= 0) lista.splice(i, 1);
+      else if (lista.length < Criacao.QUANTOS_PASSATEMPOS) lista.push(id);
+      else toast(`O livro pede ${Criacao.QUANTOS_PASSATEMPOS} passatempos.`);
+      render(); return;
+    }
+
+    case acao === 'vida-opcao': {
+      const corte = id.lastIndexOf('|');
+      S.vidaHumana.opcoes[id.slice(0, corte)] = id.slice(corte + 1);
+      render(); return;
+    }
+
+    case acao === 'vida-adicionais':
+      S.vidaHumana.adicionais = S.vidaHumana.adicionais === id ? '' : id;
+      render(); return;
+
+    case acao === 'vida-aplicar': {
+      const r = Criacao.montar(S.vidaHumana);
+      if (r.falta.length) { toast(`Falta: ${r.falta.join(', ')}.`); return; }
+      S.habilidades = Object.assign({}, r.pontos);
+      /* A especialização profissional do livro, quando o pacote a
+         nomeia — "as palavras entre parênteses representam
+         especializações" (pág. 145). */
+      (r.profissao.tres.concat(r.profissao.dois)).forEach(s => {
+        if (!s.espec) return;
+        const hid = s.fixo || (S.vidaHumana.opcoes[''] || (s.escolha || [])[0]);
+        if (hid && S.habilidades[hid]) S.especializacoes[hid] = s.espec;
+      });
+      S.modoHabilidade = r.distribuicao;
+      toast(`A vida ficou na ficha, na distribuição ${DIST_HABILIDADES[r.distribuicao].nome}. `
+          + `Falta o que os Adicionais dão.`);
+      render(); return;
+    }
+
     case acao === 'predador':
       if (S.predador !== id) {
         const antigo = S.predadorDisciplina;
@@ -930,13 +1146,28 @@ document.addEventListener('click', (e) => {
       S.predadorDisciplina = S.predadorDisciplina === id ? '' : id;
       render(); return;
 
-    case acao === 'predespec':
-      S.predadorEspec = S.predadorEspec === id ? '' : id;
-      if (S.predadorEspec) {
-        const [hid, nome] = id.split('|');
-        S.especializacoes[hid] = nome;
+    /* A ESPECIALIZAÇÃO DO PREDADOR PODE VIR COM UM PONTO.  (§91)
+
+       "Se um tipo de Predador adicionar uma especialização cuja
+        Habilidade correspondente VOCÊ NÃO POSSUA, ganhe um ponto nessa
+        Habilidade."                                (básico, pág. 149)
+
+       Sem isso, o Predador entregava uma especialização pendurada numa
+       Habilidade zerada — e especialização em Habilidade que ninguém
+       tem é enfeite: ela só soma quando aquela Habilidade rola. O livro
+       fecha esse buraco, e o motor não fechava.
+
+       O ponto é do Predador, e por isso ele NÃO gasta cota de
+       Habilidades: `pontoDoPredador` marca de onde ele veio, para a
+       contagem do painel não o cobrar e para tirá-lo se o jogador
+       trocar de especialização. */
+    case acao === 'predespec': {
+      const r = especializacaoDoPredador(S, S.predadorEspec === id ? '' : id);
+      if (r.ganhouPonto) {
+        toast(`${nomeHabilidade(r.habilidade)} estava em zero: o Predador dá o primeiro ponto (pág. 149).`);
       }
       render(); return;
+    }
 
     case acao === 'ressonancia': S.ressonancia = S.ressonancia === id ? '' : id; render(); return;
 

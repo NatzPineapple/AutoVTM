@@ -53,6 +53,16 @@ const FICHA_VAZIA = () => ({
   aparencia: '', historia: '', tracos: '', notas: '', principios: '',
   idadeVerdadeira: '', idadeAparente: '', dataNascimento: '', dataMorte: '',
   xpTotal: '', xpGasta: '',
+  /* §91 — a Habilidade que ganhou o ponto do Predador (pág. 149).
+     Guardar QUAL permite tirá-lo se o jogador trocar de especialização,
+     e mantê-lo fora da cota da distribuição escolhida. */
+  pontoDoPredador: '',
+  /* §91 — o que a experiência comprou de Potência de Sangue. */
+  potenciaMod: 0,
+  /* §91 — o método das págs. 145–146. Guarda as ESCOLHAS, e não os
+     pontos: a conta é refeita a cada render, e só o botão de aplicar
+     escreve em `habilidades`. */
+  vidaHumana: { profissao: '', evento: '', passatempos: [], adicionais: '', opcoes: {} },
   vistaFicha: 'oficial'
 });
 
@@ -68,6 +78,30 @@ function predadorDe(id) {
 }
 
 function perfilDe(f)      { return Seitas.perfil((f || {}).seita); }
+
+/* §91 — Retentores virou Lacaios e Mentor virou Mawla, que são os
+   nomes do livro (pág. 153). Ficha salva com o id velho não pode
+   perder os pontos em silêncio: é a mesma migração que os Predadores
+   ganharam na §77, pela mesma lição da §75.5.
+
+   A conversão é feita NA FICHA, e não só na leitura, porque os pontos
+   vivem num objeto indexado por id — ler por um nome e gravar por
+   outro deixaria a ficha com as duas chaves. */
+function migrarAntecedentes(f) {
+  if (!f || !f.antecedentes || typeof ANTECEDENTES_RENOMEADOS === 'undefined') return f;
+  for (const [velho, novo] of Object.entries(ANTECEDENTES_RENOMEADOS)) {
+    if (!(velho in f.antecedentes)) continue;
+    const pontos = f.antecedentes[velho] || 0;
+    delete f.antecedentes[velho];
+    if (pontos) f.antecedentes[novo] = Math.max(f.antecedentes[novo] || 0, pontos);
+  }
+  return f;
+}
+
+function antecedenteDe(id) {
+  const alvo = (typeof ANTECEDENTES_RENOMEADOS !== 'undefined' && ANTECEDENTES_RENOMEADOS[id]) || id;
+  return ANTECEDENTES.find(a => a.id === alvo) || null;
+}
 
 /* Traço para nome legível. `nomeHabilidade` já morava na área, em
    `ficha-regras.js`; `nomeAtributo` estava em `front/mesa-render.js`

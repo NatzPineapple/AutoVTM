@@ -23,7 +23,9 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import http from 'node:http';
 import { RAIZ } from './carregar.mjs';
+import { foiEstouroDeTempo } from '../comum/estouro.mjs';
 
 /* Os dois juízes — Narrador e Cronista — leem a MESMA lista negra, da
    mesma seção do guia. O teste lê da fonte, não de uma cópia. */
@@ -944,6 +946,266 @@ test('Servidor — os módulos no diagnóstico (§80)', async (t) => {
   });
 });
 
+/* ============================================================
+   O GATEWAY E OS DOIS TEMPOS-LIMITE  (§97)
+
+   Nasceu de um registro de tráfego real: uma narração morrendo em
+   20.060 ms com "o módulo cronista não respondeu" — e o módulo no ar.
+   Um número só valia para tudo, e ele era do tamanho de um checkout,
+   não do tamanho de um 12B narrando um turno.
+
+   O arreio sobe um módulo de MENTIRA que só dorme. É o único jeito de
+   afirmar isto sem depender de um modelo instalado, e o que se afirma é
+   sobre o Gateway, não sobre o modelo.
+   ============================================================ */
+test('Gateway — esperar um modelo não é o mesmo que esperar um módulo (§97)', async (t) => {
+  const PORTA_G = 43310;
+  const PORTA_C = PORTA_G + 4;
+  const BASE_G = `http://127.0.0.1:${PORTA_G}`;
+
+  /* O módulo de mentira: responde, mas devagar. */
+  let demora = 0;
+  const lerdo = http.createServer((req, res) => {
+    setTimeout(() => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, texto: 'narrei', demorou: demora }));
+    }, demora);
+  });
+  await new Promise(ok => lerdo.listen(PORTA_C, '127.0.0.1', ok));
+
+  const proxy = spawn(process.execPath, [path.join(RAIZ, 'modulos', 'gateway', 'proxy.mjs')], {
+    cwd: RAIZ,
+    env: Object.assign({}, process.env, {
+      PORTA: String(PORTA_G),
+      VITAE_ESCUTAR: '127.0.0.1',
+      OLLAMA_HOST: 'http://127.0.0.1:1',
+      VITAE_PORTA_CRONISTA: String(PORTA_C),
+      /* portas mortas para os outros três: um deles é o caso "fora do ar" */
+      VITAE_PORTA_FICHA: String(PORTA_G + 1),
+      VITAE_PORTA_MESA: String(PORTA_G + 2),
+      VITAE_PORTA_ARBITRO: String(PORTA_G + 3),
+      /* Os dois orçamentos, encolhidos para o teste durar menos de 3 s.
+         A PROPORÇÃO é o que importa, e ela é a de produção: o do modelo
+         é muito maior do que o dos outros. */
+      VITAE_TEMPO_MODULO: '250',
+      VITAE_TEMPO_MODELO: '4000'
+    }),
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  await new Promise((ok, falha) => {
+    proxy.stdout.on('data', d => { if (String(d).includes('VITÆ em')) ok(); });
+    proxy.on('exit', c => falha(new Error(`o proxy saiu com ${c}`)));
+  });
+
+  const narrar = () => fetch(`${BASE_G}/api/narrador`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: BASE_G },
+    body: JSON.stringify({ texto: 'sigo' })
+  });
+
+  try {
+    await t.test('a rota do modelo NÃO é cortada no tempo dos módulos', async (t2) => {
+      demora = 900;                       /* passa dos 250 ms, cabe nos 4000 */
+      const t0 = Date.now();
+      const r = await narrar();
+      const corpo = await r.json();
+      t2.diagnostic(`${r.status} em ${Date.now() - t0} ms · ${JSON.stringify(corpo).slice(0, 60)}`);
+      assert.equal(r.status, 200,
+        'a narração foi cortada no orçamento dos módulos — é o defeito da §97 de volta');
+      assert.equal(corpo.texto, 'narrei');
+    });
+
+    await t.test('mas ela tem um teto, e ele diz que ESGOTOU', async (t2) => {
+      demora = 6000;                      /* passa até dos 4000 */
+      const t0 = Date.now();
+      const r = await narrar();
+      const corpo = await r.json();
+      t2.diagnostic(`${r.status} em ${Date.now() - t0} ms · ${corpo.erro}`);
+      assert.equal(r.status, 504, 'desistir de esperar tem código próprio');
+      assert.equal(corpo.esgotou, true);
+      assert.equal(corpo.tempoLimite, 4000);
+      assert.match(corpo.erro, /está no ar/);
+      /* O conselho errado é pior do que conselho nenhum: quem depura
+         sobe de novo o que já subiu e continua sem entender. */
+      assert.equal(corpo.comando, undefined,
+        'o timeout mandou subir um módulo que está no ar');
+    });
+
+    await t.test('módulo FORA DO AR continua sendo 503, com o comando de subir', async (t2) => {
+      const r = await fetch(`${BASE_G}/api/mesa/saude`);
+      const corpo = await r.json();
+      t2.diagnostic(`${r.status} · ${corpo.erro} · ${corpo.comando || '(sem comando)'}`);
+      assert.equal(r.status, 503, 'fora do ar deixou de ser 503');
+      assert.match(corpo.comando || '', /mesa-servidor\.mjs/,
+        'quem está fora do ar precisa do comando de subir');
+      assert.equal(corpo.esgotou, undefined, 'fora do ar foi marcado como esgotado');
+    });
+
+    await t.test('a sonda HEAD não ganha o orçamento do modelo', async (t2) => {
+      /* Sonda que espera cinco minutos não é sonda: ela existe para
+         dizer depressa se o elo existe. */
+      demora = 900;
+      const t0 = Date.now();
+      const r = await fetch(`${BASE_G}/api/intencao`, { method: 'HEAD' });
+      const levou = Date.now() - t0;
+      t2.diagnostic(`HEAD ${r.status} em ${levou} ms`);
+      assert.ok(levou < 800,
+        `a sonda esperou ${levou} ms: ela caiu no orçamento do modelo`);
+    });
+  } finally {
+    proxy.kill();
+    await new Promise(ok => lerdo.close(ok));
+  }
+});
+
+/* ============================================================
+   O PADRÃO DA ROTA DE MODELO É NÃO TER TETO  (§98)
+
+   A §97 trocou 20 s por 300 s, e ainda era um teto do Gateway sobre
+   uma espera que não é dele. Este teste sobe o proxy SEM dizer
+   `VITAE_TEMPO_MODELO` — é o padrão que está sendo afirmado — e põe do
+   outro lado um módulo que demora muito mais do que o orçamento dos
+   módulos.
+   ============================================================ */
+test('Gateway — sem VITAE_TEMPO_MODELO, a rota de modelo não tem teto (§98)', async (t) => {
+  const PORTA_G = 43320;
+  const PORTA_C = PORTA_G + 4;
+  const BASE_G = `http://127.0.0.1:${PORTA_G}`;
+
+  const lerdo = http.createServer((req, res) => {
+    setTimeout(() => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ texto: 'narrei devagar' }));
+    }, 1200);
+  });
+  await new Promise(ok => lerdo.listen(PORTA_C, '127.0.0.1', ok));
+
+  const proxy = spawn(process.execPath, [path.join(RAIZ, 'modulos', 'gateway', 'proxy.mjs')], {
+    cwd: RAIZ,
+    env: Object.assign({}, process.env, {
+      PORTA: String(PORTA_G),
+      VITAE_ESCUTAR: '127.0.0.1',
+      OLLAMA_HOST: 'http://127.0.0.1:1',
+      VITAE_PORTA_CRONISTA: String(PORTA_C),
+      VITAE_PORTA_FICHA: String(PORTA_G + 1),
+      VITAE_PORTA_MESA: String(PORTA_G + 2),
+      VITAE_PORTA_ARBITRO: String(PORTA_G + 3),
+      /* Só o dos módulos, e bem curto. O do modelo fica NO PADRÃO — é
+         ele que este teste existe para afirmar. */
+      VITAE_TEMPO_MODULO: '250',
+      VITAE_TEMPO_MODELO: ''
+    }),
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  let saida = '';
+  await new Promise((ok, falha) => {
+    proxy.stdout.on('data', d => { saida += String(d); if (saida.includes('VITÆ em')) ok(); });
+    proxy.on('exit', c => falha(new Error(`o proxy saiu com ${c}`)));
+  });
+
+  try {
+    await t.test('o módulo lerdo termina, e a resposta chega inteira', async (t2) => {
+      const t0 = Date.now();
+      const r = await fetch(`${BASE_G}/api/narrador`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: BASE_G },
+        body: JSON.stringify({ texto: 'sigo' })
+      });
+      const corpo = await r.json();
+      const levou = Date.now() - t0;
+      t2.diagnostic(`${r.status} em ${levou} ms · ${corpo.texto || corpo.erro}`);
+      assert.equal(r.status, 200,
+        'o padrão voltou a ter teto, e ele cortou uma narração de 1,2 s');
+      assert.equal(corpo.texto, 'narrei devagar');
+      assert.ok(levou > 1000, 'o teste não chegou a exercitar a espera');
+    });
+
+    await t.test('e as rotas comuns continuam com o teto delas', async (t2) => {
+      /* Tirar o teto do modelo não pode ter tirado o dos outros: uma
+         saúde que pendura para sempre é pior do que uma que desiste. */
+      const r = await fetch(`${BASE_G}/api/cronista/diagnostico`);
+      const corpo = await r.json();
+      t2.diagnostic(`${r.status} · esgotou=${corpo.esgotou}`);
+      assert.equal(r.status, 504, 'a rota comum perdeu o teto junto');
+      assert.equal(corpo.esgotou, true);
+    });
+
+    await t.test('e o Gateway ANUNCIA com que orçamento subiu', (t2) => {
+      /* A §97 foi corrigida e o conserto não valeu, porque o processo
+         no ar era mais velho que o arquivo e nada no log dizia isso.
+         Um servidor que anuncia os próprios números responde "qual
+         build está rodando?" na primeira linha. */
+      t2.diagnostic(saida.split('\n').filter(l => l.includes('Tempo-limite')).join(''));
+      assert.match(saida, /Tempo-limite: módulos 250 ms · rotas de modelo sem limite/);
+    });
+  } finally {
+    proxy.kill();
+    await new Promise(ok => lerdo.close(ok));
+  }
+});
+
+/* ============================================================
+   ESTOURO DE TEMPO CONTRA MÓDULO FORA DO AR  (§98)
+
+   O `fetch` do Node às vezes EMBRULHA o estouro num
+   `TypeError: fetch failed`, e aí ele fica com a cara de "o outro lado
+   não existe". Nesta versão do Node o estouro chega cru, então o ramo
+   do `cause` não é exercitado pelo caminho HTTP — e mutação em cima
+   dele passava em verde.
+
+   Por isso a regra saiu do `proxy.mjs` e virou `comum/estouro.mjs`:
+   `proxy.mjs` sobe um servidor ao ser importado, e nada lá dentro é
+   alcançável por teste direto. É a lição da §91 e da §92 outra vez.
+   ============================================================ */
+test('Estouro — desistir e não existir têm caras parecidas (§98)', async (t) => {
+  await t.test('o estouro cru é reconhecido', () => {
+    const e = new Error('abortou'); e.name = 'TimeoutError';
+    assert.equal(foiEstouroDeTempo(e), true);
+  });
+
+  await t.test('e o EMBRULHADO também — é o caso que engana', () => {
+    const dentro = new Error('The operation was aborted due to timeout');
+    dentro.name = 'TimeoutError';
+    const fora = new TypeError('fetch failed');
+    fora.cause = dentro;
+    assert.equal(foiEstouroDeTempo(fora), true,
+      'o estouro se disfarçou de módulo fora do ar');
+  });
+
+  await t.test('os códigos do undici contam', () => {
+    const e = new Error('headers timeout'); e.code = 'UND_ERR_HEADERS_TIMEOUT';
+    assert.equal(foiEstouroDeTempo(e), true);
+  });
+
+  await t.test('mas conexão recusada NÃO é estouro', () => {
+    const dentro = new Error('connect ECONNREFUSED 127.0.0.1:5177');
+    dentro.code = 'ECONNREFUSED';
+    const fora = new TypeError('fetch failed');
+    fora.cause = dentro;
+    assert.equal(foiEstouroDeTempo(fora), false,
+      'módulo fora do ar virou estouro, e perdeu o comando de subir');
+  });
+
+  await t.test('cause circular não pendura o processo', (t2) => {
+    /* Um `while` ingênuo aqui penduraria justamente quem deveria estar
+       respondendo um erro. */
+    const a = new TypeError('fetch failed');
+    const b = new TypeError('outro');
+    a.cause = b; b.cause = a;
+    const t0 = Date.now();
+    assert.equal(foiEstouroDeTempo(a), false);
+    t2.diagnostic(`decidiu em ${Date.now() - t0} ms`);
+    assert.ok(Date.now() - t0 < 100, 'a corrente de cause virou laço infinito');
+  });
+
+  await t.test('e nada disso estoura com null ou undefined', () => {
+    assert.equal(foiEstouroDeTempo(null), false);
+    assert.equal(foiEstouroDeTempo(undefined), false);
+  });
+});
+
 test('Servidor — subir e derrubar um módulo irmão (§80)', async (t) => {
   await subir();
 
@@ -1101,5 +1363,110 @@ test('Servidor — ligar e desligar (§76)', async (t) => {
     try { await pegar('/api/sistemas'); } catch (e) { caiu = true; }
     assert.ok(caiu, 'o servidor continuou respondendo depois de mandar encerrar');
     processo = null;   /* já saiu: o encerramento do arquivo não tem o que matar */
+  });
+});
+
+/* ============================================================
+   O PREFIXO DEPOIS DO APÊNDICE III  (§89)
+
+   Todo o resto do prefixo é material que o AUTOR escreveu:
+   cenário, regras, estilo, campanha. O bloco de limites é a única
+   parte escrita pelo JOGADOR — e é a única que vale sobre as
+   outras. Os testes daqui guardam três coisas: que ele entra, que
+   ele entra POR ÚLTIMO, e que ele não entra quando não há nada.
+   ============================================================ */
+
+test('Servidor — os limites do jogador no prefixo (§89)', async (t) => {
+  const ctx = await import('../modulos/cronista/contexto.mjs');
+
+  await t.test('sem nada declarado, não há bloco', () => {
+    /* Um bloco dizendo "o jogador não declarou nada" seria pior do que
+       calar: soa a permissão. Sem ele, vale o piso do cenario.md §10. */
+    assert.equal(ctx.blocoDeLimites(''), null);
+    assert.equal(ctx.blocoDeLimites('   \n  '), null);
+    assert.equal(ctx.blocoDeLimites(undefined), null);
+  });
+
+  await t.test('com algo declarado, o bloco diz que vale sobre os outros', (t2) => {
+    const b = ctx.blocoDeLimites('LINHAS\n- Sofrimento animal');
+    t2.diagnostic(b.texto.split('\n')[0]);
+    assert.equal(b.rotulo, 'limites');
+    assert.match(b.texto, /VALE SOBRE TODAS AS OUTRAS/);
+    assert.match(b.texto, /INCLUSIVE SOBRE A CAMPANHA/);
+    assert.match(b.texto, /Sofrimento animal/);
+  });
+
+  await t.test('e diz que nada no turno o suspende', () => {
+    /* O jogador escreve o turno; ele também escreveu a lista. Um turno
+       que peça para violar a própria lista é um jogador mudando de
+       ideia sem editar a lista — e o livro manda editar a lista. */
+    const b = ctx.blocoDeLimites('LINHAS\n- Aranhas');
+    assert.match(b.texto, /nada que o jogador escrever no turno/i);
+  });
+
+  await t.test('texto absurdo é cortado, e o corte é avisado', (t2) => {
+    const b = ctx.blocoDeLimites('x'.repeat(9000));
+    t2.diagnostic(`${b.texto.length} caracteres depois do corte`);
+    assert.ok(b.texto.length < 5000, 'o bloco de limites entrou inteiro');
+  });
+
+  await t.test('no prefixo montado, ele é o ÚLTIMO bloco', (t2) => {
+    /* Modelo pequeno pesa o fim do contexto mais do que o meio. A
+       ordem aqui não é estética: é a regra. */
+    const partes = ctx.blocos({ camada: 'narrador', limites: 'LINHAS\n- Agulhas' });
+    t2.diagnostic(partes.map(p => p.rotulo).join(' → '));
+    assert.equal(partes[partes.length - 1].rotulo, 'limites',
+      'o bloco do jogador deixou de ser o último do prefixo');
+    assert.ok(partes.length > 3, 'o prefixo ficou pequeno demais para o teste valer');
+  });
+
+  await t.test('sem limites, o prefixo é o de sempre', () => {
+    const com = ctx.blocos({ camada: 'narrador', limites: 'LINHAS\n- Agulhas' });
+    const sem = ctx.blocos({ camada: 'narrador' });
+    assert.equal(com.length, sem.length + 1);
+    assert.ok(!sem.some(p => p.rotulo === 'limites'));
+  });
+
+  await t.test('e `prefixo()` leva o bloco até o texto final', () => {
+    const p = ctx.prefixo({ camada: 'narrador', limites: 'LINHAS\n- Bestialidade' });
+    assert.match(p.texto, /### LIMITES/);
+    assert.match(p.texto, /Bestialidade/);
+  });
+});
+
+test('Servidor — o fade e os projetos no corpo do turno (§89)', async (t) => {
+  const narrador = await import('../modulos/cronista/narrador.mjs');
+  const base = { cena: { local: 'boate_ipanema', hora: '23h40' }, personagem: 'Marina',
+                 presentes: [], pessoas: [], locais: [], fios: [], historico: [],
+                 texto: 'sigo em frente' };
+
+  await t.test('o fade manda CORTAR, e não resumir', (t2) => {
+    /* Um "não descreva isso" que permite resumo devolve o conteúdo em
+       miniatura, que é o que a técnica existe para evitar. */
+    const corpo = narrador.corpoDoTurno(Object.assign({}, base, { fade: true }));
+    const linha = corpo.split('\n').find(l => /FADE/.test(l));
+    t2.diagnostic(linha);
+    assert.match(linha, /corte/i);
+    assert.match(linha, /nem em resumo/i);
+  });
+
+  await t.test('sem pedido, nenhuma linha de fade aparece', () => {
+    assert.ok(!/FADE/.test(narrador.corpoDoTurno(base)));
+  });
+
+  await t.test('os projetos entram como pano de fundo, sem virar rolagem', (t2) => {
+    /* O Narrador nunca produz número (cenario.md §10, "Nunca" 1). Os
+       projetos existem no prompt para a cidade reagir a eles, e a linha
+       diz isso com todas as letras. */
+    const corpo = narrador.corpoDoTurno(Object.assign({}, base, {
+      projetos: '- Quebrar o banco: falência da rede (Escopo 2, Dado do Projeto em 7)' }));
+    const linha = corpo.split('\n').find(l => /TRAMANDO/.test(l));
+    t2.diagnostic(linha);
+    assert.match(linha, /não role/i);
+    assert.match(corpo, /Quebrar o banco/);
+  });
+
+  await t.test('sem projeto em curso, nada disso aparece', () => {
+    assert.ok(!/TRAMANDO/.test(narrador.corpoDoTurno(base)));
   });
 });

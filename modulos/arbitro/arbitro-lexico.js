@@ -427,10 +427,25 @@ const Lexico = {
   regexDeTermo(termo) {
     const palavras = this.normalizar(termo).split(' ').filter(Boolean);
     if (!palavras.length) return null;
-    const corpo = palavras.map(p => p.split('').map(ch => {
+    let corpo = palavras.map(p => p.split('').map(ch => {
       const cls = this.LETRAS_ACENTUADAS[ch];
       return cls ? `[${cls}]` : ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }).join('')).join('\\s+');
+
+    /* O MARCADOR TEM DE PINTAR O QUE O CASADOR ACEITOU.  (§99)
+
+       Esta é a lição da §57 escrita duas telas acima: matcher que
+       aceita o que o marcador não pinta é discordância, e ela é
+       invisível — o jogador vê a ação reconhecida e não vê onde. Como
+       `normalizar` passou a desfazer ênclise, o termo terminado em `r`
+       precisa casar também com a forma sem ele: `abrir` pinta
+       `abri-lo`, `pegar` pinta `pegá-lo`.
+
+       Vale só para o fim do termo: em "abrir a porta" quem recebe o
+       pronome é o último verbo, não o primeiro. */
+    if (corpo.endsWith('r')) {
+      corpo = `${corpo.slice(0, -1)}(?:r|-l[oa]s?)`;
+    }
     return new RegExp(`(^|[^\\p{L}])(${corpo})(?=[^\\p{L}]|$)`, 'giu');
   },
 
@@ -464,8 +479,45 @@ const Lexico = {
     return saida + esc(texto.slice(pos));
   },
 
+  /* ------------------------------------------------------------
+     A ÊNCLISE — o pronome colado no verbo  (§99)
+
+     "quero abri-lo" não casava com `abrir`, e não era uma palavra
+     faltando: era uma CLASSE inteira de frases que o jogador escreve e
+     o Árbitro não entendia. A ênclise **come a letra final do verbo**:
+
+       abrir + o  = abri-lo        pegar + o = pegá-lo
+       comer + o  = comê-lo        pôr   + o = pô-lo
+
+     Com `lo/la/los/las` o verbo perdeu a letra final — e no infinitivo,
+     que é como o jogador escreve o que quer fazer, essa letra é sempre
+     o `r`. Com os outros pronomes o verbo fica inteiro (`sente-se`,
+     `deu-me`), e basta soltar o pronome.
+
+     DESFAZ ANTES DE TIRAR A PONTUAÇÃO, e isso não é detalhe: é o hífen
+     que separa uma ênclise de duas palavras soltas. Sem ele, "pego o
+     envelope" viraria "pegoo".
+
+     E desfaz antes de tirar o acento, porque o acento é o que sobra do
+     verbo original: `pegá` + `r` → `pegár` → `pegar`.
+     ------------------------------------------------------------ */
+  CLITICOS: ['lo', 'la', 'los', 'las', 'lhe', 'lhes',
+             'me', 'te', 'se', 'nos', 'vos', 'o', 'a', 'os', 'as'],
+
+  /* Só estes quatro comem a letra final do verbo. */
+  CLITICOS_QUE_COMEM_O_R: ['lo', 'la', 'los', 'las'],
+
+  desfazerEnclise(t) {
+    return String(t || '').replace(
+      /(\p{L}+)-(los|las|lhes|lhe|lo|la|nos|vos|me|te|se|os|as|o|a)(?=$|[^\p{L}\p{N}])/giu,
+      (todo, verbo, pronome) => {
+        const cl = pronome.toLowerCase();
+        return this.CLITICOS_QUE_COMEM_O_R.includes(cl) ? `${verbo}r` : verbo;
+      });
+  },
+
   normalizar(t) {
-    return String(t || '').toLowerCase()
+    return this.desfazerEnclise(String(t || '').toLowerCase())
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9\s]/g, ' ')
       .replace(/\s+/g, ' ').trim();

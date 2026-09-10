@@ -135,7 +135,7 @@ const Legado = {
                    porque: 'Um Pilar da crônica anterior continua de pé ao seu lado.' },
       contato:    { classe: 'antecedentes', id: 'contatos', pontos: 1,
                    porque: 'Um telefone que ainda atende de madrugada.' },
-      autoridade: { classe: 'antecedentes', id: 'mentor', pontos: 1,
+      autoridade: { classe: 'antecedentes', id: 'mawla', pontos: 1,
                    porque: 'Quem mandava na crônica anterior passou a investir em você — e a cobrar.' }
     },
     posse: { classe: 'antecedentes', id: 'recursos', pontos: 1,

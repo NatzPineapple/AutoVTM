@@ -498,7 +498,7 @@ const Arbitro = {
   },
 
   piscinaFinal(ficha, { rota, estados = [], dominio = null, intencao = null, fala = null,
-                        disciplina = null, texto = '' }) {
+                        disciplina = null, texto = '', belezaDoLocal = null, luz = null }) {
     /* §73 (H1): com o texto da ação em mãos, a especialização deixa de
        ser dado de graça e passa a valer só quando a tarefa se enquadra. */
     const casa = this.casadorDeEspecializacao(texto || intencao || '');
@@ -519,6 +519,28 @@ const Arbitro = {
       mods.push({ nome: `Matilha (${rota.bonusMatilha} companheiro${rota.bonusMatilha === 1 ? '' : 's'})`,
                   dados: rota.bonusMatilha, tipo: 'matilha' });
     }
+    /* §95 (A10) — AS PERDIÇÕES DE CLÃ ENTRAM AQUI.
+
+       Quatro das seis terminam neste mesmo lugar, porque as quatro
+       fazem a mesma coisa: tiram dados de uma parada. Elas entram como
+       modificador negativo, junto dos outros, e o piso de 1 dado do
+       §63 (A1) continua segurando o fundo — o livro manda rolar o
+       dado, e Perdição nenhuma pode zerar uma parada.
+
+       Elas vêm ANTES dos bônus de propósito: quem lê a lista na tela
+       vê primeiro o que o sangue cobra, e depois o que ele dá. */
+    if (typeof Perdicoes !== 'undefined') {
+      mods.push(...Perdicoes.modificadores(ficha, {
+        atributo: base.atributoId || rota.atributo, disciplina, texto, belezaDoLocal }));
+    }
+
+    /* §96 — a luz do ambiente, que só Oblívio paga (Oblivio.pdf, pág. 4).
+       O caso que IMPEDE não passa por aqui: sem sombra não há parada a
+       montar, e quem responde isso é `MotorOblivio.vereditoDaLuz`. */
+    if (typeof MotorOblivio !== 'undefined') {
+      mods.push(...MotorOblivio.modificadores(ficha, { disciplina, luz }));
+    }
+
     const bonusPS = this.bonusDePotencia(ficha, disciplina);
     if (bonusPS) mods.push(bonusPS);
     const bonusRes = this.bonusDeRessonancia(ficha, disciplina);

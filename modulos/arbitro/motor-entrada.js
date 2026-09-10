@@ -48,6 +48,33 @@ const Entrada = {
     { volume: 'mensagem', re: /\b(mensage\w*|mando um|escrevo para|whats\w*|text\w*|digito)\b/i }
   ],
 
+  /* ----------------------------------------------------------
+     QUEM DÁ O SINAL DE FALA  (§94, trava 4)
+
+     A medição do extrator (G6) mostrou o modelo pondo fala na boca
+     do personagem onde o jogador não escreveu nenhuma: em "..." ele
+     devolveu, com todas as letras, uma frase do exemplo do próprio
+     prompt. Fala inventada não é um aviso perdido — vira mensagem na
+     mesa, entra no histórico e o Narrador responde a ela.
+
+     A trava é o sinal do jogador: um VERBO DE DIZER na primeira
+     pessoa. É o mesmo acordo das aspas, só que sem aspas — "digo pra
+     ela que…" é o caso que a §57 quis alcançar, e todo caso que ela
+     quis alcançar tem um destes verbos.
+
+     Primeira pessoa DE PROPÓSITO: em "me contar quem esteve aqui"
+     quem fala é a outra pessoa, e o modelo já tentou virar isso em
+     fala do personagem. `conto` casa; `contar` não. */
+  VERBOS_DE_DIZER: new RegExp(
+    '\\b(' + [
+      'digo', 'falo', 'converso', 'pergunto', 'respondo', 'replico',
+      'grito', 'berro', 'urro', 'brado', 'sussurro', 'cochicho', 'murmuro',
+      'aviso', 'conto', 'explico', 'comento', 'repito', 'insisto',
+      'peço', 'ordeno', 'mando', 'exijo', 'xingo',
+      'ameaço', 'prometo', 'juro', 'nego', 'admito', 'cumprimento',
+      'agradeço', 'me apresento', 'solto um'
+    ].join('|') + ')\\b', 'i'),
+
   /* "para a Bia", "pra ela", "ao segurança" — o nome vem depois. */
   RE_ALVO: /\b(?:para|pra|pro|ao|à|a)\s+(?:o\s+|a\s+)?([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'\- ]{1,28}?)\b/i,
 
@@ -261,7 +288,7 @@ const Entrada = {
      de qualquer jeito para achar a intenção mecânica, e agora devolve
      também `speech` e `speech_volume`.
 
-     Três travas, e as três são a mesma ideia:
+     Quatro travas, e as quatro são a mesma ideia:
 
      1. O MODELO NÃO CORRIGE O JOGADOR. Se havia aspas, a leitura do
         modelo é descartada inteira. Ele só fala onde houve silêncio.
@@ -271,13 +298,47 @@ const Entrada = {
         reescrita, não uma citação, e a mesa desenha diferente — pôr
         aspas em cima de texto que o jogador não escreveu seria pôr
         na boca dele uma frase que ele não disse.
+     4. O MODELO NÃO INVENTA FALA (§94). Sem verbo de dizer no que o
+        jogador escreveu, a leitura de fala é descartada. Foi a medição
+        do G6 que pediu esta: em "...", o extrator devolveu uma frase
+        inteira, copiada do exemplo do próprio prompt.
      ---------------------------------------------------------- */
   DE_VOLUME: { whisper: 'sussurro', shout: 'grito', message: 'mensagem', normal: 'normal' },
+
+  /* Trava 4, isolada para poder ser medida sozinha: diz se o que o
+     jogador escreveu autoriza o modelo a pôr fala na boca dele.
+
+     A negação conta ao contrário, e é literal: "me escondo e não digo
+     nada" é o jogador escrevendo o SILÊNCIO com todas as letras, e um
+     verbo de dizer negado é o sinal mais forte que existe de que não
+     houve fala. */
+  deuSinalDeFala(texto) {
+    const t = String(texto || '');
+    const busca = new RegExp(this.VERBOS_DE_DIZER.source, 'gi');
+    for (const achado of t.matchAll(busca)) {
+      const antes = t.slice(Math.max(0, achado.index - 12), achado.index);
+      if (/\b(n[ãa]o|nem|sem)\s+$/i.test(antes)) continue;
+
+      /* NOME PRÓPRIO NÃO É VERBO, e este projeto tem um poder chamado
+         "Sussurro Sedutor". Sem esta linha, "chamo o Sussurro Sedutor"
+         dava sinal de fala por causa do NOME da Disciplina — a lista de
+         verbos colidindo com a lista de poderes, em silêncio.
+
+         Maiúscula no meio da frase é nome; maiúscula na primeira letra
+         é só o jogador começando a frase, e continua valendo. */
+      const palavra = achado[0];
+      if (achado.index > 0 && palavra[0] !== palavra[0].toLowerCase()) continue;
+
+      return true;
+    }
+    return false;
+  },
 
   comModelo(seg, bruta, pessoas = []) {
     if (!seg || seg.fala) return seg;                      /* trava 1 */
     const dito = bruta && typeof bruta.speech === 'string' ? bruta.speech.trim() : '';
     if (!dito) return seg;
+    if (!this.deuSinalDeFala(seg.texto)) return seg;        /* trava 4 */
 
     const volume = this.DE_VOLUME[bruta.speech_volume] || 'normal';
     const alvo = this.alvoDe(seg.acao + ' ' + (bruta.target || ''), dito, pessoas);

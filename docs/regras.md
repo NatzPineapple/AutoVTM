@@ -1027,11 +1027,56 @@ Exemplo: *Braços de Arimã* é Oblívio 2 com Amálgama Potência 2.
 > mesmo fato, e discordavam: o livro tem oito amálgamas só no básico, e o motor conhecia
 > duas. §64.4 do README.
 
-### 14.6 Rituais e Cerimônias
+### 14.6 Rituais e Cerimônias *(Cerimônias conferidas no `Oblivio.pdf`, pág. 14 — §96)*
 
 **Feitiçaria do Sangue** usa **Rituais**; **Oblívio** usa **Cerimônias**. Ambos exigem
-tempo, preparação e componentes, e o nível do ritual **não pode passar do nível da
-Disciplina**. O custo em experiência é o **nível do ritual × 3** (§17).
+tempo, preparação e componentes, e o nível **não pode passar do nível da Disciplina**. O
+custo em experiência é o **nível × 3** (§17).
+
+**O que faltava das Cerimônias, e agora está no motor** (`motor-oblivio.js`):
+
+| | Regra |
+|---|---|
+| Custo | Uma **Checagem de Sangue** |
+| Preparo | **Cinco minutos por nível** |
+| Teste | **Determinação + Oblívio**, Dificuldade = **nível da Cerimônia + 1** |
+| Pré-requisito | **Cada Cerimônia exige um poder de Oblívio**, e não se compra nem se realiza sem ele |
+| Na criação | **Uma** Cerimônia de Nível 1, se o personagem tiver o poder que ela exige |
+| Aprender em jogo | XP, um professor que a conheça, e **no mínimo nível² semanas** |
+
+> "Cada cerimônia tem como pré-requisito um poder de Oblívio. Esse requisito serve como uma
+> **porta de entrada para necromantes pela qual feiticeiros de sangue não precisam passar**."
+
+Duas restrições que o livro escreve e que não são de dado: o usuário só realiza Cerimônias
+**benéficas em si mesmo**, salvo texto em contrário; e quem ganhou Oblívio **bebendo de
+temperamento vazio** — carniçais, necromantes, sangues-ralos — leva os **poderes**, não as
+Cerimônias.
+
+### 14.6.1 As regras gerais de Oblívio *(`Oblivio.pdf`, pág. 4 — §96)*
+
+Oblívio é a única Disciplina do projeto com regras próprias de ambiente, e elas nunca
+existiram no motor.
+
+**A luz manda.** Três estados, e o primeiro não é penalidade, é impedimento:
+
+| Ambiente | Efeito |
+|---|---|
+| Iluminação intensa, luz do dia, cômodo **sem sombras** | **Impede.** A Disciplina não funciona |
+| Cômodo **moderadamente iluminado** | **−1 dado** na rolagem da Disciplina |
+| Luz **ultravioleta ou infravermelha** | **Nenhuma restrição** — o livro isenta as duas por nome |
+
+**A Checagem de Sangue de Oblívio corrói pelas duas pontas.** Numa Checagem comum só o **1**
+cobra; aqui:
+
+> "um resultado **'1' ou '10'** gera Mácula, além do nível de Fome ganho. Se a Potência de
+> Sangue do usuário permitir uma rerrolagem (…), o usuário pode **escolher qualquer um dos
+> dois resultados**."
+
+**Tipo:** Mental · **Ameaça à Máscara:** média para alta · **Ressonância de Sangue:**
+psicopatas e emocionalmente desconectados; sangue sem Ressonância.
+
+Projeções e espíritos de Oblívio sofrem fogo e sol como vampiros de **Potência de Sangue 1**,
+e mais **um nível de Agravado por rodada** sob luz direta e brilhante.
 
 ### 14.7 Oblívio — lista oficial
 
@@ -1053,15 +1098,32 @@ Extraída de `Livros/Regras/Oblivio.pdf`. Azul = mais comum entre Lasombra; verm
 | 4 | A Mortalha Estígia · Praga Necrótica |
 | 5 | Passo Sombrio · Avatar Tenebroso · Skulds Realizada · Espírito em Declínio |
 
-**Cerimônias:**
+**Cerimônias — dez, e cada uma com o poder que exige** *(§96)*
 
-| Nível | Cerimônias |
-|---|---|
-| 1 | A Dádiva da Vida Falsa · Invocar o Espírito · Cadáver Irracional |
-| 2 | Despertar do Servo Homuncular · Obrigar Espíritos · Servo Homuncular |
-| 3 | Espírito Anfitrião · Hordas Trôpegas · Cadáver Violento |
-| 4 | Vincular o Espírito · Rasgar a Mortalha |
-| 5 | Ex Nihilo · Benção Lazarena |
+> **Esta tabela tinha três Cerimônias que não existem.** *Cadáver Irracional*, *Servo
+> Homuncular* e *Cadáver Violento* não são Cerimônias: são os **blocos de estatística das
+> criaturas** que as Cerimônias criam — *"Parada de Dados Padrão: Físico 2, Social 0, Mental
+> 0"*, *"Atributos Secundários: Vitalidade 6, Força de Vontade 0"*.
+>
+> É o mesmo engano da §65, do outro lado: lá o **dado** tinha dois poderes que não existem,
+> aqui o **documento** tinha três Cerimônias que são criaturas. A regra continua a mesma —
+> não é "o código está certo" nem "o documento está certo", **é o livro**.
+
+| Nível | Cerimônia | Poder exigido |
+|---|---|---|
+| 1 | Invocar o Espírito | Grilhões que Vinculam |
+| 1 | A Dádiva da Vida Falsa | Do Pó ao Pó |
+| 2 | Despertar do Servo Homuncular | Onde a Mortalha Afina |
+| 2 | Obrigar Espíritos | Onde a Mortalha Afina |
+| 3 | Espírito Anfitrião | Aura de Decadência |
+| 3 | Hordas Trôpegas | Aura de Decadência |
+| 4 | Vincular o Espírito | Praga Necrótica |
+| 4 | Rasgar a Mortalha | Praga Necrótica |
+| 5 | Ex Nihilo | Espírito em Declínio |
+| 5 | Benção Lazarena | Skulds Realizada |
+
+**O nível do poder exigido é sempre o nível da Cerimônia** — em todas as dez. Há teste
+afirmando isso: é regra escrita virando invariante.
 
 Projeções e espíritos de Oblívio sofrem dano de fogo e sol como se fossem vampiros de
 Potência de Sangue 1.
@@ -1091,8 +1153,10 @@ e esta tabela divergirem, de qualquer lado, `npm test` cai (§65).
 
 ## 15. Combate
 
-*(conferido no básico, págs. 301–302 — esta seção mudou bastante na revisão; o que estava
-aqui antes vinha do Guia do Jogador e divergia do livro em quatro pontos)*
+*(conferido no básico em duas passadas: as págs. 301–302 na §63, e o capítulo "Conflito
+Avançado" inteiro — págs. 295–305 — na §90. O que estava aqui antes da §63 vinha do Guia do
+Jogador e divergia do livro em quatro pontos; a §90 achou mais três, e um deles não era
+divergência de tradução, era regra inventada — ver §15.7)*
 
 ### 15.1 Corpo a corpo
 
@@ -1186,11 +1250,211 @@ usa para **estacar o coração** e **decapitar**.
 **Dividir a piscina** — é possível atacar vários alvos dividindo os dados, com todas as
 penalidades que isso implica.
 
+### 15.7 Iniciativa *(pág. 300, e pág. 125)*
+
+O básico tem **dois** sistemas, e o projeto usava um terceiro, que não é de livro nenhum —
+`d10 + Destreza + Raciocínio`. Corrigido na §90.
+
+| Sistema | Onde | O que é |
+|---|---|---|
+| **Básico** | pág. 125 | não há valor: ordena-se por situação — corpo a corpo **já engajado**, depois **à distância**, depois corpo a corpo **recém-iniciado**, depois o resto. Desempate por Destreza + Raciocínio, e depois pelos pontos da Habilidade usada |
+| **Avançado** | pág. 300 | **Iniciativa = Autocontrole + Percepção**, e ela é **estática**: não se rola, e não muda durante o combate, "mesmo quando um combatente muda a Habilidade de combate que ele usa" |
+
+**O motor usa o avançado**, e a escolha é de projeto: esta mesa **desenha** uma lista de
+iniciativa, e quem desenha uma lista já escolheu o sistema que tem uma. O livro avisa que ele
+*"desacelera o combate significativamente"*.
+
+**Num duelo formal**, Destreza substitui Autocontrole; num duelo **muito** formal, Determinação.
+
+**Desempates, na ordem do livro:** personagens dos jogadores antes dos do Narrador · vampiros
+antes de mortais · Autocontrole decrescente · e então, diz o livro, *role um dado*.
+
+> **O último degrau é o único que diverge.** Aqui o desempate final é o **nome**, e não um dado.
+> Duas razões: este motor não produz acaso desde a §82, e a ordem é desenhada numa lista que o
+> jogador relê — ordem estável vale mais do que o quarto critério de um empate que já passou
+> por três.
+
+**Passar a vez** *(pág. 300)* põe o combatente **por último**, e o mantém lá pelo resto do
+conflito. Quem passa depois entra **antes** de quem já tinha passado.
+
+### 15.8 As opções do Conflito Avançado *(págs. 298–303)*
+
+Todas opcionais, todas escolha de quem ataca ou de quem se defende.
+
+| Opção | Efeito | Preço |
+|---|---|---|
+| **Ataque Total** | **+1 no dano** | não se defende de nada no turno; descarrega a arma à distância; **não vale com surpresa**; falhando, quem age contra ele ganha +1 dado no turno seguinte |
+| **Defesa Total** | **+1 dado** em todas as defesas do turno | nada além de uma ação menor |
+| **Ataque surpresa** | o primeiro é contra **Dificuldade 1 fixa** | exige vencer Destreza + Furtividade contra o melhor Raciocínio + Percepção da oposição |
+| **Ataque localizado** | atinge um ponto escolhido | **−2 sucessos** no resultado, e o Narrador pode mudar o número: −1 para o pneu de um carro, −4 para a tubulação de combustível de um avião |
+| **Ações menores** | preparar arma, recarregar, andar alguns passos | **subtraem dados** da ação principal; o Narrador diz quantas cabem |
+
+**O ataque localizado subtrai SUCESSO, e não dado.** O livro é explícito — *"após realizar o
+teste, ele subtrai sucessos"* —, e a diferença importa: tirar dados mexeria na chance de Falha
+Bestial, e o livro não mandou mexer nela.
+
+**A estaca depende dele.** O rodapé da tabela de armas *(pág. 304)* pede **ataque localizado no
+coração** *e* **5+ de dano**. Até a §90 o motor lia só a segunda metade, e a estaca paralisava
+sem pagar os −2 sucessos que são justamente o que a tornam uma aposta.
+
+**Ferimentos Incapacitantes** *(pág. 303)* — opcional, "para jogadores à procura de um combate
+mais substancial". Depois de sofrer dano **estando já Debilitado**, rola-se **1d10 + o dano
+Agravado atual** na trilha de Vitalidade:
+
+| Rolagem | Ferimento |
+|---|---|
+| 1–6 | **Atordoado** — gaste 1 de Força de Vontade ou perca um turno |
+| 7–8 | **Trauma grave na cabeça** — Físicas −1, Mentais −2 |
+| 9–10 | **Membro quebrado** (−3 com aquele membro) **ou Cegado** (−3 no que envolva visão, inclusive combate). O Narrador decide |
+| 11 | **Ferimento Maciço** — tudo −2, e +1 a todo dano adicional |
+| 12 | **Aleijado** — como o membro quebrado, mas o membro é perdido |
+| 13+ | Morte, para mortais; **torpor imediato**, para vampiros |
+
+**Crítico contra mortal anônimo** *(pág. 303)* — incapacita **sem calcular dano**. É regra de
+ritmo, e o livro diz isso: existe para não gastar turno com segurança de boate. Um crítico
+bestial, nesse caso, costuma ser letal. PN com nome próprio na cena não é anônimo.
+
+### 15.9 Armadura *(pág. 304)*
+
+> **A armadura NÃO subtrai dano. Ela converte.**
+>
+> *"Cada ponto de armadura transforma 1 ponto de dano Agravado originário de armas perfurantes
+> ou de lâmina (por rolagem de dano) em dano Superficial, que então é cortado pela metade como
+> de costume. Essa proteção só costuma ser útil para mortais e sangues-ralos, já que vampiros já
+> consideram esses tipos de dano Superficiais."*
+
+O motor subtraía até a §90, e a diferença não é de número: é de **quem a armadura serve**.
+Contra um vampiro, bala e lâmina já são Superficiais, e não sobra Agravado para converter —
+um neonato de colete não fica mais duro. **Fogo passa inteiro**: a conversão vale só para arma
+perfurante ou de lâmina, e o corte é pela **origem** do Agravado — a classe da arma converte,
+o item que declara a própria natureza (fogo, hafla, sopro de dragão) não.
+
+> **Leitura, e não texto do livro:** as **garras** contam como perfuração aqui. O livro não as
+> excetua nem as nomeia; a alternativa seria deixá-las de fora por não serem "arma", e isso faria
+> um colete parar uma faca e não parar uma garra.
+
+| Armadura | Valor |
+|---|---|
+| Roupa reforçada, couro pesado | **2** — e **zero contra balas** |
+| Tecido balístico | 2 |
+| Colete Kevlar, jaqueta flak | 4 |
+| Armadura tática da SWAT, armadura militar | 6 — e **−1 dado** em rolagens de Destreza |
+
+### 15.10 Dano de arma *(pág. 304)*
+
+| Valor | Armas |
+|---|---|
+| **+0** | Arma improvisada, estaca |
+| **+1** | Impacto leve (soco inglês) |
+| **+2** | Impacto pesado (cassetete, taco, chave de roda, bastão de baseball) · perfuração leve (virote de besta, canivete) · disparo leve (pistola .22) |
+| **+3** | Arma branca pesada (espada de lâmina larga, machado de bombeiro) · disparo médio (rifle .308, pistola 9 mm, escopeta dentro do alcance efetivo) |
+| **+4** | Disparo pesado (espingarda 12 à curta distância, Magnum .357) · arma branca enorme (claymore, viga de aço) |
+
+> **Estes nomes eram do Escudo, e dois deles não casavam.** A linha de +2 se chamava "Impacto
+> médio (bastão, barra de ferro)"; quem escrevesse **cassetete** ou **taco de baseball** — as
+> palavras do livro — caía no caso final e levava **dano 0** com uma arma de +2. Na armadura era
+> pior: as duas linhas do meio estavam trocadas, e "Colete Kevlar" não casava com nada.
+> Corrigido na §90, e o casador passou a ter uma lista de **nomes** separada do texto de
+> exibição, para que corrigir uma tradução não mude em silêncio o que ela reconhece.
+
+### 15.11 Combate social — "Facas em seus Sorrisos" *(págs. 304–305)*
+
+*"Resolva conflitos sociais com as mesmas mecânicas usadas para combates físicos."* Mudam três
+coisas:
+
+1. a trilha ferida é a **Força de Vontade**;
+2. a Iniciativa, quando importa, é **Raciocínio + Etiqueta**;
+3. há um bônus de dano pela **audiência**.
+
+Os dois lados rolam, o vencedor subtrai os sucessos do perdedor e aplica o resto como dano à
+Força de Vontade. **Conceder acontece antes das paradas serem roladas**, e quem concede não
+sofre dano nenhum — é a válvula que impede a discussão perdida de virar moedor.
+
+| Quem assiste | Dano extra à Força de Vontade |
+|---|---|
+| Apenas os oponentes | +0 |
+| Sua coterie | +1 |
+| Membros cujas opiniões você valoriza: mentor, amante | +2 |
+| Primogênito, Harpia, outro rival verdadeiro | +3 |
+| O Príncipe, o Barão ou outra figura poderosa | +4 |
+
+**Apenas estar presente não conta**: a audiência precisa estar *interessada no resultado*.
+
+O combate social **pode se estender** por dias, semanas ou séculos, e termina quando um lado se
+dá por vencido — em geral ao ficar **Debilitado**, às vezes só no colapso mental total, com a
+trilha de Vontade cheia de Agravado.
+
+### 15.12 O que o motor NÃO aplica do Conflito Avançado
+
+| Item | Págs. | Por quê |
+|---|---|---|
+| **Três, Dois, Feito** · **Já terminamos aqui?** | 295 | conselho de ritmo ao Narrador: encerrar a cena após três interações. Não há o que um motor arbitre |
+| **Concessões** | 295 | conclusão negociada entre Narrador e jogadores. A recompensa mecânica (+1 num Antecedente da coterie, ou um ponto de Vontade de volta) é fácil; a negociação é a regra, e ela é entre pessoas |
+| **Manobra · Bloqueio · Avanço** | 297 | ações variantes cujo efeito é "+1 a 3 dados, a critério do Narrador". Sem um Narrador que julgue o que é manobra, virariam bônus de graça |
+| **Movimento em conflitos** | 298 | *"O movimento em Vampiro costuma ser abstrato"*; o mapa é opcional e o projeto resolve alcance pelo grafo de locais desde a §49 |
+| **Recarregar e contar munição** | 302 | o livro o oferece como sabor opcional — *"em Vampiro geralmente não se anota o gasto de munição"* |
+
+### 15.13 Conflito de Rolagem Única *(págs. 296 e 298–299 — §95)*
+
+Resolver um conflito inteiro — ou **encerrar** um que já está rolando — numa rolagem só.
+
+> "Um conflito não precisa necessariamente ser resolvido como uma série detalhada de
+> interações (…). Ele também pode ser resolvido de um modo mais geral, especialmente se
+> contiver menos potencial para gerar drama ou envolver poucos jogadores."
+
+**São DUAS tabelas de Dificuldade, e este documento tinha só metade de uma.** A versão anterior
+da §15.12 dizia *"Dificuldade 2/4/6"*, que é a primeira tabela sem os ajustes — e usá-la para
+encerrar uma briga em andamento dá a resposta errada em três dos quatro casos.
+
+**Abrir o conflito inteiro — pelo poder da oposição** *(pág. 298–299)*
+
+| Situação | Dificuldade |
+|---|---|
+| A oposição é significativamente mais fraca, ou a meta é simples de ser alcançada | **2** |
+| Ambos os lados se igualam em poder, ou a meta é um desafio e tanto | **4** |
+| A oposição é muito mais forte, ou a meta é extremamente difícil | **6** |
+
+**Encerrar um conflito em andamento — pelos últimos três turnos** *(pág. 296)*
+
+| Situação | Dificuldade |
+|---|---|
+| A maior parte do combate foi favorável, ou venceram os últimos três turnos | **3** |
+| Ambos os lados sofreram igualmente, ou venceram dois de três turnos | **4** |
+| Se deram mal, ou venceram só uma interação de três | **5** |
+| Tiveram a sorte de sobreviver, ou perderam os últimos três turnos | **6** |
+
+**Os dois ajustes**, cada um de 1, e independentes entre si:
+
+- vantagem em **Disciplinas ou poderes sobrenaturais** equivalentes;
+- vantagem de **posição, preparação ou surpresa**.
+
+**Como rola:** cada jogador faz **uma** rolagem com parada adequada, **sem rerrolagem de Força
+de Vontade e sem Surto de Sangue**. **A oposição não rola.** Quanto mais personagens vencerem,
+melhor o resultado: a oposição pode se separar, cair ferida, abandonar o local, render-se.
+
+**O dano, que é o coração da regra:**
+
+> "Cada personagem do jogador sofre uma quantidade de dano igual à diferença entre seus
+> sucessos e o **dobro** da Dificuldade. Esse dano **não pode ser diminuído por armadura ou
+> meios sobrenaturais, como Fortitude**. (…) **Não diminua pela metade o dano Superficial**
+> nesse caso."
+
+**Vencer não isenta.** No exemplo do livro, Rebeca supera a Dificuldade 4 com cinco sucessos e
+ainda leva 3 pontos de Agravado na Força de Vontade — 8 − 5 = 3. É o preço da vitória, e é o
+ponto da regra.
+
+A natureza do dano depende da oposição e das armas: agentes da Segunda Inquisição costumam
+causar **Agravado**.
+
+**Opcional:** em vez de aplicar níveis de dano, permitir que os jogadores o diminuam adotando
+**Máculas** — por terem alcançado o objetivo com brutalidade maior.
+
 ---
 
 ## 16. Criação de personagem
 
-*(conferido no básico, pág. 136)*
+*(conferido no básico em duas passadas: o sumário da pág. 136, e o capítulo inteiro — págs.
+135–154 — na §91)*
 
 | Etapa | Regra |
 |---|---|
@@ -1218,24 +1482,141 @@ A idade define Potência de Sangue inicial e experiência de partida:
 
 ---
 
-## 17. Experiência
+### 16.2 A vida humana — o método longo *(págs. 145–146)*
 
-*(conferido no básico, pág. 151 — as nove linhas batem; faltava uma)*
+O quadro das três distribuições **é a alternativa**, e o livro diz isso no título: *"Escolha
+alternativa rápida de Habilidades"* *(pág. 147)*. Alternativa a este método, que é o texto
+principal e que o projeto não tinha até a §91.
+
+Aqui as Habilidades não são distribuídas: são **contadas** a partir da vida que o personagem teve.
+
+| Etapa | O que dá |
+|---|---|
+| **Profissão** | duas Habilidades em **3** e duas em **2**, mais uma **especialização profissional** |
+| **Evento-chave** | uma em **3** e outra em **2** |
+| **Passatempos** | **três** Habilidades em **1** |
+| **Habilidades adicionais** | **Especialista**: mais uma em **4** · **Generalista**: mais duas em **2** e quatro em **1** |
+
+> **E aqui está o que só se vê somando.**
+>
+> Profissão + evento + passatempos + **Especialista** = uma em 4, três em 3, três em 2, três em 1
+> — **a distribuição Especialista**.
+>
+> Profissão + evento + passatempos + **Generalista** = três em 3, cinco em 2, sete em 1
+> — **a distribuição Equilibrado**.
+>
+> **O método longo gera o quadro rápido.** Não são dois sistemas concorrentes: o quadro é este
+> método escrito de trás para frente. Só o **Pau pra Toda Obra** existe apenas no quadro.
+
+O livro dá **nove pacotes profissionais**, **dez eventos** e **dez passatempos**, todos em
+`data-criacao.js`. Numa mesa solo isso vale mais do que numa mesa com gente: quem escolheu
+"Mafioso", "Vítima de crime" e "Tirador de racha" já tem três cenas antes da primeira noite.
+
+**A especialização livre não sai de onde nasceu** *(pág. 146)*: ao ganhar o primeiro ponto em
+Erudição, Ofícios, Performance ou Ciência escolhe-se uma especialização para **aquela**
+Habilidade, e ela não pode ser movida para outra. A profissional, sim: quem for Especialista pode
+levá-la para a Habilidade de nível 4.
+
+> **Um erro do livro, declarado.** O evento nº 2, "Separação dolorosa", oferece *"Manipulação ou
+> Subterfúgio"* — e **Manipulação é Atributo**, numa caixa que lista Habilidades. Não dá para saber
+> se é erro de tradução ou do original, e inventar a Habilidade "certa" seria escrever a regra em
+> vez de lê-la. A entrada ficou com uma opção só, e o motivo está escrito nela.
+
+### 16.3 O que o Predador acrescenta *(pág. 149)*
+
+Cada tipo de Predador dá uma especialização, um ponto numa Disciplina e as Vantagens e Defeitos
+listados — e nada disso conta no orçamento de 7 e 2 pontos. E há uma regra que faltava ao motor:
+
+> *"Se um tipo de Predador adicionar uma especialização cuja Habilidade correspondente **você não
+> possua**, ganhe um ponto nessa Habilidade."*
+
+Sem ela, o Predador entregava uma especialização pendurada numa Habilidade zerada — e
+especialização em Habilidade que ninguém tem é enfeite.
+
+**O Predador não é obrigatório para todos.** *"Os sugadores de sangue mais recentes, como os
+sangues-ralos e diversas Crianças da Noite, não selecionam um tipo de Predador, pois ainda estão
+descobrindo esse aspecto da sua existência noturna."* A mesa exigia Predador de todos, e com isso
+um sangue-ralo não conseguia abrir mesa.
+
+### 16.4 Sangue-ralo na criação *(págs. 142, 149 e 151)*
+
+| Regra | |
+|---|---|
+| Clã | **nenhum** |
+| Disciplinas | **não distribui ponto nenhum**. As que ele usa são temporárias, e vêm da Ressonância do sangue que bebeu |
+| Alquimia Sangue-Ralo | aprende-se por uma **Qualidade** ou com **experiência** — não de graça na criação |
+| Qualidades e Defeitos | de **uma a três** Qualidades de Sangue-Ralo, e **o mesmo número** de Defeitos |
+| Antecedentes vedados | **Laço, Mawla, Lacaios e Status** não se compram na criação |
+| Potência de Sangue | **0** |
+
+O projeto mandava pôr um ponto em Alquimia — um ponto que o livro não dá.
+
+> **O que ficou de fora:** as Qualidades e os Defeitos de Sangue-Ralo em si estão nas **págs.
+> 182–183**, fora deste capítulo. Eles não existem em `data-vantagens.js`, e a §91 não os
+> inventou.
+
+### 16.5 Humanidade e Coterie na criação
+
+**A Humanidade começa em 7**, e há uma opção: *"O Narrador pode permitir que os personagens de uma
+crônica só de vampiros Crianças da Noite comecem com Humanidade 8"* *(pág. 149)*.
+
+**Todos recebem um ponto de Coterie** *(pág. 151)* — *"no caso de coteries pequenas, o Narrador
+pode dar a cada jogador dois pontos"*. Ele compra o Domínio e Antecedentes de coterie
+compartilhados. **Uma mesa solo é a menor coterie que existe**, e por isso o piso aqui são dois.
+
+---
+
+## 17. Experiência *(pág. 151)*
+
+*(conferido na §91. A tabela estava certa e completa desde a §61; o que faltava era tudo o resto.)*
 
 | Compra | Custo |
 |---|---|
-| Atributo | novo nível × 5 |
-| Habilidade | novo nível × 3 |
-| Especialização | 3 |
-| Disciplina de clã | novo nível × 5 |
-| Disciplina fora do clã | novo nível × 7 |
-| Caitiff | novo nível × 6 |
-| Ritual ou Cerimônia | nível × 3 |
-| Fórmula de Sangue-Ralo | nível da Fórmula × 3 |
-| Vantagem | 3 por ponto |
-| Potência de Sangue | novo nível × 10 |
+| Aumento em Atributo | novo nível **× 5** |
+| Aumento em Habilidade | novo nível **× 3** |
+| Nova Especialização | **3** |
+| Disciplina do Clã | novo nível **× 5** |
+| Outra Disciplina | novo nível **× 7** |
+| Disciplina de Caitiff | novo nível **× 6** |
+| Ritual de Feitiçaria de Sangue | nível do Ritual **× 3** |
+| Fórmula de Sangue-Ralo | nível da Fórmula **× 3** |
+| Vantagem | **3 por ponto** |
+| Potência de Sangue | novo nível **× 10** |
 
----
+### 17.1 As duas regras que transformam a tabela num sistema
+
+**"Novo nível" é o nível que se COMPRA, e não o que se tem.** Passar de dois para três pontos em
+Autocontrole custa 3 × 5 = 15.
+
+> **E não se salta etapa.**
+>
+> *"Você não pode saltar etapas e comprar quatro pontos de Autocontrole por 20 pontos, se
+> atualmente tiver apenas dois pontos nesse Atributo. Você precisa primeiro comprar o terceiro
+> ponto por 15 pontos de experiência e, em seguida, comprar os quatro pontos por 20."*
+
+Subir de 2 para 4 custa **15 + 20 = 35**, e não 20. É esta segunda regra que faz da tabela uma
+escada — e é justamente ela que some quando alguém implementa só a primeira.
+
+### 17.2 A carteira
+
+`xpTotal` e `xpGasta` eram dois campos de **texto** na ficha, preenchidos à mão. O motor somava
+experiência no fim de cada sessão e **nunca gastava nada**: `CUSTO_XP` e `Estado.custoDe` existiam
+desde a §61 e **nenhuma linha do jogo os chamava**.
+
+É a quarta tabela morta que este projeto encontra do mesmo jeito — a Ressonância na §67, os
+Ferimentos Incapacitantes e a audiência do combate social na §90. `motor-experiencia.js` é o
+caminho que faltava: aba **Experiência** na mesa, com a conta aberta.
+
+### 17.3 A experiência de partida — o Mar do Tempo *(pág. 137)*
+
+| Idade | Experiência | E mais |
+|---|---|---|
+| **Criança da Noite** | — | a criação já terminou |
+| **Neófita** | **15** | — |
+| **Ancilla** | **35** | +1 Potência de Sangue, +2 Vantagens, +2 Defeitos, −1 Humanidade |
+
+Ela é gasta **ao final da criação** *(pág. 144)*, e o Narrador pode deixar até as Crianças da Noite
+remanejarem pontos depois do prelúdio.
 
 ## 18. Perigos permanentes
 
@@ -1397,7 +1778,360 @@ Continuam valendo, e vêm de outras seções:
 
 ---
 
-## 19. O que o motor já implementa
+## 19. Clãs — a Perdição, e a Gravidade da Perdição *(págs. 63–114)*
+
+O básico tem **sete clãs**, mais Caitiff e Sangue-Ralo. Banu Haqim, Hecata, Lasombra,
+Ministério, Ravnos, Salubri e Tzimisce — que também estão em `data-clans.js` — vieram do
+Companion e de livros de seita, e **não foram conferidos contra a página**.
+
+### 19.1 O que o livro chama de Perdição
+
+O termo é **Perdição** (*Bane*), não "maldição". E o livro é uniforme num ponto que muda tudo:
+
+> **Toda Perdição de clã se mede em Gravidade da Perdição.**
+
+A Gravidade da Perdição sai da Potência do Sangue — `Escudo.POTENCIA_SANGUE[n].perdicao`,
+tabela da pág. 216 — e vale de 0 (Potência 0) a 6 (Potência 9–10).
+
+Ela já existia nos dados e já era impressa na folha oficial, mas **nada a calculava**. Sem o
+valor à mão, as nove Perdições foram escritas com números inventados no lugar dela. Desde a §88
+ela é derivada de verdade: `derivados(f).gravidadePerdicao`.
+
+### 19.2 As nove Perdições do básico
+
+| Clã | Perdição *(pág.)* |
+|---|---|
+| **Brujah** *(67)* | Subtraia da parada para resistir a frenesi de **fúria** dados iguais à Gravidade. Piso de 1 dado |
+| **Gangrel** *(73)* | Em frenesi ganha aspectos animalescos em quantidade igual à Gravidade; cada um reduz 1 Atributo; duram **mais uma noite** depois do frenesi. Curtir a Onda → só um aspecto |
+| **Malkaviano** *(79)* | Ao sofrer **Falha Bestial ou Compulsão**, penalidade igual à Gravidade em **uma** categoria de parada (Física, Social ou Mental), pela cena inteira, somada às penalidades de Compulsão |
+| **Nosferatu** *(85)* | Defeito **Repulsivo (-2)**, sem subir Qualidade Visual; esconder deformidade sofre penalidade igual à Gravidade, **inclusive por Disciplina**. Ser visto **não quebra a Máscara** |
+| **Toreador** *(91)* | Em ambiente **menos do que belo**, redutor igual à Gravidade nas paradas para **acionar Disciplinas** |
+| **Tremere** *(97)* | O Vitae **não cria Laço com outros Membros**; com mortais e carniçais exige goles extras iguais à Gravidade |
+| **Ventrue** *(102)* | Só um tipo de mortal alimenta; outro sangue volta em vômito a menos que gaste Força de Vontade igual à Gravidade. **Determinação + Percepção (Dif. 4+)** fareja o tipo certo |
+| **Caitiff** *(107)* | **Sem Perdição.** Defeito Suspeito (•), sem Status na criação, Narrador pode impor 1–2 dados em Sociais. Disciplina custa **seis** vezes o nível |
+| **Sangue-Ralo** *(111)* | **Potência 0 sempre**, Sem-Clã, sem Perdição nem Compulsão. Sofre Agravado de **cortante e perfurante** além de fogo; **estaca não paralisa** |
+
+### 19.3 O que o motor aplica, e o que ainda é texto
+
+**Aplicado (§88):** a Perdição **Brujah**. `Estado.testeDeFrenesi` subtrai a Gravidade da parada
+quando o clã é Brujah e o frenesi é de fúria, e diz que subtraiu. Medido: Gravidade 2 → Brujah
+rola 6 dados onde o Ventrue rola 8.
+
+**Aplicado na §95** — `modulos/arbitro/motor-perdicoes.js`, e cada uma numa função com nome:
+
+| Clã | O que passou a acontecer |
+|---|---|
+| **Gangrel** | O frenesi gera aspectos em número igual à Gravidade, cada um tira 1 dado do Atributo dele, e eles duram **mais uma noite**. Curtir a Onda segura em um só |
+| **Malkaviano** | Falha Bestial e Compulsão ligam a penalidade de Gravidade na **categoria escolhida na criação**, pela cena inteira, **somada** à da Compulsão |
+| **Nosferatu** | Esconder a aparência custa a Gravidade em dados, **inclusive por Disciplina** |
+| **Toreador** | Em ambiente menos que belo, a Gravidade sai das paradas para **acionar Disciplina** |
+| **Tremere** | O Vitae **não enlaça outro Membro**, e em mortal ou carniçal exige **goles extras iguais à Gravidade** |
+| **Sangue-Ralo** | Cortante e perfurante entram **Agravado**, e a **estaca não paralisa** |
+
+**Ainda declarativo**, e por falta de gancho, não de regra:
+
+- **Nosferatu:** o Defeito Repulsivo não entra automaticamente na criação — é passo de ficha, não
+  de arbitragem.
+- **Toreador:** a beleza do ambiente chega de fora e o padrão é **desconhecido**, não feio. Punir
+  por informação ausente seria inventar regra que o livro não escreveu.
+- **Ventrue:** a alimentação por tipo de mortal continua sem mecanizar; ela precisa de um tipo na
+  bolsa, que o motor de Ressonância ainda não carrega.
+
+Cada um desses exige um gancho que o motor não tem — ambiente estético, tipo de bolsa, contagem
+de goles do Laço. Estão **declarados** em vez de meio feitos, que é a regra do projeto para
+divergência conhecida sem implementação.
+
+### 19.4 O que estava errado antes
+
+As nove estavam erradas, e sempre do mesmo jeito: **número inventado no lugar da Gravidade**.
+
+| Clã | O projeto dizia | Por que importa |
+|---|---|---|
+| Brujah | soma a Potência de Sangue à **dificuldade** | somar à dificuldade muda quantos sucessos bastam; **tirar dados** muda a chance de não haver sucesso nenhum — e é isso que empurra para a Falha Bestial |
+| Gangrel | "de uma a três" feições, duram "a noite" | a quantidade é a Gravidade, e a duração é **mais uma noite depois** |
+| Malkaviano | "sob estresse ou Fome alta, dois dados" | o gatilho é **Falha Bestial ou Compulsão**, e a penalidade é de cena |
+| Nosferatu | "**falha automática** em se passar por humano" | o livro dá penalidade, não falha automática — e diz que ele **não quebra a Máscara** |
+| Toreador | "diante de algo **belo**, perca dois dados em **todos** os testes" | **o gatilho estava invertido**: o livro penaliza o ambiente FEIO, e só em Disciplinas |
+| Tremere | "um gole a mais / um a menos" | ele **não cria Laço com Membros**, e os goles extras são a Gravidade |
+| Ventrue | "gastar Força de Vontade" | a quantidade é a Gravidade, e falta o teste de Determinação + Percepção |
+| Caitiff | "custa mais experiência" | é **seis vezes** o nível, e faltavam Suspeito (•) e a trava de Status |
+| Sangue-Ralo | texto vago | faltava o Agravado de cortante/perfurante e a estaca que não paralisa |
+
+O Toreador é o mais grave: um Toreador jogado com a regra antiga era penalizado exatamente
+quando o livro manda **não** penalizar.
+
+---
+
+## 20. Projetos — o que corre entre as noites *(Apêndice II, págs. 415–418)*
+
+Tudo o que este projeto sabia fazer acontecia **dentro de uma noite**. Um plano de anos —
+comprar a Harpia, quebrar o banco, virar Mawla — não tinha onde morar, e virava conversa.
+O Apêndice II é o subsistema que resolve isso, e ele cabe numa mesa solo melhor do que na
+mesa para a qual foi escrito: quem joga sozinho não tem com quem negociar o tempo entre as
+sessões, e o Dado do Projeto negocia por ele.
+
+> A palavra vem do latim *proicere*, "jogar adiante" — como em jogar os dados.
+
+### 20.1 As três medidas
+
+| Medida | O que é | Como se acha |
+|---|---|---|
+| **Escopo** | quantos pontos de Antecedente o projeto entrega | escolha do jogador, com o Narrador |
+| **Incremento** | quanto tempo passa por rolagem | duração provável **dividida por dez** |
+| **Dado do Projeto** | quanto falta | começa em **10**, cai **um por incremento** |
+
+O Escopo é o preço e a medida ao mesmo tempo: ele fixa a Dificuldade do Lançamento
+(**Escopo + 2**) e o quanto o jogador arrisca (**Escopo + 1, menos a margem**). Um projeto
+com duração estimada **menor do que dez dias não é projeto**: é teste estendido *(pág. 293)*.
+
+### 20.2 A rolagem de Lançamento *(pág. 415)*
+
+Teste simples, parada de **Habilidade + Antecedente**, Dificuldade **Escopo + 2**. O jogador
+**não pode gastar Força de Vontade nem usar Surto de Sangue**. O Narrador pode permitir
+Disciplinas, especialmente se os alvos forem mortais.
+
+| Resultado | O que acontece |
+|---|---|
+| **Crítico** | não compromete ponto nenhum — e o projeto passa a resistir a uma derrota de Objetivo |
+| **Sucesso** | compromete **Escopo + 1 − margem** pontos, **mínimo 1** |
+| **Falha** | pode recomeçar do zero, com **+1** na Dificuldade do Lançamento |
+| **Falha total** | um inimigo novo, ou um velho energizado; o Narrador pode custar-lhe pontos do Antecedente |
+
+Pontos comprometidos ficam **retidos**: não valem em jogo até o projeto terminar de um jeito
+ou de outro.
+
+> **O exemplo do livro, conferido em teste.** Istvan quer cinco pontos de Recursos e já tem
+> dois: Escopo 3, logo Dificuldade 5. Rola oito dados e faz seis sucessos — margem 1. O risco
+> é 3 + 1 − 1 = **três pontos**. É esse número que o teste da §89 exige.
+
+### 20.3 A rolagem de Objetivo, e a vantagem da casa *(pág. 416)*
+
+Rolagem de **conflito** contra uma parada igual ao **valor atual do Dado do Projeto**. Pode
+ser feita a qualquer momento. Também aqui não entram Força de Vontade, Surto de Sangue nem,
+em geral, Disciplinas.
+
+E aqui está a regra mais estranha do livro inteiro:
+
+> **A rolagem de Objetivo não gera críticos: cada 10 conta como um sucesso comum. Pior ainda,
+> os críticos contam para a oposição.** O livro chama isso, com todas as letras, de *vantagem
+> da casa do status quo*.
+
+É a única regra do V5 que desliga o crítico **de um lado só**. Por isso ela mora em
+`motor-projetos.js` e não em `motor-dados.js`: lá, ela valeria para todo mundo. A **Falha
+Bestial não some junto** — ela não depende de crítico, e o livro não a exclui.
+
+| | O que acontece |
+|---|---|
+| **Vitória** | o Dado do Projeto cai pela **margem**. Abaixo de 1, o projeto **deu certo** |
+| **Derrota** | perde pontos de Antecedente iguais à margem da oposição, **começando pelos retidos** |
+| **Retidos a zero** | o projeto **falha de repente** — salvo se o Lançamento tiver sido crítico |
+
+Nos dois casos o Narrador **deve criar uma razão dentro do jogo** para a virada, e pode não
+compartilhá-la com o jogador.
+
+### 20.4 Encerrar, e o que não se encerra junto *(pág. 417)*
+
+Quem iniciou **sempre pode encerrar**, e os pontos retidos voltam. Os inimigos ganhados pelo
+caminho não se encerram junto.
+
+### 20.5 O empate — leitura, não texto do livro
+
+O apêndice descreve vencer e perder, e não diz o que é um empate na rolagem de Objetivo. A
+§6.4 deste documento já lê conflito empatado como **margem zero**, e margem zero não move
+nada: o incremento passou e o Dado ficou onde estava. **Isto é leitura do projeto**, e está
+escrito aqui por isso.
+
+### 20.6 O que o motor NÃO aplica deste apêndice
+
+| Item | Por quê |
+|---|---|
+| **A Longue Durée** *(pág. 417)* | exige jogar um capítulo de lançamento em **Memoriam** *(pág. 311)*, e o projeto não tem Memoriam. Inventar a Memoriam para poder ter a Longue Durée seria escrever a regra que falta, não a que existe |
+| **Projetos da oposição** *(págs. 417–418)* | detectar, interferir, saquear e sequestrar a conspiração de um PN é ferramenta de Narrador para uma mesa com gente. O que sobrevive é `Projetos.interferir()`, que move o Dado por fora — a porta por onde a camada narrativa mexe no relógio |
+| **Comprar o objetivo com experiência** *(pág. 417)* | o livro deixa isso a critério do Narrador, sem número |
+
+### 20.7 O preço de cultivar uma bolsa *(pág. 415)*
+
+Está aqui, e não no capítulo de Ressonância — que é por que a §67 leu as págs. 225–231
+inteiras e saiu sem ele:
+
+| O que se quer da bolsa | Escopo do projeto |
+|---|---|
+| Mudar a Ressonância e levá-la a **Intensa** | **1** |
+| Mudar a Ressonância e acrescentar uma **Discrasia** | **2** |
+
+Com Escopo 1 e 2, a Dificuldade do Lançamento é 3 e 4. Ver Parte II §11.8.
+
+---
+
+## 21. Jogo ponderado — Linhas, Véus e a Carta X *(Apêndice III, págs. 419–423)*
+
+É o único apêndice do livro cuja regra protege a **pessoa**, e não o personagem. São sete
+técnicas; três atravessam para um aplicativo sem perder nada, e quatro não.
+
+### 21.1 As três que atravessam
+
+| Técnica | Pág. | O que é | Como ficou aqui |
+|---|---|---|---|
+| **Linhas e Véus** | 421 | *(Ron Edwards)* Linha não é tocada nem mencionada de passagem; Véu pode acontecer mas não é jogado | aba **Limites**, lista do jogador, no prefixo do Narrador |
+| **A Carta X** | 422 | *(John Stavropolous)* uma carta no centro da mesa; qualquer um a toca e a cena para | botão sobre a caixa de texto |
+| **Fade** | 421 | a câmera corta antes e volta depois | botão **Desvanecer**, vale por um turno |
+
+**A lista é do jogador.** Essa é a regra inteira, e é onde o projeto estava errado: até a §89
+a única trava era a que **eu** escrevi no `cenario.md` §10, que o jogador herdava e não podia
+editar. Ela continua, como **piso** — um Narrador automático precisa de trava mesmo quando
+ninguém declarou nada. O que faltava era o teto.
+
+O livro é explícito em três pontos que a interface tinha de respeitar:
+
+1. a lista é montada **antes do jogo** e é **editável a qualquer momento**;
+2. um **Véu pode virar Linha e vice-versa**, e entradas podem ser apagadas;
+3. na Carta X, *"caso queiram se explicar, podem fazê-lo, mas isso não é necessário"*.
+
+O item 3 é por que o botão **não pede motivo e não pede confirmação**. A §37.4 já proibia o
+`confirm()` do navegador; aqui nem na interface a pergunta cabe.
+
+Linhas e Véus **não servem para eliminar antagonistas** *(pág. 421)* — "não quero que
+vampiros façam parte do jogo" não é Linha. Servem para restringir o que dos antagonistas é
+encenado.
+
+### 21.2 O que a Carta X faz com o texto retirado
+
+| | |
+|---|---|
+| na tela | a narração some da cena e deixa uma lacuna marcada; ela **não é apagada da sessão** |
+| no histórico que sobe ao modelo | vira `[retirado pelo jogador — não aconteceu]`, **sem o texto** |
+| no prefixo | um resumo curto sobe uma vez, com a ordem de **não voltar ao assunto** |
+
+Devolver o trecho inteiro ao modelo é a forma mais garantida de ele voltar ao assunto; não
+dizer nada é a forma mais garantida de ele repetir. O resumo curto com a ordem é o meio.
+
+### 21.3 As quatro que não atravessam
+
+| Técnica | Pág. | Por quê |
+|---|---|---|
+| **Sistema Refletores** | 421 | três círculos coloridos para o Narrador ler a sala. Numa mesa de um jogador não há sala para ler: pedir mais ou menos intensidade é dizer isso na caixa de texto que já existe |
+| **Verificação de Bem-Estar** | 422 | sinais de mão entre pessoas presentes |
+| **A Porta está Sempre Aberta** | 422 | sair da sessão sem dar satisfação. Num aplicativo é fechar a aba, e a sessão fica onde estava |
+| **Descompressão** | 422 | conversa pós-jogo, fora do personagem, entre os participantes |
+
+Elas estão declaradas em `data-limites.js`, com o motivo, e a aba Limites as mostra. Técnica
+de segurança que some sem explicação parece técnica que ninguém achou importante.
+
+### 21.4 O resto do apêndice
+
+O Apêndice III abre com duas seções que **não são técnicas**: "A Identidade de Personagens e
+Jogadores" *(pág. 419)* e "Fascismo em Jogo" *(págs. 419–420)*, mais "Violência Sexual nos
+Jogos" *(págs. 420–421)*. São orientação editorial dirigida a pessoas, não regra. O que delas
+tem consequência mecânica já está no projeto:
+
+- *"As Máculas são suas amigas"* — violar um Princípio da Crônica custa Mácula: `cenario.md`
+  §9.1, implementado desde a §69;
+- *"Princípios da Crônica"* — nenhum dos conjuntos de exemplo permite abusar de humanos:
+  `cenario.md` §9;
+- *"Permita a autorreflexão"* — as regras de Remorso *(pág. 239)*: §12 desta Parte.
+
+---
+
+## 22. Estados de Condenação — Laço, carniçais e Diablerie *(págs. 233–235)*
+
+*(lido na §90. O projeto não tinha nenhum dos três — nem regra, nem dado, nem texto.)*
+
+> *"Sangue vampírico pode exercer profundas mudanças naqueles que o consomem, seja o bebedor
+> mortal ou não vivo. Se essas mudanças são para a melhor ou para a pior depende, como os
+> Anarchs leninistas dizem, de quem está bebendo quem."*
+
+Três estados, e o livro os organiza por **quem bebe de quem**: o Laço prende quem bebe a quem
+doou; o carniçal é o mortal que bebeu e ficou; a Diablerie é beber o vampiro inteiro. Os três se
+medem em **tempo** — noites, meses, anos —, e por isso combinam mais com os Projetos da §20 do
+que com o combate.
+
+### 22.1 O Laço de Sangue *(págs. 233–234)*
+
+**Quem prende é o `reinante`; quem fica preso é o `escravo`.** São as palavras do livro, e ele
+as usa o tempo todo.
+
+| Regra | Valor |
+|---|---|
+| Goles para o Laço ficar completo | **3**, em três noites distintas |
+| Intervalo máximo entre goles, para o Laço se formar | **um ano** |
+| Força do Laço | o número de vezes que bebeu, **no máximo 6** |
+| Queda | **−1 por mês** sem uma gota sequer |
+| Escravos que um reinante segura | tantos quanto a sua **Potência de Sangue** |
+| Reinantes que um escravo pode ter | **um**, e enquanto Enlaçado ele fica **imune** a outras tentativas |
+
+**O sangue tem de vir direto da veia**: *"perde seu poder de Enlaçar em questão de segundos a
+menos que seja ingerido"*. Vitae de bolsa **não enlaça** — e isso importa nesta mesa, que tem
+bolsa desde a §67.
+
+**Uma cria é um terço Enlaçada ao Senhor** no primeiro ano, por já ter provado o Sangue dele
+uma vez.
+
+Passando do limite de escravos, o **Laço mais antigo desaparece ao longo de uma semana**.
+
+**Agir contra os desejos do reinante** exige uma disputa de **Determinação + Inteligência vs. a
+Força do Laço**. E o ritmo é a regra inteira:
+
+| Onde | Quantas vezes |
+|---|---|
+| **Na presença** dele | uma vez **por turno** |
+| Fora da percepção dele | uma vez **por cena** |
+
+**Partir o Laço** exige reduzir a Força a 0 evitando o reinante por um longo período, com um
+teste de desafio **uma vez por sessão** — ou mais, se o Narrador julgar que algo fez o escravo
+lembrar dele. *"Poucos escravos podem resistir tanto tempo, especialmente se seu reinante vier
+em seu encalço."*
+
+Nada impede enlaçar um vampiro de **geração menor** ou de Sangue mais potente. Um Laço mútuo é o
+**casamento de Sangue**, e *"não envolve amor — envolve obsessão e vício"*.
+
+### 22.2 Carniçais *(pág. 234)*
+
+Uma quantidade de Vitae equivalente a **uma Checagem de Sangue** sustenta um mortal ou animal
+por cerca de **um mês**:
+
+- o primeiro ponto de uma Disciplina conhecida pelo mestre, ou um único poder de nível 1 dele;
+- o **envelhecimento cessa**, às vezes rejuvenescendo alguns anos;
+- ferimentos curam com o **dobro** da velocidade — **exceto** os causados por fogo.
+
+**Usar poder acima do nível 1** custa **1 de dano Agravado à Vitalidade**, *em vez* de uma
+Checagem de Sangue. É troca, não acréscimo.
+
+Ao contrário do Abraço e do Laço, a Vitae **guardada** em recipiente hermético e ao abrigo do sol
+ainda alimenta carniçal por alguns dias.
+
+### 22.3 Diablerie *(págs. 234–235)*
+
+São **duas provas em sequência**, e a diferença entre elas é o que faz a Diablerie ser o que é.
+
+**1. Tomar a centelha.** Com o alvo já incapacitado e drenado: **Força + Determinação,
+Dificuldade 3**, uma rolagem por turno, **tantas quanto a Potência de Sangue da vítima**. *"Se
+apenas uma falhar, a centelha que anima a vítima se apaga sem ser consumida."* Nos dois casos o
+corpo se decompõe na Morte Final.
+
+**2. Segurar o que se tomou.**
+
+- o diablerista **perde 1 ponto de Humanidade**, sem rolagem;
+- rola uma disputa de **Humanidade + a sua Potência de Sangue** vs. **Determinação + a Potência
+  da vítima**;
+- **mesmo perdendo**, cada sucesso da sua rolagem vale **5 pontos de experiência** para gastar
+  na hora — em Potência de Sangue, até o valor da vítima, ou nas Disciplinas que ela conhecia;
+- perdendo, ele perde **mais um ponto de Humanidade por sucesso de diferença**. Se isso a levar
+  a **0**, *"a mente da presa substitui a do diablerista"*: ele vira o corpo hospedeiro dela, e o
+  personagem passa a ser um PN.
+
+> **O que quase todo mundo lê errado é o terceiro item.** O prêmio vem mesmo perdendo. O que se
+> perde na disputa é o **controle**, não a experiência — e é isso que torna a Diablerie tentadora
+> justamente para quem já não tem muita Humanidade a perder.
+
+**Se a vítima era de geração menor**, o diablerista **desce uma geração**.
+
+**Veias negras** tornam-se visíveis na aura, e persistem por **um ano** — ou, se a geração do
+diablerista era maior que a da presa, por uma quantidade de anos igual à **diferença original
+entre as gerações**.
+
+---
+
+## 23. O que o motor já implementa
 
 | Regra | Onde | Estado |
 |---|---|---|
@@ -1414,6 +2148,15 @@ Continuam valendo, e vêm de outras seções:
 | Frenesi e Compulsão | `js/arbitro/motor-estado.js` | Implementado |
 | Combate | `js/arbitro/motor-combate.js` | Implementado |
 | Experiência e fim de sessão | `js/arbitro/motor-estado.js` | Implementado |
+| Projetos — Escopo, Lançamento, Dado do Projeto, Objetivo | `modulos/arbitro/motor-projetos.js` | Implementado — §20, menos a Longue Durée |
+| Linhas, Véus, Carta X e fade | `comum/dados/data-limites.js` + a aba Limites | Implementado — §21 |
+| Conflito Avançado: Ataque/Defesa Total, surpresa, mira, agarramento, Ferimentos, combate social | `modulos/arbitro/motor-combate-avancado.js` | Implementado — §15.7 a §15.12 |
+| Conflito de Rolagem Única, com as duas tabelas de Dificuldade | `modulos/arbitro/motor-combate-avancado.js` → `RolagemUnica` | Implementado — §15.13 (§95) |
+| As Perdições de clã, da Brujah ao Sangue-Ralo | `modulos/arbitro/motor-perdicoes.js` | Implementado — §19.3 (§95) |
+| Oblívio: a luz, a Checagem que gera Mácula, e a porta das Cerimônias | `comum/dados/data-oblivio.js` + `modulos/arbitro/motor-oblivio.js` | Implementado — §14.6 e §14.6.1 (§96) |
+| Laço de Sangue, carniçais e Diablerie | `modulos/arbitro/motor-lacos.js` + a aba Sangue | Implementado — §22 |
+| Experiência: a escada da pág. 151, a carteira e a compra | `modulos/arbitro/motor-experiencia.js` + a aba Experiência | Implementado — §17 |
+| A vida humana: profissão, evento e passatempos | `comum/dados/data-criacao.js` + o passo "A vida que você teve" | Implementado — §16.2 |
 
 ---
 
@@ -1775,6 +2518,20 @@ resistir ao frenesi, e 2 de Vontade para rerrolar em Sucesso em Perigo ou Falha 
 Alucinógenos −2 Raciocínio, Determinação e Manipulação · Opiáceos −2 físicos e −1 para resistir ao
 frenesi · Maconha −1 Raciocínio e −1 para resistir ao frenesi · Veneno −1 em tudo e 1–3 Superficial
 por cena.
+
+### 11.8 O preço de cultivar uma bolsa *(Apêndice II, pág. 415)*
+
+A §67 leu as págs. 225–231 inteiras e saiu sem o preço mecânico de **mudar** a Ressonância de
+uma bolsa, porque ele não está no capítulo: está a duzentas páginas dali, no Apêndice II.
+Cultivar uma bolsa é um **projeto**, e o Escopo é o preço.
+
+| O que se quer | Escopo | Dificuldade do Lançamento |
+|---|---|---|
+| Mudar a Ressonância e levá-la a **Intensa** | 1 | 3 |
+| Mudar a Ressonância e acrescentar uma **Discrasia** | 2 | 4 |
+
+O incremento é o do projeto — meses, tipicamente, porque é o tempo de se alimentar da mesma
+pessoa até o sangue dela mudar de humor. Parte I §20.7.
 
 ## 12. Correções que este livro impôs
 

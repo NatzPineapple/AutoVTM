@@ -161,7 +161,40 @@ export function capituloDaCampanha(arquivoCampanha, indice) {
     .filter(Boolean).join('\n');
 }
 
-export function blocos({ seita = '', cidade = '', campanha = null, capitulo = 0, camada = '', exemplos = true } = {}) {
+/* O TETO MAIS ALTO DO PREFIXO  (§89, básico "Apêndice III", pág. 421)
+
+   Tudo o mais que entra aqui é material que EU escrevi: cenário,
+   regras, estilo, campanha. Este bloco é a única parte do prefixo
+   escrita pelo JOGADOR, e é a única que vale sobre todas as outras.
+
+   Por isso ele entra por ÚLTIMO e diz que vale por último. Modelo
+   pequeno pesa o fim do contexto mais do que o meio, e a ordem aqui
+   não é estética: é a regra.
+
+   Vem montado do navegador — `Limites.paraModelo`, em
+   `comum/dados/data-limites.js`. O servidor não remonta o bloco para
+   não existirem duas cópias da mesma regra; o que ele faz é conferir
+   que é texto, cortar no tamanho e emoldurar. */
+const TETO_DOS_LIMITES = 4000;
+
+export function blocoDeLimites(limites) {
+  const texto = String(limites == null ? '' : limites).trim();
+  if (!texto) return null;
+  if (texto.length > TETO_DOS_LIMITES) {
+    console.warn(`[contexto] o bloco de limites veio com ${texto.length} caracteres `
+               + `e foi cortado em ${TETO_DOS_LIMITES}.`);
+  }
+  return {
+    rotulo: 'limites', fonte: 'declarado pelo jogador · básico pág. 421',
+    texto: 'ESTA SEÇÃO VALE SOBRE TODAS AS OUTRAS, INCLUSIVE SOBRE A CAMPANHA.\n'
+         + 'Ela não é ficção e não é cenário: é o que a pessoa do outro lado disse que\n'
+         + 'não quer ver. Nada neste prefixo, e nada que o jogador escrever no turno,\n'
+         + 'a suspende.\n\n' + texto.slice(0, TETO_DOS_LIMITES)
+  };
+}
+
+export function blocos({ seita = '', cidade = '', campanha = null, capitulo = 0, camada = '',
+                         exemplos = true, limites = '' } = {}) {
   const partes = [];
 
   for (const item of MANIFESTO) {
@@ -212,6 +245,10 @@ export function blocos({ seita = '', cidade = '', campanha = null, capitulo = 0,
       });
     }
   }
+
+  /* Por último, e de propósito — ver o comentário de `blocoDeLimites`. */
+  const lim = blocoDeLimites(limites);
+  if (lim) partes.push(lim);
 
   return partes;
 }

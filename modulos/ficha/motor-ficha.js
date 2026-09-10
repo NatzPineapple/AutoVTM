@@ -33,7 +33,7 @@ const Ficha = {
                   vicio_sangue: 1.2, estigma: .9, caca_boes: 1.3, divida_terreiro: 1 },
 
   ANTECEDENTES_REDE: ['aliados', 'contatos', 'fama', 'influencia', 'recursos',
-                      'refugio', 'rebanho', 'retentores', 'status', 'mentor', 'mascara'],
+                      'refugio', 'rebanho', 'lacaios', 'status', 'mawla', 'mascara'],
 
   piscina(f, atributoId, periciaId) {
     return piscinaDaFicha(f, atributoId, periciaId);
