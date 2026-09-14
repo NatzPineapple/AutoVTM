@@ -135,73 +135,29 @@ const Arbitro = {
     ilimitado: { nome: 'Sem limite de distância', metros: Infinity }
   },
 
-  DISCIPLINA_EXIGE: {
-    animalismo:  { capacidades: ['fala', 'visao'], alcance: 'voz',
-                   nota: 'Você fala com o animal e o encara. Sem voz ou sem visão, não há comando.' },
-    auspicios:   { capacidades: [], alcance: 'visao' },
-    celeridade:  { capacidades: ['corpo', 'movimento'], alcance: 'toque' },
-    dominacao:   { capacidades: ['fala', 'visao'], alcance: 'curto',
-                   nota: 'Exige contato visual e voz de comando.' },
-    fortitude:   { capacidades: ['corpo'], alcance: 'toque' },
-    ofuscacao:   { capacidades: [], alcance: 'toque' },
-    potencia:    { capacidades: ['corpo'], alcance: 'toque' },
-    presenca:    { capacidades: ['visao'], alcance: 'ambiente' },
-    metamorfose: { capacidades: ['corpo'], alcance: 'toque' },
-    feiticaria:  { capacidades: ['sangue', 'maos'], alcance: 'visao',
-                   nota: 'Feitiçaria exige gesto e Vitae.' },
-    oblivio:     { capacidades: ['sangue'], alcance: 'visao' },
-    alquimia:    { capacidades: ['maos', 'sangue'], alcance: 'toque' }
+  /* A REGRA DE DISCIPLINA MORA EM `motor-disciplinas.js`.
+
+     `DISCIPLINA_EXIGE`, `PODER_EXIGE`, `AMALGAMAS`, `alcanceDe` e
+     `exigenciasDe` saíram daqui numa revisão de código, junto com o
+     que era o `motor-oblivio.js`: Oblívio tinha motor próprio e as
+     outras onze Disciplinas não tinham nenhum, com a regra delas solta
+     dentro deste arquivo. Agora o assunto inteiro tem um lugar.
+
+     Estas linhas existem porque os chamadores são muitos — o
+     Especialista, o diagnóstico e os testes —, e a divisão é de
+     responsabilidade, não de interface pública. Mesmo acordo do
+     `Lexico` e do `TabelasV5` na §48.
+
+     `ALCANCES` NÃO foi junto, de propósito: ele nomeia distância para
+     o projeto inteiro, e arma de fogo usa tanto quanto poder. */
+  get DISCIPLINA_EXIGE() { return Disciplinas.EXIGE; },
+  get PODER_EXIGE() { return Disciplinas.PODER_EXIGE; },
+  get AMALGAMAS() { return Disciplinas.AMALGAMAS; },
+  alcanceDe(poderNome, disciplinaId, nivel) {
+    return Disciplinas.alcanceDe(poderNome, disciplinaId, nivel);
   },
-
-  PODER_EXIGE: {
-    'Voz Irresistível':   { capacidades: ['fala'], alcance: 'voz',
-                            nota: 'Dispensa contato visual: basta a voz, mesmo por telefone.' },
-    'Convocar':           { capacidades: [], alcance: 'ilimitado' },
-    'Olhar Aterrorizante':{ capacidades: ['visao'], alcance: 'ambiente' },
-    'Fascínio':           { capacidades: ['visao'], alcance: 'ambiente' },
-    'Manto de Sombras':   { capacidades: [], alcance: 'toque' },
-    'Sentir a Besta':     { capacidades: [], alcance: 'ambiente' },
-    'Toque do Espírito':  { capacidades: ['maos'], alcance: 'toque' },
-    'Clarividência':      { capacidades: ['mente'], alcance: 'ilimitado' },
-    'Telepatia':          { capacidades: ['mente'], alcance: 'visao' },
-    'Manto Obscuro':      { capacidades: [], alcance: 'toque' },
-    'Visão de Oblívio':   { capacidades: ['visao'], alcance: 'visao' },
-    'Do Pó ao Pó':        { capacidades: ['maos', 'sangue'], alcance: 'toque' },
-    'Braços de Arimã':    { capacidades: ['visao', 'sangue'], alcance: 'formula',
-                            formula: (nivel) => nivel * 2,
-                            nota: 'Os braços alcançam o dobro do seu Oblívio em metros, e se movem por superfícies.' },
-    'Projetar Sombra':    { capacidades: ['sangue'], alcance: 'formula',
-                            formula: (nivel) => nivel * 2 },
-    'Perspectiva da Sombria': { capacidades: ['sangue'], alcance: 'formula',
-                            formula: (nivel) => nivel * 2 },
-    'Precognição Fatal':  { capacidades: ['sangue'], alcance: 'visao',
-                            nota: 'Precisa ver ou ouvir o alvo. Não funciona em vampiros.' },
-    'Armas Ferais':       { capacidades: ['maos', 'corpo'], alcance: 'toque' },
-    'Forma de Névoa':     { capacidades: ['corpo'], alcance: 'toque' },
-    'Corpo Letal':        { capacidades: ['maos', 'corpo'], alcance: 'toque' }
-  },
-
-  /* AMÁLGAMAS SÃO DERIVADAS DO DADO.  (§64)
-
-     Isto era uma lista escrita à mão com DUAS entradas, ao lado de um
-     `data-disciplinas.js` que anota a amálgama no próprio poder. Duas
-     listas para o mesmo fato, e elas discordavam: o livro tem oito
-     amálgamas só no básico, e o motor conhecia duas.
-
-     Agora há uma fonte só. Poder novo com `amalgama` no dado passa a
-     valer sem ninguém lembrar de mexer aqui — que é o erro que esta
-     função existe para não deixar acontecer de novo. */
-  get AMALGAMAS() {
-    if (this._amalgamas) return this._amalgamas;
-    const mapa = {};
-    for (const d of Object.values(DISCIPLINAS)) {
-      for (const nivel of Object.values(d.poderes || {})) {
-        for (const poder of nivel) {
-          if (poder.amalgama) mapa[poder.nome] = poder.amalgama;
-        }
-      }
-    }
-    return (this._amalgamas = mapa);
+  exigenciasDe(poderNome, disciplinaId) {
+    return Disciplinas.exigenciasDe(poderNome, disciplinaId);
   },
 
   MODIFICADORES: [
@@ -267,24 +223,6 @@ const Arbitro = {
     return lista;
   },
 
-  alcanceDe(poderNome, disciplinaId, nivel) {
-    const p = this.PODER_EXIGE[poderNome];
-    if (p && p.alcance === 'formula') {
-      return { nome: 'Alcance calculado', metros: p.formula(nivel || 1), nota: p.nota };
-    }
-    if (p && p.alcance) return Object.assign({}, this.ALCANCES[p.alcance], { nota: p.nota });
-    const d = this.DISCIPLINA_EXIGE[disciplinaId];
-    if (d) return Object.assign({}, this.ALCANCES[d.alcance], { nota: d.nota });
-    return this.ALCANCES.ambiente;
-  },
-
-  exigenciasDe(poderNome, disciplinaId) {
-    const p = this.PODER_EXIGE[poderNome];
-    if (p) return { capacidades: p.capacidades || [], nota: p.nota };
-    const d = this.DISCIPLINA_EXIGE[disciplinaId];
-    if (d) return { capacidades: d.capacidades || [], nota: d.nota };
-    return { capacidades: [] };
-  },
 
   avaliar({ ficha, estados = [], texto = '', intencao = null, alvo = null,
             dificuldade = null, fala = null }) {
@@ -498,7 +436,8 @@ const Arbitro = {
   },
 
   piscinaFinal(ficha, { rota, estados = [], dominio = null, intencao = null, fala = null,
-                        disciplina = null, texto = '', belezaDoLocal = null, luz = null }) {
+                        disciplina = null, texto = '', belezaDoLocal = null, luz = null,
+                        noProprioRefugio = false, contraDeteccaoEletronica = false }) {
     /* §73 (H1): com o texto da ação em mãos, a especialização deixa de
        ser dado de graça e passa a valer só quando a tarefa se enquadra. */
     const casa = this.casadorDeEspecializacao(texto || intencao || '');
@@ -531,14 +470,25 @@ const Arbitro = {
        vê primeiro o que o sangue cobra, e depois o que ele dá. */
     if (typeof Perdicoes !== 'undefined') {
       mods.push(...Perdicoes.modificadores(ficha, {
-        atributo: base.atributoId || rota.atributo, disciplina, texto, belezaDoLocal }));
+        atributo: base.atributoId || rota.atributo, disciplina, texto, belezaDoLocal,
+        luz, contraDeteccaoEletronica }));
     }
 
-    /* §96 — a luz do ambiente, que só Oblívio paga (Oblivio.pdf, pág. 4).
+    /* O que a Disciplina em jogo cobra da parada. Hoje só Oblívio cobra
+       — a luz do ambiente (§96, Oblivio.pdf, pág. 4) —, e a porta é
+       genérica para que a próxima não precise de linha nova aqui.
+
        O caso que IMPEDE não passa por aqui: sem sombra não há parada a
-       montar, e quem responde isso é `MotorOblivio.vereditoDaLuz`. */
-    if (typeof MotorOblivio !== 'undefined') {
-      mods.push(...MotorOblivio.modificadores(ficha, { disciplina, luz }));
+       montar, e quem responde isso é `Disciplinas.vereditoDaLuz`. */
+    /* §101 — o que o Tipo de Predador faz na parada (hoje: o Alçapão no
+       próprio labirinto). Mesmo lugar e mesmo formato das Perdições. */
+    if (typeof Predadores !== 'undefined') {
+      mods.push(...Predadores.modificadores(ficha, {
+        atributo: base.atributoId || rota.atributo, pericia: rota.pericia, noProprioRefugio }));
+    }
+
+    if (typeof Disciplinas !== 'undefined') {
+      mods.push(...Disciplinas.modificadores(ficha, { disciplina, luz }));
     }
 
     const bonusPS = this.bonusDePotencia(ficha, disciplina);

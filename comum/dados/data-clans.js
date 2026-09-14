@@ -154,11 +154,12 @@ const CLAS = [
     disciplinas: ['dominacao', 'oblivio', 'potencia'],
     maldicao: {
       nome: 'Ausência',
-      texto: 'Espelhos e câmeras não seguram sua imagem: reflexos distorcem, gravações chiam, sensores falham quando você é o alvo.'
+      pagina: 'Guia, 29',
+      texto: 'Reflexo e gravação o denunciam a quem sabe o que procura. Tecnologia de comunicação — até um telefonema — exige teste de Tecnologia com Dificuldade 2 + Gravidade da Perdição; evitar detecção eletrônica sofre penalidade igual à Gravidade.'
     },
     compulsao: {
-      nome: 'Ruína',
-      texto: 'Você precisa vencer a qualquer custo, escolhendo sempre a opção mais destrutiva disponível, ou sofre penalidade de dois dados.'
+      nome: 'Crueldade',
+      texto: 'Na próxima falha em qualquer ação, penalidade de dois dados em TODO teste até uma nova tentativa da mesma ação dar certo ou a cena terminar — inclusive nas novas tentativas.'
     },
     arquetipos: ['Dono de casa noturna em Ipanema', 'Juíza de tribunal superior', 'Traficante de arte sacra', 'Bispo do Sabá exilado'],
     seita: 'Camarilla (desde 2019) / Sabá remanescente'
@@ -170,12 +171,13 @@ const CLAS = [
     resumo: 'Assassinos e juristas do sangue. Julgam os Membros pelos próprios pecados — e cobram na veia.',
     disciplinas: ['celeridade', 'feiticaria', 'ofuscacao'],
     maldicao: {
-      nome: 'Sede do Juiz',
-      texto: 'Provar sangue de outro Membro dispara a sede: teste de Autocontrole + Determinação ou entre em frenesi de fome contra vampiros.'
+      nome: 'Sangue que Julga',
+      pagina: 'Guia, 18',
+      texto: 'Saciar ao menos um nível de Fome com Sangue de Membro provoca teste de frenesi de Fome com Dificuldade 2 + Gravidade da Perdição. Falhando, você se empanturra — às vezes até a Diablerie.'
     },
     compulsao: {
       nome: 'Julgamento',
-      texto: 'Você precisa beber ao menos um ponto de Vitalidade de alguém que violou o próprio código, ou sofre penalidade de dois dados.'
+      texto: 'Por uma cena, você precisa saciar ao menos um ponto de Fome de quem agir contra uma Convicção sua, amigo ou inimigo. Não fazer isso custa três dados em todos os testes até satisfazer ou a cena acabar.'
     },
     arquetipos: ['Promotor de justiça', 'Ex-operador de tropa de elite', 'Vingadora silenciosa', 'Alfaiate que aceita encomendas estranhas'],
     seita: 'Camarilla (desde 2013)'
@@ -187,12 +189,13 @@ const CLAS = [
     resumo: 'Necromantes reunidos de linhagens rivais: Giovanni, Samedi, Pisanob. Traficam com os mortos e cobram juros.',
     disciplinas: ['auspicios', 'fortitude', 'oblivio'],
     maldicao: {
-      nome: 'Toque Doloroso',
-      texto: 'Seu Beijo é agonia pura. A vítima jamais sente prazer, resiste com todas as forças, e alimentar-se fica muito mais difícil.'
+      nome: 'O Beijo que Dói',
+      pagina: 'Guia, 23',
+      texto: 'Suas presas trazem agonia, não prazer. Só se bebe direto causando dano. Mortal coagido ou voluntário testa Vigor + Determinação contra Dificuldade 2 + Gravidade da Perdição para não se debater; Membro mordido testa frenesi de terror contra Dificuldade 3.'
     },
     compulsao: {
-      nome: 'Morbidez',
-      texto: 'Você precisa entender uma morte específica. Penalidade de dois dados em tudo que não seja essa investigação mórbida.'
+      nome: 'Morbidade',
+      texto: 'Necessidade imediata de levar algo da vida à morte ou da morte à vida — pessoa, objeto, ideia, conversa. Toda ação sem esse fim sofre dois dados de penalidade, até você matar ou devolver algo à vida.'
     },
     arquetipos: ['Herdeira de funerária centenária', 'Pai de santo que negocia com eguns', 'Legista noturno', 'Pisanob vindo da Amazônia'],
     seita: 'Independente'
@@ -205,11 +208,12 @@ const CLAS = [
     disciplinas: ['ofuscacao', 'presenca', 'metamorfose'],
     maldicao: {
       nome: 'Abominação da Luz',
-      texto: 'Luz intensa queima. Penalidades sob luz forte aumentam e o dano do Sol vem um nível acima do normal.'
+      pagina: 'Guia, 36',
+      texto: 'Seu Sangue abomina a luz. Sob luz brilhante apontada para você, penalidade igual à Gravidade da Perdição em todas as paradas. E a luz do sol causa Gravidade da Perdição a mais de dano Agravado.'
     },
     compulsao: {
       nome: 'Transgressão',
-      texto: 'Você precisa tentar alguém a quebrar uma Convicção — ou quebrar uma das suas. Penalidade de dois dados até conseguir.'
+      texto: 'Dois dados de penalidade em toda parada que não sirva para induzir alguém — inclusive você — a quebrar um Princípio da Crônica ou uma Convicção, causando ao menos uma Mácula. Isso encerra a Compulsão.'
     },
     arquetipos: ['Dono de motel na Dutra', 'Pastor de igreja lotada', 'Aliciadora de carnaval', 'Farmacêutico de drogas de design'],
     seita: 'Independente / Anarquistas'
@@ -221,12 +225,13 @@ const CLAS = [
     resumo: 'Sobreviventes de um clã quase extinto na Semana do Pesadelo. Não podem descansar duas vezes no mesmo lugar.',
     disciplinas: ['animalismo', 'ofuscacao', 'presenca'],
     maldicao: {
-      nome: 'Repouso Inquieto',
-      texto: 'Dormir duas vezes seguidas no mesmo refúgio provoca Dano Agravado igual à sua Potência de Sangue ao acordar.'
+      nome: 'Condenados',
+      pagina: 'Guia, 42',
+      texto: 'O fogo de Zapathasura corre no Sangue. Dormir no mesmo lugar mais de uma vez em sete noites: role Gravidade da Perdição dados, e cada 10 é um Agravado. Dois lugares precisam estar a 1 km; refúgio móvel serve se andou 1,5 km. Vale em torpor. Não pode ter o Defeito Sem Refúgio.'
     },
     compulsao: {
-      nome: 'Ansiedade',
-      texto: 'Você precisa se arriscar sem necessidade ou ir embora imediatamente. Penalidade de dois dados até se mover.'
+      nome: 'Tentar o Destino',
+      texto: 'No próximo problema, qualquer solução que não seja a mais chamativa ou perigosa sofre dois dados. Persiste até o problema se resolver ou novas tentações se tornarem impossíveis.'
     },
     arquetipos: ['Caminhoneiro da BR-116', 'Artista de circo itinerante', 'Cambista de estádio', 'Mochileira que nunca envelhece'],
     seita: 'Sem seita'
@@ -238,12 +243,13 @@ const CLAS = [
     resumo: 'Antigos vaivodas do leste, escultores de carne e de território. Possuem — coisas, lugares, pessoas.',
     disciplinas: ['animalismo', 'auspicios', 'metamorfose'],
     maldicao: {
-      nome: 'Fundação',
-      texto: 'Você precisa dormir cercado por algo que reivindica como seu. Sem isso, perde metade da Força de Vontade a cada noite, cumulativamente.'
+      nome: 'A Carga',
+      pagina: 'Guia, 54',
+      texto: 'Você escolhe uma carga — um domínio, um grupo, uma organização, algo definido e limitado — e precisa dormir cercado por ela. Do contrário, sofre Agravado à Força de Vontade igual à Gravidade da Perdição ao acordar.'
     },
     compulsao: {
-      nome: 'Possessividade',
-      texto: 'Ninguém toca no que é seu. Penalidade de dois dados em qualquer ação que não seja reafirmar seu domínio.'
+      nome: 'Cobiça',
+      texto: 'Obsessão por possuir algo da cena — objeto, propriedade, pessoa. Toda ação sem esse fim sofre dois dados, até a posse se estabelecer ou o objeto ficar inatingível.'
     },
     arquetipos: ['Fazendeira do Centro-Oeste', 'Cirurgião plástico clandestino', 'Colecionador de terras', 'Escultora de barro e osso'],
     seita: 'Sem seita / Sabá'
@@ -255,12 +261,13 @@ const CLAS = [
     resumo: 'Curandeiros quase extintos, caçados como se fossem diablerie ambulante. O terceiro olho abre com o Abraço.',
     disciplinas: ['auspicios', 'dominacao', 'fortitude'],
     maldicao: {
-      nome: 'Presa Marcada',
-      texto: 'O terceiro olho sangra quando você usa Disciplinas. E todos sabem que seu sangue recompensa quem cometer diablerie em você.'
+      nome: 'Caçados',
+      pagina: 'Guia, 47',
+      texto: 'Seu sangue prende quem o bebe: outro Membro que sacie ao menos um nível de Fome com ele testa frenesi de Fome contra Dificuldade 2 + sua Gravidade da Perdição (3 + para Banu Haqim). E o terceiro olho chora vitae ao ativar qualquer Disciplina — Membros perto com Fome 4+ testam frenesi de Fome.'
     },
     compulsao: {
-      nome: 'Afeição',
-      texto: 'Você precisa aliviar o sofrimento de quem está à sua frente. Penalidade de dois dados até ajudar.'
+      nome: 'Empatia Afetiva',
+      texto: 'Você é dominado pela empatia por um problema pessoal de alguém. Toda ação que não mitigue essa tragédia sofre dois dados, até o fardo ser aliviado, uma crise maior o substituir ou a cena terminar.'
     },
     arquetipos: ['Enfermeira de UPA', 'Capelão de hospital', 'Terapeuta noturno', 'Parteira de beira de rio'],
     seita: 'Sem seita'

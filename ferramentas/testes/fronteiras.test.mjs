@@ -879,8 +879,22 @@ test('Estrutura — desligar avisa que há sessão em andamento (§86)', async (
    ============================================================ */
 
 test('Documento — as duas listas de pendência não divergem (§87)', async (t) => {
-  const pend = fs.readFileSync(path.join(RAIZ, 'docs', 'Organização de arquivos.txt'), 'utf8');
-  const readme = fs.readFileSync(path.join(RAIZ, 'README.md'), 'utf8');
+  /* FIM DE LINHA NORMALIZADO ANTES DE QUALQUER COISA.
+
+     O recorte da tabela por peso, logo abaixo, procura a primeira linha
+     em branco com `indexOf('\n\n')` — e num `git checkout` com
+     `core.autocrlf=true`, que é o padrão do Windows, o arquivo volta ao
+     disco com CRLF. Aí `'\n\n'` não casa nunca, `indexOf` devolve -1, o
+     recorte pega o README inteiro e o teste acusa vinte e seis itens
+     que não existem.
+
+     Não é hipótese: aconteceu numa revisão de código, ao desfazer uma
+     edição do README com `git checkout --`. O conteúdo não tinha mudado
+     nada — só o fim de linha. Um teste que depende do fim de linha do
+     sistema operacional reprova por motivo que ninguém consegue ler. */
+  const semCR = (t) => t.replace(/\r\n/g, '\n');
+  const pend = semCR(fs.readFileSync(path.join(RAIZ, 'docs', 'Organização de arquivos.txt'), 'utf8'));
+  const readme = semCR(fs.readFileSync(path.join(RAIZ, 'README.md'), 'utf8'));
 
   /* No arquivo de pendências, item aberto é uma linha `  X9. ...` antes
      da seção FECHADO. */

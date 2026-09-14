@@ -231,39 +231,11 @@ const ACOES_MESA = {
   'consumar-diablerie'(id, alvo) { consumarDiablerie(); return; },
   'abandonar-diablerie'(id, alvo){ abandonarDiablerie(); return; },
 
-  /* ----------------------------------------------------------
-     EXPERIÊNCIA  (§91, pág. 151)
-     ---------------------------------------------------------- */
-  'xp-classe'(id, alvo) {
-        M.compraXP = { classe: id, id: '', para: 0 };
-        salvarMesa(); renderMesa(); return;
-  },
-
-  'xp-nivel'(id, alvo) {
-        const c = M.compraXP || (M.compraXP = { classe: 'atributo', id: '', para: 0 });
-        const atual = nivelAtualDaCompra();
-        c.para = Math.max(atual + 1, (c.para || atual + 1) + (Number(id) || 0));
-        salvarMesa(); renderMesa(); return;
-  },
-
-  'xp-comprar'(id, alvo) {
-        const c = M.compraXP;
-        if (!c || !c.classe) return;
-        const r = Experiencia.comprar(M.ficha, {
-          classe: c.classe, id: c.id, para: c.para || (nivelAtualDaCompra() + 1) });
-        anunciar(r.eventos);
-        if (r.comprou) M.compraXP = { classe: c.classe, id: '', para: 0 };
-        salvarMesa(); renderMesa(); return;
-  },
-
-  'xp-especializacao'(id, alvo) {
-        const hab = $('#xp-esp-hab');
-        const txt = $('#xp-esp-texto');
-        if (!hab || !hab.value) { toast('Escolha uma Habilidade com pontos.'); return; }
-        if (!txt || !txt.value.trim()) { toast('Escreva a especialização.'); return; }
-        anunciar(Experiencia.comprarEspecializacao(M.ficha, hab.value, txt.value).eventos);
-        salvarMesa(); renderMesa(); return;
-  },
+  /* As quatro ações de experiência saíram daqui e foram para o
+     criador (`paineis/painel-experiencia.js`): gastar experiência é
+     editar a ficha, e a Mesa não edita ficha fora do que o jogo faz
+     nela. O que a Mesa faz com experiência é ganhá-la no fim da
+     sessão. */
 
   'lancar-projeto'(id, alvo)   { lancarProjeto(id); return; },
   'objetivo-projeto'(id, alvo) { rolarObjetivoDoProjeto(id); return; },
@@ -392,16 +364,27 @@ const ACOES_MESA = {
         salvarMesa(); renderMesa(); return;
   },
 
-  'dano'(id, alvo) {
-        const [qual, n] = id.split(':');
-        const mapa = {
-          sup:  { tipo: 'superficial', trilha: 'vitalidade' },
-          agr:  { tipo: 'agravado',    trilha: 'vitalidade' },
-          vsup: { tipo: 'superficial', trilha: 'vontade' },
-          vagr: { tipo: 'agravado',    trilha: 'vontade' }
-        }[qual];
-        aplicarNoEstado(f => Estado.aplicarDano(f, Object.assign(
-          { quantidade: +n, fonte: 'marcado na doca' }, mapa)));
+  /* O QUE A BESTA COBRA, escolhido pelo jogador e aplicado pelo Árbitro.
+
+     `data-id` é `<id da mensagem>:<índice da escolha>`. A mensagem
+     guarda as opções que o Árbitro ofereceu, então o clique não
+     consegue pedir nada que não tenha sido oferecido — e o `escolhido`
+     fecha a linha para não pagar duas vezes.
+
+     Os botões de "+1 superficial" e "Fome +1" que existiam para isto
+     saíram: alterar a ficha sem ação em jogo não é do jogador. */
+  'consequencia'(id, alvo) {
+        const corte = id.lastIndexOf(':');
+        const msg = M.mensagens.find(x => x.id === id.slice(0, corte));
+        if (!msg || msg.escolhido) return;
+        const escolha = (msg.escolhas || [])[+id.slice(corte + 1)];
+        if (!escolha) return;
+        /* O resultado vem da MENSAGEM da rolagem, e não de `M.rolagens`:
+           aquele mapa é indexado pelo id do pedido do Narrador, e um
+           reteste de Vontade reescreve o resultado na mensagem. */
+        const r = (M.mensagens.find(x => x.id === msg.rolagem) || {}).resultado;
+        msg.escolhido = escolha;
+        aplicarNoEstado(f => Estado.aplicarConsequencia(f, r, escolha));
         return;
   },
 
@@ -413,7 +396,8 @@ const ACOES_MESA = {
   },
 
   'alimentar'(id, alvo) {
-        aplicarNoEstado(f => Estado.alimentar(f, id));
+        /* §101 — Predadores.alimentar embrulha Estado.alimentar: só ele sabe do cadáver. */
+        aplicarNoEstado(f => (typeof Predadores !== 'undefined' ? Predadores : Estado).alimentar(f, id));
         return;
   },
 
@@ -422,30 +406,24 @@ const ACOES_MESA = {
         return;
   },
 
-  'fome'(id, alvo) {
-        const delta = id === '+1' ? 1 : -1;
-        const antes = M.ficha.fome || 0;
-        M.ficha.fome = Math.max(0, Math.min(5, antes + delta));
-        anunciar([{ tipo: 'fome', texto: `Fome ${antes} → ${M.ficha.fome}.` }]);
-        salvarMesa(); renderMesa();
-        return;
-  },
+  /* SAÍRAM DAQUI, E NÃO FORAM PARA LUGAR NENHUM: `dano`, `fome`,
+     `macula`, `atenuante` e `estado-manual`.
 
-  /* A atenuante vale para a PRÓXIMA Mácula e se apaga depois de usada
-     — invocar a Convicção é sobre um ato, não um estado (§69, A9). */
-  'atenuante'(id, alvo) {
-        M.atenuante = M.atenuante === +id ? null : +id;
-        salvarMesa(); renderMesa(); return;
-  },
+     Eram cinco botões que escreviam na ficha sem nada ter acontecido no
+     jogo — "+1 superficial", "Fome +1", "+2 Máculas", ligar "cego" à
+     mão. O estado do personagem é do Árbitro: ele conta que houve dano,
+     e a Mesa grava. Quem marcava era o jogador, e o `fonte` dos dois
+     piores dizia isso com todas as letras — "marcado na doca".
 
-  'macula'(id, alvo) {
-        const i = M.atenuante;
-        const cv = (i != null && M.ficha) ? (M.ficha.conviccoes || [])[i] : '';
-        aplicarNoEstado(f => Estado.ganharMacula(f, +id, 'marcada na doca',
-          cv ? { porConviccao: cv } : {}));
-        if (cv) { M.atenuante = null; salvarMesa(); renderMesa(); }
-        return;
-  },
+     Por onde o estado muda agora:
+
+       . o combate, por `Combate.resolver` → `Estado.aplicarDano`;
+       . a consequência da rolagem, pela ação `consequencia` acima;
+       . o Narrador, pelos `efeitos` que `aplicarResposta` grava;
+       . as ações declaradas abaixo, que passam por um motor do Árbitro.
+
+     O que ficou SEM caminho está na lista de pendências: marcar
+     "cego" ou "surdo" não nasce de lugar nenhum hoje. */
 
   /* DOIS CLIQUES, E NÃO `confirm()`.  (§76)
 
@@ -499,15 +477,6 @@ const ACOES_MESA = {
 
   'cavalgar'(id, alvo) {
         aplicarNoEstado(f => Estado.testeDeFrenesi(f, { tipo: 'fome', cavalgar: true }));
-        return;
-  },
-
-  'estado-manual'(id, alvo) {
-        const i = M.estados.indexOf(id);
-        if (i >= 0) M.estados.splice(i, 1); else M.estados.push(id);
-        const nome = Arbitro.ESTADOS[id].nome;
-        anunciar([{ tipo: 'estado', texto: i >= 0 ? `${nome}: não mais.` : `${nome}.` }]);
-        salvarMesa(); renderMesa();
         return;
   },
 
@@ -1074,7 +1043,7 @@ function definirTestemunhas(texto) {
 function beberDoReinante(daVeia) {
   const nome = (M.laco && M.laco.reinante) || '';
   if (!nome) { toast('Diga primeiro de quem você bebeu.'); return; }
-  const r = Lacos.beber(M.laco, { daVeia });
+  const r = Lacos.beber(M.laco, { daVeia, bebedor: M.ficha });
   M.laco = r.laco;
   anunciar(r.eventos);
   salvarMesa(); renderMesa();
@@ -1178,18 +1147,4 @@ function abandonarDiablerie() {
   M.diablerie = null;
   anunciar([{ tipo: 'nota', texto: 'Você recua. O corpo se decompõe na Morte Final do mesmo jeito.' }]);
   salvarMesa(); renderMesa();
-}
-
-
-/* O nível atual do que está selecionado para compra. Ele mora aqui, e
-   não no render, porque quem precisa dele é a ação que muda o alvo —
-   e o render já sabe pedir a cotação inteira ao motor. (§91) */
-function nivelAtualDaCompra() {
-  const c = M.compraXP;
-  if (!c || !c.classe) return 0;
-  const f = M.ficha;
-  if (c.classe === 'potenciaSangue') return derivados(f).potencia;
-  const onde = { atributo: 'atributos', habilidade: 'habilidades',
-                 disciplina: 'disciplinas', vantagem: 'antecedentes' }[c.classe];
-  return ((f[onde] || {})[c.id]) || 0;
 }

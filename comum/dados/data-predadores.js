@@ -180,62 +180,124 @@ const PREDADORES = [
   },
 
   /* ---------------------------------------------------------
-     DAQUI PARA BAIXO: GUIA DO JOGADOR, págs. 107–111.
-     NÃO conferidos contra a página nesta rodada (§77). O Guia é
-     a autoridade da matéria própria dele, e a leitura fica como
-     pendência declarada — G10 no README §14.1.
+     OS SEIS DO GUIA DO JOGADOR  (págs. 106–109 — G10, pago na §101)
+
+     Conferidos no `V5-Guia-Do-Jogador.txt`. O Guia é tradução
+     automática e "só apoio" pela tabela de autoridade, mas é a única
+     fonte destes seis no disco — e a regra é entrar pela REGRA, não
+     pelo vocabulário. Cada nome de Habilidade, Disciplina e Antecedente
+     aqui é o do manual básico: onde o Guia escreve "Furto", o básico
+     escreve Ladroagem (`furto`); "Consciência" é Percepção
+     (`consciencia`); "Insight" é Sagacidade (`intuicao`);
+     "Esquecimento" é Oblívio.
+
+     O que a conferência achou: dos cinco que já existiam, NENHUM batia
+     com a página. O Ladrão de Túmulos tinha parada, Qualidade e Defeito
+     errados; o Montero tinha Disciplina errada; o Perseguidor não
+     perdia Humanidade; o Alçapão tinha a parada de armadilhas e o
+     Antecedente errados. E faltava um — o Ceifador, que é o sexto.
+
+     O Guia também traz uma nota geral: o Tipo de Predador pode dar um
+     ponto de Disciplina FORA DO CLÃ — "a fome pode ser mais forte que a
+     linhagem" (pág. 107).
      --------------------------------------------------------- */
   {
-    id: 'extorsionista', nome: 'Extorsionista', simbolo: '💼',
+    id: 'extorsionista', nome: 'Extorsionista', simbolo: '💼', pagina: 'Guia, 107',
     lema: 'Proteção. De mim, principalmente.',
-    desc: 'Você vende segurança e cobra em veias. Coerção elegante, ameaça sussurrada, contrato assinado com dor.',
+    desc: 'Você vende segurança e cobra em veias. Quando a ameaça é real, o negócio parece justo; quando não é, você a inventa para que pareça.',
     teste: 'Força ou Manipulação + Intimidação',
     piscinas: [['forca','intimidacao'],['manipulacao','intimidacao']],
-    especializacao: { opcoes: [['intimidacao', 'Extorsão'], ['furto', 'Segurança']] },
+    especializacao: { opcoes: [['intimidacao', 'Coerção'], ['furto', 'Segurança']] },
     disciplina: ['dominacao', 'potencia'],
-    vantagens: [{ nome: 'Contatos ou Recursos', pontos: 3, tipo: 'antecedente' }],
-    defeitos: [{ nome: 'Inimigo poderoso', pontos: 2, tipo: 'defeito' }]
+    vantagens: [{ nome: 'Três pontos entre Contatos e Recursos', pontos: 3, tipo: 'antecedente' }],
+    defeitos: [{ nome: 'Inimigo: a polícia, ou uma vítima que escapou e quer vingança', pontos: 2, tipo: 'defeito' }]
   },
   {
-    id: 'ladrao_de_tumulos', nome: 'Ladrão de Túmulos', simbolo: '⚰',
+    id: 'ladrao_de_tumulos', nome: 'Ladrão de Túmulos', simbolo: '⚰', pagina: 'Guia, 108',
     lema: 'Os recém-mortos ainda têm o que dar.',
-    desc: 'Necrotérios, velórios, cemitérios, enchentes. Você trabalha onde o luto ainda é fresco.',
-    teste: 'Determinação + Medicina (ou Manipulação + Subterfúgio entre enlutados)',
-    piscinas: [['determinacao','medicina'],['manipulacao','labia']],
-    especializacao: { opcoes: [['ocultismo', 'Fantasmas'], ['medicina', 'Necropsia']] },
-    disciplina: ['oblivio', 'fortitude'],
+    desc: 'Cadáveres frescos, enlutados em cemitérios, pacientes e visitantes de hospital. A Ressonância Melancólica atrai mais que qualquer outra. Costuma exigir refúgio ou laços com igreja, hospital ou necrotério.',
+    teste: 'Determinação + Medicina (vasculhar os mortos) · Manipulação + Sagacidade (entre os enlutados)',
+    piscinas: [['determinacao','medicina'],['manipulacao','intuicao']],
+    especializacao: { opcoes: [['ocultismo', 'Ritos Fúnebres'], ['medicina', 'Cadáveres']] },
+    disciplina: ['fortitude', 'oblivio'],
     vantagens: [
-      { nome: 'Refúgio (adega funerária)', pontos: 1, tipo: 'antecedente' },
-      { nome: 'Aliado no ramo funerário', pontos: 1, tipo: 'antecedente' }
+      { nome: 'Qualidade de Alimentação: Estômago de Ferro', pontos: 3, tipo: 'merito', meritoId: 'iron_gullet' },
+      { nome: 'Refúgio', pontos: 1, tipo: 'antecedente' }
     ],
-    defeitos: [{ nome: 'Refúgio sem Aquecimento / Alimentação Difícil', pontos: 1, tipo: 'defeito' }]
+    defeitos: [{ nome: 'Defeito de Rebanho: Predador Óbvio', pontos: 2, tipo: 'defeito', defeitoId: 'predador_obvio' }],
+    /* "Um cadáver frio pode saciar até 3 pontos de Fome, mas sofre as
+       mesmas penalidades de saciedade que o sangue ensacado." */
+    alimentacao: { fonte: 'cadaver', saciaAte: 3, comoSangueEnsacado: true }
   },
   {
-    id: 'montero', nome: 'Montero', simbolo: '🏹',
+    id: 'ceifador', nome: 'Ceifador', simbolo: '🌾', pagina: 'Guia, 108',
+    lema: 'Só o que já está indo.',
+    desc: 'Também chamado de rato da peste: você se alimenta só de quem está prestes a morrer. Hospícios, casas de repouso, abrigos. Vive em movimento atrás de vítimas no fim, e tem dificuldade em se fixar.',
+    teste: 'Inteligência + Percepção ou Medicina',
+    piscinas: [['inteligencia','consciencia'],['inteligencia','medicina']],
+    especializacao: { opcoes: [['consciencia', 'Morte'], ['furto', 'Falsificação']] },
+    disciplina: ['auspicios', 'oblivio'],
+    /* O único dos seis que GANHA Humanidade: quem só toma de quem já
+       vai, poupa vidas. */
+    humanidade: 1,
+    vantagens: [{ nome: 'Aliados ou Influência na comunidade médica', pontos: 1, tipo: 'antecedente' }],
+    defeitos: [{ nome: 'Defeito de Alimentação: Presa Excluída — mortais saudáveis', pontos: 1, tipo: 'defeito', defeitoId: 'presa_excluida' }]
+  },
+  {
+    id: 'montero', nome: 'Montero', simbolo: '🏹', pagina: 'Guia, 108',
     lema: 'A caçada é ritual e você tem batedores.',
-    desc: 'Tradição ibérica: uma equipe de carniçais encurrala a presa e você aplica o golpe final. Elegância aristocrática.',
-    teste: 'Inteligência + Furtividade (com equipe)',
-    piscinas: [['inteligencia','furtividade']],
-    especializacao: { opcoes: [['lideranca', 'Carniçais'], ['furtividade', 'Emboscada']] },
-    disciplina: ['dominacao', 'metamorfose'],
+    desc: 'A montería ibérica em versão moderna: lacaios encurralam a presa e a conduzem até você. Pode ser um golpe longo, um flash mob, uma confusão burocrática ou uma perseguição de gangue sem sentido aparente.',
+    teste: 'Inteligência + Furtividade (planejar com a equipe) · Determinação + Furtividade (esperar a presa chegar)',
+    piscinas: [['inteligencia','furtividade'],['determinacao','furtividade']],
+    especializacao: { opcoes: [['lideranca', 'Matilha de Caça'], ['furtividade', 'Tocaia']] },
+    disciplina: ['dominacao', 'ofuscacao'],
     humanidade: -1,
-    vantagens: [{ nome: 'Retentores (batedores)', pontos: 2, tipo: 'antecedente' }],
-    defeitos: [{ nome: 'Adversário', pontos: 2, tipo: 'defeito' }]
+    vantagens: [{ nome: 'Lacaios', pontos: 2, tipo: 'antecedente' }],
+    defeitos: []
   },
   {
-    id: 'perseguidor', nome: 'Perseguidor', simbolo: '🎯',
-    lema: 'Você estuda a presa antes de tocá-la.',
-    desc: 'Vigilância, rotina, padrões. Quando finalmente ataca, a vítima já não tinha chance havia semanas.',
-    teste: 'Inteligência + Investigação (para encontrar) / Destreza + Furtividade (para abater)',
-    piscinas: [['inteligencia','investigacao'],['destreza','furtividade']],
-    especializacao: { opcoes: [['investigacao', 'Perfil de Vítima'], ['furtividade', 'Perseguição']] },
-    disciplina: ['auspicios', 'ofuscacao'],
+    id: 'perseguidor', nome: 'Perseguidor', simbolo: '👁', pagina: 'Guia, 108–109',
+    lema: 'Ninguém vai sentir falta.',
+    desc: 'Você estuda a vítima, aprende a rotina dela e se ela pode sumir sem tumulto. Depois a segue a noite inteira, e ataca só quando a fome e o momento estão no ponto.',
+    teste: 'Inteligência + Investigação (achar quem ninguém sente falta) · Vigor + Furtividade (longas perseguições)',
+    piscinas: [['inteligencia','investigacao'],['vigor','furtividade']],
+    especializacao: { opcoes: [['investigacao', 'Perfil'], ['furtividade', 'Sombra']] },
+    disciplina: ['animalismo', 'auspicios'],
     humanidade: -1,
-    vantagens: [{ nome: 'Contato no submundo', pontos: 1, tipo: 'antecedente' }],
-    defeitos: [{ nome: 'Perseguido pela Máscara', pontos: 1, tipo: 'defeito' }]
+    vantagens: [
+      { nome: 'Qualidade: Cheiro de Sangue', pontos: 1, tipo: 'merito', meritoId: 'cheiro_sangue' },
+      { nome: 'Contatos entre os habitués do território: seguranças, vigias, vendedores da madrugada', pontos: 1, tipo: 'antecedente' }
+    ],
+    defeitos: []
   },
+  {
+    id: 'alcapao', nome: 'Alçapão', simbolo: '🕸', pagina: 'Guia, 109',
+    lema: 'Você não caça. Você espera.',
+    desc: 'Como a aranha-alçapão, você monta o ninho e atrai a presa até ele: um parque escuro, um banho turco, uma casa mal-assombrada, um clube da luta. As vítimas chegam ao seu lugar de poder.',
+    teste: 'Carisma + Furtividade (quem entra esperando diversão) · Destreza + Furtividade (invasores e exploradores urbanos)',
+    piscinas: [['carisma','furtividade'],['destreza','furtividade']],
+    especializacao: { opcoes: [['persuasao', 'Marketing'], ['furtividade', 'Emboscadas']] },
+    disciplina: ['metamorfose', 'ofuscacao'],
+    vantagens: [
+      { nome: 'Refúgio', pontos: 1, tipo: 'antecedente' },
+      { nome: 'Lacaios (o major-domo), Rebanho (os visitantes) ou um segundo ponto de Refúgio', pontos: 1, tipo: 'antecedente' }
+    ],
+    defeitos: [{ nome: 'Defeito de Refúgio: Assustador ou Assombrado', pontos: 1, tipo: 'defeito' }],
+    /* "Navegar pelo labirinto dentro de sua toca exige Raciocínio +
+       Percepção (mas você pode adicionar seus pontos de Refúgio em
+       dados à reserva)." */
+    labirinto: { piscina: ['raciocinio','consciencia'], somaRefugio: true }
+  },
+  /* ASSASSINO DE ESTRADA — SEM FONTE NO DISCO.
+
+     Não está no Guia do Jogador: os seis do Guia são os de cima. Este
+     é do Companion (Roadside Killer), que só existe aqui em PDF de
+     imagem, sem texto extraído. Fica porque há ficha salva usando o
+     id, e apagá-lo quebraria o que o jogador guardou — mas fica
+     MARCADO. Quando o Companion for lido, ele se confere ou sai. */
   {
     id: 'assassino_de_estrada', nome: 'Assassino de Estrada', simbolo: '🛣',
+    naoConferido: 'Companion — sem texto no disco (§101)',
     lema: 'Rodovia, posto, motel, próximo estado.',
     desc: 'Caminhoneiros, mochileiros, gente que ninguém dá falta. Você nunca dorme duas vezes na mesma cidade.',
     teste: 'Destreza + Condução',
@@ -246,17 +308,6 @@ const PREDADORES = [
     vantagens: [{ nome: 'Migrante (refúgio móvel)', pontos: 1, tipo: 'antecedente' }],
     defeitos: [{ nome: 'Predador Óbvio', pontos: 2, tipo: 'defeito' }]
   },
-  {
-    id: 'alcapao', nome: 'Alçapão', simbolo: '🕸',
-    lema: 'Você não caça. Você espera.',
-    desc: 'Seu refúgio é a armadilha: um prédio abandonado, um bar, uma casa em ruínas. Eles entram por conta própria.',
-    teste: 'Carisma + Furtividade ou Raciocínio + Ladroagem (armadilhas)',
-    piscinas: [['carisma','furtividade'],['raciocinio','furto']],
-    especializacao: { opcoes: [['furto', 'Armadilhas'], ['manha', 'Boatos']] },
-    disciplina: ['metamorfose', 'oblivio'],
-    vantagens: [{ nome: 'Refúgio com 2 pontos extras', pontos: 3, tipo: 'antecedente' }],
-    defeitos: [{ nome: 'Refúgio Localizado / Infestado', pontos: 1, tipo: 'defeito' }]
-  }
 ];
 
 /* Os ids mudaram junto com os nomes na §77. Ficha salva com o id

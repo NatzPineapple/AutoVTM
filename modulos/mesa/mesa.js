@@ -80,9 +80,6 @@ const MESA_VAZIA = () => ({
   /* §89 — o Apêndice II. O que corre ENTRE as noites. */
   projetos: [],
 
-  /* §91 — o que está selecionado na aba de Experiência. */
-  compraXP: { classe: 'atributo', id: '', para: 0 },
-
   /* §90 — os Estados de Condenação (págs. 233–235). O Laço que PESA
      sobre este personagem: ele é o escravo, e `reinante` é quem o
      enlaçou. Enlaçar os outros é assunto de PN, e não tem ficha aqui. */
@@ -633,10 +630,23 @@ async function rolarDoJogador(idMensagem, indiceRota) {
   M.mensagens.push({ id: idRolagem, autor: 'rolagem', resultado, animar: true, ts: Date.now() });
   registrar(`${resultado.rotulo} — ${Dados.descrever(resultado)}`);
 
+  /* O ÁRBITRO CONTA, A MESA GRAVA.
+
+     Isto mostrava as escolhas como TEXTO — "Falha Bestial: perde um
+     ponto de Vontade · a Fome sobe · …" — e parava aí. Quem aplicava
+     era o jogador, à mão, nos botões de dano e Fome da doca de Estado:
+     o mesmo defeito que a §100 achou no resultado do Narrador, e a
+     sexta tabela morta deste projeto (§67, §90 duas vezes, §91, §100).
+     `Estado.aplicarConsequencia` existia inteira e não tinha um
+     chamador sequer.
+
+     Agora a escolha é do jogador — o livro manda escolher —, mas o
+     EFEITO é do Árbitro e a gravação é da Mesa. O jogador não decide
+     quanto custa; decide qual das opções que o Árbitro ofereceu. */
   const conseq = Arbitro.consequencias(resultado);
   if (conseq) {
-    M.mensagens.push({ id: msgId(), autor: 'sistema',
-      texto: `${conseq.titulo}: ${conseq.escolhas.join(' · ')}`, ts: Date.now() });
+    M.mensagens.push({ id: msgId(), autor: 'consequencia', ts: Date.now(),
+      titulo: conseq.titulo, escolhas: conseq.escolhas, rolagem: idRolagem });
   }
   if (M.campanha && M.diretor && M.opcaoAberta) {
     const rv = Diretor.resolverTeste(M.campanha, M.diretor,
@@ -1486,11 +1496,6 @@ document.addEventListener('change', (e) => {
     if (o) o[campo.slice(corte + 1)] = valor;
   } else if (campo.startsWith('combate:')) {
     M.combate[campo.split(':')[1]] = valor;
-  } else if (campo === 'compraXPId') {
-    /* §91 — escolher O QUE comprar zera o nível-alvo: a cotação passa
-       a valer para o traço novo, e não para o degrau do anterior. */
-    M.compraXP = Object.assign({ classe: 'atributo' }, M.compraXP, { id: valor, para: 0 });
-    salvarMesa(); renderDoca(); return;
   } else {
     M[campo] = valor;
   }

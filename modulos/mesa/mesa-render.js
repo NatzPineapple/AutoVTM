@@ -38,6 +38,27 @@ function msgHTML(m) {
     return `<div class="msg sistema${m.critico ? ' critico' : ''}${m.cartaX ? ' carta-x' : ''}">
       <span>${esc(m.texto)}</span></div>`;
   }
+
+  /* A CONSEQUÊNCIA QUE O ÁRBITRO COBRA, e a escolha que é do jogador.
+
+     O livro manda escolher entre as opções da Falha Bestial e do
+     Sucesso em Perigo; o que ele não manda é o jogador decidir quanto
+     custa. Por isso as opções vêm do Árbitro e o clique só diz QUAL —
+     quem aplica é `Estado.aplicarConsequencia`, e quem grava é a Mesa.
+
+     Depois de escolhida, a linha mostra o que foi cobrado e não aceita
+     segundo clique: consequência paga duas vezes é consequência
+     inventada. */
+  if (m.autor === 'consequencia') {
+    return `<div class="msg sistema critico">
+      <span><b>${esc(m.titulo)}</b>${m.escolhido
+        ? ` — ${esc(m.escolhido)}`
+        : ' — escolha o que a Besta cobra:'}</span>
+      ${m.escolhido ? '' : `<div class="chips" style="margin-top:.4rem">${
+        m.escolhas.map((x, i) => `<span class="chip" data-mesa="consequencia"
+          data-id="${esc(m.id)}:${i}">${esc(x)}</span>`).join('')}</div>`}
+    </div>`;
+  }
   if (m.autor === 'jogador') return jogadorHTML(m);
 
   if (m.autor === 'arbitro') {
@@ -257,15 +278,29 @@ function pedidoHTML(m) {
    chamada pelo Árbitro, que carrega antes do front. */
 
 const ABAS_DOCA = [
-  { id: 'ficha',    rotulo: 'Ficha' },
-  { id: 'estado',   rotulo: 'Estado', conta: () => estadosAtuais().length || null },
+  { id: 'ficha',    rotulo: 'Ficha', conta: () => estadosAtuais().length || null },
+  /* A ABA ESTADO SAIU. O estado do personagem é do Árbitro: ele conta
+     que houve dano e a Mesa grava. A aba tinha cinco botões que
+     escreviam na ficha sem nada ter acontecido no jogo, e eles não
+     existem mais; a leitura e as ações declaradas foram para a Ficha,
+     e o fim de sessão para o Registro. A contagem de estados ativos
+     virou o número da aba Ficha. */
   { id: 'bolsa',    rotulo: 'Bolsa',  conta: () => (M.bolsa || []).length || null },
   { id: 'locais',   rotulo: 'Locais',  conta: () => M.locais.length },
   { id: 'pessoas',  rotulo: 'Pessoas', conta: () => M.pessoas.length },
   { id: 'historia', rotulo: 'História', conta: () => M.fatos.length + M.fios.length },
   { id: 'projetos', rotulo: 'Projetos', conta: () => Projetos.emCurso(M.projetos).length || null },
-  { id: 'xp',       rotulo: 'Experiência',
-    conta: () => Experiencia.carteira(M.ficha).livre || null },
+  /* A ABA DE EXPERIÊNCIA SAIU DAQUI.
+
+     Gastar experiência é editar a ficha: sobe um Atributo, escreve uma
+     Especialização, desconta da carteira. Isso não é coisa que se faça
+     no meio de um turno, com o Narrador esperando — é coisa que se faz
+     entre uma noite e outra, com a ficha aberta na frente.
+
+     Ela mora no criador agora, na tela da Ficha, onde o resto da ficha
+     já se edita. O que a Mesa continua fazendo com experiência é
+     GANHÁ-LA: `Estado.fimDeSessao` credita, e o Registro mostra.
+     (Mudança pedida em revisão de código, sem número de §.) */
   { id: 'sangue',   rotulo: 'Sangue',
     conta: () => (Lacos.normalizar(M.laco).forca || (M.diablerie ? '!' : null)) || null },
   { id: 'limites',  rotulo: 'Limites',
@@ -372,6 +407,10 @@ function docaFicha() {
       ${linha('Fome', '', `<b class="blood-text">${f.fome || 0}</b>`)}
       ${linha('Potência de Sangue', '', `<b class="gold">${d.potencia}</b>`)}
     </div>
+
+    ${/* Os vitais acima são o MÁXIMO; a condição abaixo é o que está
+         gasto agora, e veio da aba Estado quando ela saiu. */''}
+    ${condicaoHTML()}
 
     <div class="doca-sec"><h4>Atributos</h4>${atr}</div>
     <div class="doca-sec"><h4>Habilidades</h4>${habs || '<p class="quiet">—</p>'}</div>
@@ -755,7 +794,30 @@ function docaBolsa() {
   ${cartoes || '<div class="doca-sec"><p class="quiet">A bolsa está vazia.</p></div>'}`;
 }
 
-function docaEstado() {
+/* ------------------------------------------------------------
+   A CONDIÇÃO DO PERSONAGEM — leitura, e as ações que são de jogo
+
+   Era a aba ESTADO, e ela saiu: o estado do personagem é do Árbitro.
+   Ele conta que houve dano e a Mesa grava — como o combate já fazia
+   desde sempre por `Combate.resolver`. O que a aba tinha de errado
+   eram cinco botões que escreviam na ficha sem nada ter acontecido
+   ("+1 superficial", "Fome +1", "+2 Máculas", os estados à mão), e
+   esses não existem mais em lugar nenhum.
+
+   O que sobrou mora na aba FICHA, que é a do personagem, e se divide
+   em duas naturezas:
+
+     LEITURA — o que está queimando, o sangue no corpo e o que ele vale
+       no dado, as trilhas gastas, os estados que o Árbitro já
+       considera. Nada disso se editava; só não tinha outra casa.
+
+     AÇÃO DECLARADA — alimentar-se, curar, resistir ao frenesi,
+       celebrar um Ritae, agir pelo Desejo, apagar o fogo. Todas passam
+       por um motor do Árbitro (`Estado.*`), que é quem decide o custo:
+       o jogador declara o que o personagem FEZ, e não o número que
+       quer na ficha.
+   ------------------------------------------------------------ */
+function condicaoHTML() {
   const f = M.ficha;
   const d = derivados(f);
   const t = Estado.trilhas(f);
@@ -773,15 +835,14 @@ function docaEstado() {
   const botao = (acao, id, rotulo, titulo) =>
     `<span class="chip" data-mesa="${acao}" data-id="${id}" title="${esc(titulo || '')}">${rotulo}</span>`;
 
-  const manuais = ['cego', 'surdo', 'mudo', 'algemado', 'agarrado', 'imobilizado',
-                   'estacado', 'em_chamas', 'luz_solar', 'submerso', 'frenesi']
-    .map(id => `<span class="chip ${M.estados.includes(id) ? 'on' : ''}"
-       data-mesa="estado-manual" data-id="${id}"
-       title="${esc(Arbitro.ESTADOS[id].desc)}">${esc(Arbitro.ESTADOS[id].nome)}</span>`).join('');
-
-  const derivadosAtivos = Estado.estadosDerivados(f)
-    .map(id => `<span class="chip on" style="opacity:.7" title="derivado da ficha, não se desliga à mão">${
-      esc(Arbitro.ESTADOS[id].nome)}</span>`).join('');
+  /* Os estados ATIVOS, e só de leitura. A lista de chips que os ligava
+     à mão saiu junto com a aba: cego, algemado ou em chamas são coisas
+     que acontecem COM o personagem, e quem as declara é o combate ou a
+     narração — nunca um clique do jogador. */
+  const ligados = ativos
+    .map(id => `<span class="chip on" style="opacity:.8"
+       title="${esc((Arbitro.ESTADOS[id] || {}).desc || '')}">${
+      esc((Arbitro.ESTADOS[id] || {}).nome || id)}</span>`).join('');
 
   /* O fogo que ainda está pegando, e o que apaga cada um (§66). Sem
      este bloco a queima corria por turno e o jogador não tinha onde
@@ -818,72 +879,44 @@ function docaEstado() {
     </details>` : ''}
   </div>` : '';
 
+  /* O fogo vem primeiro porque queima por turno e tem hora para ser
+     apagado; o sangue no corpo vai depois das trilhas e da Fome, que é
+     o assunto dele. */
   return `
   ${fogo}
-  ${sangue}
   <div class="doca-sec">
-    <h4>Vitalidade</h4>
-    ${trilha('Trilha', t.vitalidade.livres, t.vitalidade.max, t.vitalidade.agr)}
-    <div class="chips">
-      ${botao('dano', 'sup:1', '+1 superficial')}
-      ${botao('dano', 'sup:3', '+3 superficial')}
-      ${botao('dano', 'agr:1', '+1 agravado')}
-      ${botao('curar', 'vitalidade', 'Curar', 'Custa uma Provocação e pode subir a Fome')}
+    <h4>Trilhas</h4>
+    ${trilha('Vitalidade', t.vitalidade.livres, t.vitalidade.max, t.vitalidade.agr)}
+    ${trilha('Força de Vontade', t.vontade.livres, t.vontade.max, t.vontade.agr)}
+    <div class="chips" style="margin-top:.4rem">
+      ${botao('curar', 'vitalidade', 'Curar o corpo', 'Gasta sangue: custa uma Provocação e pode subir a Fome')}
+      ${botao('curar', 'vontade', 'Recuperar Vontade')}
     </div>
-  </div>
-
-  <div class="doca-sec">
-    <h4>Força de Vontade</h4>
-    ${trilha('Trilha', t.vontade.livres, t.vontade.max, t.vontade.agr)}
-    <div class="chips">
-      ${botao('dano', 'vsup:1', '+1 superficial')}
-      ${botao('dano', 'vagr:1', '+1 agravada')}
-      ${botao('curar', 'vontade', 'Recuperar')}
-    </div>
+    <p class="quiet" style="margin:.5rem 0 0;font-size:.78rem">O dano entra pelo que acontece na
+    mesa — o combate, a consequência da rolagem, o que o Narrador cobra. Não há onde marcá-lo à mão.</p>
   </div>
 
   <div class="doca-sec">
     <h4>Fome — ${f.fome || 0} de 5</h4>
+    <p class="quiet" style="margin:0 0 .4rem;font-size:.8rem">De quem você bebeu:</p>
     <div class="chips">
       ${FONTES_DE_SANGUE.map(x => botao('alimentar', x.fonte, x.rotulo)).join('')}
     </div>
     <div class="chips" style="margin-top:.4rem">
       ${botao('provocacao', '', 'Provocação', 'Rola 1d10; de 1 a 5 a Fome sobe')}
-      ${botao('fome', '+1', 'Fome +1')}
-      ${botao('fome', '-1', 'Fome −1')}
     </div>
   </div>
 
+  ${sangue}
+
   <div class="doca-sec">
     <h4>${esc(pf.bussola.rotulo)} — ${d.humanidade}${(f.maculas || 0) ? `, ${f.maculas} Mácula(s)` : ''}</h4>
-    ${(() => {
-      /* Mácula A SERVIÇO de uma Convicção é reduzida em uma ou mais
-         (pág. 239) — §69, item A9. O exemplo do livro é 3 → 2, então
-         o controle útil não é um botão fixo: é escolher a gravidade
-         do ato E dizer se houve atenuante.
-
-         `M.atenuante` guarda o índice da Convicção invocada, e vale
-         para a PRÓXIMA Mácula marcada. É a ordem em que a mesa
-         pensa: primeiro "eu tinha um motivo", depois "quanto custou". */
-      const cvs = (f.conviccoes || []).map((c, i) => [c, i]).filter(([c]) => c);
-      const at = M.atenuante;
-      const atual = (at != null && f.conviccoes[at]) ? f.conviccoes[at] : null;
-      return `
     <div class="chips">
-      ${[1, 2, 3].map(n => botao('macula', String(n),
-        `+${n} Mácula${n === 1 ? '' : 's'}`,
-        n === 1 ? 'Violação clara, porém justificável' : n === 2 ? 'Ato pesado'
-                : 'Ato verdadeiramente bestial')).join('')}
       ${botao('remorso', '', 'Teste de Remorso', 'Rola os espaços vazios da trilha')}
     </div>
-    ${cvs.length ? `<p class="quiet" style="margin:.5rem 0 .2rem;font-size:.8rem">
-      ${atual
-        ? `Atenuante ligada: a próxima Mácula vem reduzida em respeito a <b>"${esc(atual)}"</b> (pág. 239).`
-        : 'Foi em respeito a uma Convicção? Ligue a atenuante antes de marcar a Mácula:'}</p>
-    <div class="chips">${cvs.map(([c, i]) => `<span class="chip ${at === i ? 'on' : ''}"
-      data-mesa="atenuante" data-id="${i}"
-      title="${esc(c)}">${esc(c.length > 30 ? c.slice(0, 28) + '…' : c)}</span>`).join('')}</div>` : ''}`;
-    })()}
+    <p class="quiet" style="margin:.5rem 0 0;font-size:.78rem">A Mácula vem do ato — a consequência
+    da rolagem, o que o Narrador cobra, a Perdição do clã. Quem mede a gravidade é o Árbitro,
+    inclusive a redução por Convicção (pág. 239).</p>
     ${cam ? `<p class="quiet" style="margin:.5rem 0 0;font-size:.82rem">
       Caminho: ${esc(cam.nome)}. Celebrar um Ritae-Pilar alivia uma Mácula por sessão.</p>
       <div class="chips" style="margin-top:.4rem">
@@ -916,20 +949,28 @@ function docaEstado() {
 
   <div class="doca-sec">
     <h4>Estados</h4>
-    <div class="chips">${manuais}</div>
-    ${derivadosAtivos ? `<p class="quiet" style="margin:.5rem 0 .2rem;font-size:.78rem">
-      Derivados da ficha:</p><div class="chips">${derivadosAtivos}</div>` : ''}
-    ${ativos.length ? `<p class="quiet" style="margin:.5rem 0 0;font-size:.8rem">
-      O Árbitro já considera estes em toda avaliação.</p>` : ''}
-  </div>
+    ${ligados
+      ? `<div class="chips">${ligados}</div>
+         <p class="quiet" style="margin:.5rem 0 0;font-size:.8rem">O Árbitro já considera estes em
+         toda avaliação. Eles entram pelo combate, pela consequência ou pela narração.</p>`
+      : '<p class="quiet" style="margin:0;font-size:.82rem">Nenhum. Você está inteiro — por ora.</p>'}
+  </div>`;
+}
 
+/* O fim da noite mora na aba REGISTRO, junto do Cronista: fechar
+   capítulo, fechar crônica e encerrar a sessão são o mesmo gesto. */
+function fimDeSessaoHTML() {
+  const pf = Seitas.perfil(M.ficha.seita);
+  const botao = (id, rotulo) =>
+    `<span class="chip" data-mesa="fim-sessao" data-id="${id}">${rotulo}</span>`;
+  return `
   <div class="doca-sec">
     <h4>Fim de sessão</h4>
     <div class="chips">
-      ${botao('fim-sessao', 'nada', 'Encerrar')}
-      ${botao('fim-sessao', 'desejo', '+ cumpriu o Desejo')}
-      ${botao('fim-sessao', 'ambicao', '+ cumpriu a Ambição')}
-      ${botao('fim-sessao', 'pilar', `+ beneficiou um ${esc(pf.ancoras.rotulo)}`)}
+      ${botao('nada', 'Encerrar')}
+      ${botao('desejo', '+ cumpriu o Desejo')}
+      ${botao('ambicao', '+ cumpriu a Ambição')}
+      ${botao('pilar', `+ beneficiou um ${esc(pf.ancoras.rotulo)}`)}
     </div>
     <p class="quiet" style="margin:.5rem 0 0;font-size:.8rem">Recupera Vontade, testa Remorso
     se houver Mácula, e dá a experiência da noite.</p>
@@ -1238,123 +1279,9 @@ function docaSangue() {
   return laco + carnical + diablerie;
 }
 
-/* ------------------------------------------------------------
-   A DOCA DA EXPERIÊNCIA  (§91, pág. 151)
-
-   A tabela de custos existia desde sempre e ninguém a chamava; a
-   ficha tinha dois campos de texto — `xpTotal` e `xpGasta` — que o
-   jogador preenchia à mão. Aqui é o caminho que faltava.
-
-   A tela mostra a CONTA ABERTA de propósito. É nela que a regra da
-   pág. 151 fica visível: subir um Atributo de 2 para 4 custa
-   15 + 20 = 35, e não 20, porque não se salta etapa.
-   ------------------------------------------------------------ */
-function docaExperiencia() {
-  const f = M.ficha;
-  const c = Experiencia.carteira(f);
-
-  const alvo = M.compraXP || { classe: 'atributo', id: '', para: 0 };
-  const CLASSES = [
-    { id: 'atributo',       rotulo: 'Atributo' },
-    { id: 'habilidade',     rotulo: 'Habilidade' },
-    { id: 'disciplina',     rotulo: 'Disciplina' },
-    { id: 'vantagem',       rotulo: 'Antecedente' },
-    { id: 'potenciaSangue', rotulo: 'Potência de Sangue' }
-  ];
-
-  /* O que dá para comprar em cada classe, com o nível atual. */
-  const opcoes = {
-    atributo: Object.values(ATRIBUTOS).flatMap(gr => gr.lista)
-      .map(a => ({ id: a.id, nome: a.nome, nivel: (f.atributos || {})[a.id] || 0 })),
-    habilidade: todasHabilidades()
-      .map(h => ({ id: h.id, nome: nomeHabilidade(h.id), nivel: (f.habilidades || {})[h.id] || 0 })),
-    disciplina: Object.keys(DISCIPLINAS)
-      .map(d => ({ id: d, nome: DISCIPLINAS[d].nome, nivel: (f.disciplinas || {})[d] || 0 })),
-    vantagem: ANTECEDENTES
-      .map(a => ({ id: a.id, nome: a.nome, nivel: (f.antecedentes || {})[a.id] || 0 })),
-    potenciaSangue: [{ id: '', nome: 'Potência de Sangue', nivel: derivados(f).potencia }]
-  }[alvo.classe] || [];
-
-  const escolhido = opcoes.find(o => o.id === alvo.id)
-    || (alvo.classe === 'potenciaSangue' ? opcoes[0] : null);
-  const cot = escolhido
-    ? Experiencia.cotar(f, { classe: alvo.classe, id: escolhido.id,
-                             para: alvo.para || (escolhido.nivel + 1) })
-    : null;
-
-  const tabela = Object.entries(Experiencia.CUSTOS).map(([id, x]) => `
-    <div class="linha"><span class="rot">${esc(x.nome)}${x.nota ? `<small>${esc(x.nota)}</small>` : ''}</span>
-      <span>${x.porNivel ? `novo nível × ${x.fator}` : (x.fixo != null ? x.fixo : x.fator)}</span></div>`).join('');
-
-  return `
-  <div class="doca-sec">
-    <h4>Experiência <small style="font-family:var(--sans);font-size:.6rem;opacity:.5">pág. 151</small></h4>
-    <div class="linha"><span class="rot">Ganha<small>uma por sessão, mais Ambição cumprida</small></span>
-      <span>${c.total}</span></div>
-    <div class="linha"><span class="rot">Gasta</span><span>${c.gasta}</span></div>
-    <div class="linha"><span class="rot">Livre<small>o que dá para gastar agora</small></span>
-      <span><b class="gold">${c.livre}</b></span></div>
-  </div>
-
-  <div class="doca-sec">
-    <h4>Comprar</h4>
-    <div class="chips">${CLASSES.map(x =>
-      `<span class="chip ${alvo.classe === x.id ? 'on' : ''}" data-mesa="xp-classe"
-        data-id="${x.id}">${esc(x.rotulo)}</span>`).join('')}</div>
-
-    ${opcoes.length > 1 ? `
-      <div class="campo" style="margin-top:.5rem">
-        <label>O quê</label>
-        <select id="xp-alvo" data-mesa-campo="compraXPId">
-          <option value="">—</option>
-          ${opcoes.map(o => `<option value="${esc(o.id)}" ${o.id === alvo.id ? 'selected' : ''}>${
-            esc(o.nome)} · ${o.nivel}</option>`).join('')}
-        </select>
-      </div>` : ''}
-
-    ${cot ? `
-      <div class="linha" style="margin-top:.5rem">
-        <span class="rot">${esc(cot.nome)}<small>${cot.de} → ${cot.para}</small></span>
-        <span>${cot.custo != null ? `${cot.custo} de experiência` : '—'}</span>
-      </div>
-      ${cot.explicacao && cot.salto ? `<p class="quiet" style="margin:.2rem 0 0;font-size:.8rem">
-        <b>${esc(cot.explicacao)}</b> — não se salta etapa (pág. 151).</p>` : ''}
-      ${cot.motivo ? `<p class="quiet" style="margin:.3rem 0 0;font-size:.82rem">${esc(cot.motivo)}</p>` : ''}
-      <div class="chips" style="margin-top:.45rem">
-        <span class="chip" data-mesa="xp-nivel" data-id="-1">− um nível</span>
-        <span class="chip" data-mesa="xp-nivel" data-id="1">+ um nível</span>
-        <span class="chip ${cot.possivel ? '' : 'apagado'}" data-mesa="xp-comprar" data-id="ok">Comprar</span>
-      </div>
-    ` : '<p class="quiet" style="margin-top:.5rem;font-size:.82rem">Escolha o que comprar.</p>'}
-  </div>
-
-  <div class="doca-sec">
-    <h4>Especialização</h4>
-    <p class="quiet" style="margin:0 0 .5rem;font-size:.82rem">Custo fixo de
-    ${Experiencia.custoDe('especializacao')}, e ela precisa de pelo menos um ponto na Habilidade.</p>
-    <div class="campo"><label>Em qual Habilidade</label>
-      <select id="xp-esp-hab">
-        ${todasHabilidades().filter(h => (f.habilidades || {})[h.id] > 0)
-          .map(h => `<option value="${esc(h.id)}">${esc(nomeHabilidade(h.id))}</option>`).join('')
-          || '<option value="">— nenhuma Habilidade com pontos —</option>'}
-      </select></div>
-    <div class="campo"><label>Qual especialização</label>
-      <input id="xp-esp-texto" placeholder="Ex.: Facas"></div>
-    <div class="chips"><span class="chip" data-mesa="xp-especializacao" data-id="ok">Comprar</span></div>
-  </div>
-
-  <div class="doca-sec">
-    <h4>A tabela do livro</h4>
-    ${tabela}
-    <p class="quiet" style="margin:.5rem 0 0;font-size:.8rem">"Novo nível" é o nível que você
-    <b>deseja comprar</b>, e não o que você tem. E não se salta etapa: para chegar ao quarto ponto
-    é preciso comprar o terceiro antes, e pagar os dois.</p>
-  </div>`;
-}
-
 function docaRegistro() {
-  return cronistaHTML() + (!M.registro.length ? '<p class="quiet">Sem registros.</p>'
-    : registroHTML());
+  return fimDeSessaoHTML() + cronistaHTML()
+    + (!M.registro.length ? '<p class="quiet">Sem registros.</p>' : registroHTML());
 }
 
 function cronistaHTML() {
@@ -1507,9 +1434,9 @@ function abasHTML() {
 
 function corpoDocaHTML() {
   return ({
-    ficha: docaFicha, estado: docaEstado, bolsa: docaBolsa,
+    ficha: docaFicha, bolsa: docaBolsa,
     locais: docaLocais, pessoas: docaPessoas,
-    historia: docaHistoria, projetos: docaProjetos, xp: docaExperiencia,
+    historia: docaHistoria, projetos: docaProjetos,
     sangue: docaSangue, limites: docaLimites,
     registro: docaRegistro, debug: docaDebug
   }[M.aba] || docaFicha)();

@@ -1377,10 +1377,23 @@ F1 a F5 pagos na §47. A área carrega sozinha, com duas pastas: `['data', 'fich
 
 ---
 
-#### Árbitro — **fechada de novo**
+#### Árbitro — **um item, achado numa mudança de área**
 
-A1 a A4 foram achadas lendo o livro (§58 a §62) e **pagas na §63**. Um sexto item, A6,
-apareceu enquanto eu escrevia o teste do terceiro, e foi pago junto.
+**A12. O ponto da Ambição está preso à cura da Vontade** — *baixo*
+
+Em `Estado.fimDeSessao`, o +1 de experiência por Ambição cumprida só é pago quando há Vontade
+Agravada para curar — as duas coisas moram no mesmo `if`. A pág. 128 não as prende: quem cumpre
+a Ambição com a trilha limpa ganha o ponto do mesmo jeito.
+
+Apareceu ao separar **quanto a noite rende** (do Árbitro) de **como se gasta** (da Ficha): a
+regra do quanto ganhou nome próprio, `xpDaSessao`, e com nome próprio ficou visível que ela
+recebia uma condição que não é dela. Preservado como estava — mudança de área não é hora de
+mudar regra calado.
+
+---
+
+Os outros fecharam. A1 a A4 foram achadas lendo o livro (§58 a §62) e **pagas na §63**. Um sexto
+item, A6, apareceu enquanto eu escrevia o teste do terceiro, e foi pago junto.
 
 | # | O que era | Onde foi parar |
 |---|---|---|
@@ -1418,7 +1431,7 @@ diferente por ser um assunto inteiro, e não um pedaço de tela.
 
 ---
 
-#### Cronista — **um item, medido**
+#### Cronista — **dois itens, os dois medidos**
 
 **C1. O degrau 3 aceita ou recusa por sorteio** — *baixo* · era o A9, e o dono é a Escada
 
@@ -1428,6 +1441,24 @@ em degraus diferentes, e o custo em LLM varia sem ninguém ter escolhido isso. N
 
 Não é urgente: o efeito é ~5% de turnos indo ao Narrador sem motivo. Está aqui porque foi medido,
 e porque a meta de "70% local" merece um número estável.
+
+**C2. O esquema do extrator em português caiu de 96,8% pra 80,6%** — *médio* · achado numa
+refatoração do Elo 1
+
+`motor-intencao.js` deixou de desempatar casando frase contra o léxico e passou a comparar a
+`intencao_detalhada` que o modelo escreve com o domínio da ação (revisão de código, sem §). Junto,
+o esquema do extrator (`modulos/cronista/intencao.mjs`) virou português no fio — `tipo_acao`,
+`alvo`, `poder`, no lugar de `action_type`, `target`, `spell_name`.
+
+Medido com a mesma bateria e o mesmo protocolo da §94 (5 repetições, `qwen2.5:7b`, 155 chamadas):
+tipo certo caiu de 150/155 para **125/155**, e o caso do arremesso — G4, pago 20/20 desde a §94 —
+quebrou: *"jogo o cinzeiro na cabeça dela"* passou a sair como corpo a corpo. A suspeita é o
+próprio enum: `atacar_corpo_a_corpo` e `atacar_distancia` são identificadores longos com
+sublinhado, e a decodificação por gramática restrita de um modelo pequeno é sensível à forma como
+o valor tokeniza — `melee_attack`/`ranged_attack` eram tokens curtos e bem separados.
+
+Não bloqueia o jogo: tipo errado cai na rota de fuga (léxico, e depois o Narrador), a mesma que
+existe para o serviço fora do ar. O custo é usar menos o modelo do que o desenho permite.
 
 ---
 
@@ -1485,22 +1516,6 @@ contraditórias estão **no mesmo arquivo**:
 Dois deles — o 2 e o 5 — dão para travar com teste, do jeito que a §94 travou a bateria: caminho de
 livro citado num `.md` que não existe no disco vira falha de `npm test`.
 
-**G12. As Partes III e IV, e o livro que não está aqui** — *médio* · nasceu na §95
-
-**Zero páginas conferidas nas duas**, e elas não se leem igual.
-
-A **Parte III** é **documento de desenho**, não regra extraída de livro: as fontes dela são a Parte
-I, a Parte IV e `cenario.md`. Reler é **conferir contra o código**, não contra a página — a
-pergunta é se a §11 dela ainda descreve a realidade depois das §88–§94.
-
-A **Parte IV** depende de dois livros de peso muito diferente, e o que carrega os **sistemas** —
-Vaulderie, Vinculum, matilhas, Ritae com efeito mecânico, os 8 Predadores — é o de **comunidade**,
-que **não está nesta máquina**. O oficial `SABBAT.pdf`, que está, trata o Sabá como inimigo e
-nunca dá sistema para jogá-lo.
-
-Dá para reler contra o oficial: **§1**, a metade de cenário da **§2**, os nomes dos Ritae da **§5**
-e a parte oficial da **§7**. O resto fica como está enquanto o PDF de comunidade não voltar.
-
 **G10. Os seis Tipos de Predador do Guia do Jogador não foram conferidos** — *médio* · nasceu na §77
 
 Extorsionista, Ladrão de Túmulos, Montero, Perseguidor, Assassino de Estrada e Alçapão vêm do
@@ -1517,8 +1532,8 @@ O usuário desenhou o sistema em cinco módulos com processo e porta próprios (
 existem**: MesaServer na §78, as pastas na §79, ligar e desligar na §80, a rolagem passando à
 Mesa na §82, e FichaServer, Árbitro e Cronista virando processos na §83 e na §84.
 
-O que falta é **o Cliente usar**. As rotas respondem, têm teste, e o navegador não chama nenhuma
-delas.
+**E o Cliente já usa** (§85): guarda ficha no Módulo 2, faz checkout e checkin no Módulo 3, rola
+pela Mesa e ouve o canal. Com os módulos fora, o jogo continua local e a tela diz por quê.
 
 **M9. A sessão é espelhada, não autoritativa** — *médio* · nasceu na §85
 
@@ -1536,6 +1551,14 @@ a fonte local da §82. Separá-los exigiria tornar assíncrono o miolo do Árbit
 Do desenho do Módulo 4: *pegar uma carta, conhecer alguém* — o veredito tem de trazer **o que a
 mesa deve gravar**, e não só o resultado mecânico. Hoje `mundo.objetos` e `mundo.pessoas` ficam
 vazios a menos que alguém os preencha à mão.
+
+**M11. Checkout/checkin sem teste com o FichaServer de verdade** — *baixo*
+
+`cliente-ficha.mjs` e `ficha-servidor.mjs` foram conferidos por leitura — rota, envelope e formato
+de resposta batem —, mas nenhum teste sobe os dois processos juntos: `mesa-servidor.test.mjs` fixa
+`VITAE_PORTA_FICHA` numa porta que ninguém atende, de propósito, e só cobre o caminho sem
+FichaServer. O caminho feliz (`origemDaFicha: 'fichaserver'`, checkin 200 de verdade) nunca rodou
+fora de teste mockado na Ponte.
 
 ---
 
@@ -1562,9 +1585,11 @@ Para responder "o que fazer em seguida":
 | 3 | O Árbitro não manda salvar na memória da mesa (M4) | Geral | médio |
 | 4 | A sessão é espelhada, não autoritativa (M9) | Geral | médio |
 | 5 | Seis erros de documento achados no levantamento (G11) | Geral | médio |
-| 6 | As Partes III e IV, e o livro que não está aqui (G12) | Geral | médio |
-| 7 | O degrau 3 aceita ou recusa por sorteio (C1) | Cronista | baixo |
-| 8 | Só a rolagem de ação passa pela Mesa (M10) | Geral | baixo |
+| 6 | O degrau 3 aceita ou recusa por sorteio (C1) | Cronista | baixo |
+| 7 | Só a rolagem de ação passa pela Mesa (M10) | Geral | baixo |
+| 8 | Checkout/checkin sem teste com o FichaServer de verdade (M11) | Geral | baixo |
+| 9 | O ponto da Ambição está preso à cura da Vontade (A12) | Árbitro | baixo |
+| 10 | O esquema do extrator em português caiu de 96,8% pra 80,6% (C2) | Cronista | médio |
 
 **O Árbitro reabriu e fechou na mesma §95.** O levantamento pôs na lista o que já estava escrito em
 `regras.md` mas fora dela — as seis Perdições de clã que eram só texto (A10) e o Conflito de
@@ -1784,6 +1809,11 @@ framework — a divisão por arquivo não precisa de build, só de disciplina de
 | **`testes/` muda de pasta** para `ferramentas/testes/` | agrupa runner e o que ele testa sob "o que não é o produto" | sem §, revisão de código |
 | **`ficha-oficial.js` renomeado para `ficha-modelo.js`** (e `fichaOficialHTML` → `fichaModeloHTML`) | nome mais específico do que o arquivo faz (monta o modelo oficial de impressão) | sem §, revisão de código |
 | **`campanhas/` sai do controle de versão** | já estava no `.gitignore`, mas tinha sido commitada antes disso — `git rm --cached` para o ignore valer de verdade | sem §, revisão de código |
+| **Gastar experiência é da área Ficha, e a tela é a do criador** | `motor-experiencia.js` foi do Árbitro para `modulos/ficha/`, e a aba Experiência saiu da doca da Mesa: gastar XP escreve na ficha (sobe Atributo, escreve Especialização, desconta da carteira), e isso se faz entre as noites, não no meio de um turno. O teste é a prova — o motor roda em `ficha.test.mjs`, que carrega só `data` e `ficha` | sem §, revisão de código |
+| **Ao Árbitro fica só QUANTO a noite rendeu** | `Estado.xpDaSessao` — uma por sessão, mais a Ambição. Decidir quanto se ganha é arbitragem; guardar e gastar é ficha. O atalho morto `Estado.custoDe` saiu junto | sem §, revisão de código |
+| **Oblívio deixa de ser a única Disciplina com motor próprio** | `motor-oblivio.js` reuniu-se com o que era regra de Disciplina solta em `motor-arbitro.js` (`DISCIPLINA_EXIGE`, `PODER_EXIGE`, `AMALGAMAS`, `alcanceDe`, `exigenciasDe`) em `motor-disciplinas.js`. Mesmo desenho de `motor-perdicoes.js`: quando o assunto tem um motor, a próxima Disciplina com regra própria já sabe onde entrar | sem §, revisão de código |
+| **A aba Estado saiu: o personagem é mediado pelo Árbitro** | Ela tinha cinco botões que escreviam na ficha sem nada ter acontecido no jogo (`+1 superficial`, `Fome ±1`, `+N Mácula`, estados à mão) — "marcado na doca" era o próprio texto de um deles. `Estado.aplicarConsequencia` existia e não tinha chamador: agora a Falha Bestial e o Sucesso em Perigo oferecem as escolhas do livro como botões no fluxo, o jogador escolhe QUAL, o Árbitro aplica e a Mesa grava. A leitura foi para a Ficha; o Fim de sessão, para o Registro | sem §, revisão de código |
+| **`modulos/arbitro/motores/`** reúne os quinze `motor-*.js` | mesmo padrão que `paineis/` já usa no Front: o nome do arquivo, na lista de carga, carrega o subcaminho (`motores/motor-dados`), e `PASTA_DA_AREA.arbitro` continua sendo uma pasta só. `arbitro-lexico.js` e `arbitro-tabelas.js` ficam fora — não são motores | sem §, revisão de código |
 
 Quatro dessas mudaram desde a revisão anterior, e três merecem nota:
 
@@ -3493,7 +3523,7 @@ decorar.
 
 ### 39.6 A tradução para o V5
 
-`modulos/arbitro/motor-intencao.js`. O esquema pedido é genérico — `cast_spell`, `spell_name` —
+`modulos/arbitro/motores/motor-intencao.js`. O esquema pedido é genérico — `cast_spell`, `spell_name` —
 e Vampiro não tem "spell": tem Disciplina e poder. Este módulo é a fronteira onde o genérico
 vira id de `Arbitro.ACOES`.
 
@@ -4121,12 +4151,12 @@ O LLM NUNCA produz número. Quem rola é o motor; quem aplica efeito é o Árbit
 ESTRUTURA: uma pasta por MODULO, em modulos/. A pasta e o modulo, e nao onde o
 codigo roda: .js e script classico de navegador, .mjs e ESM de servidor, e os
 dois moram juntos quando sao do mesmo modulo (secao 79).
-A URL E O CAMINHO NO REPOSITORIO: /modulos/arbitro/motor-dados.js e o arquivo
-modulos/arbitro/motor-dados.js. Nao ha tabela de traducao no meio, de proposito
+A URL E O CAMINHO NO REPOSITORIO: /modulos/arbitro/motores/motor-dados.js e o arquivo
+modulos/arbitro/motores/motor-dados.js. Nao ha tabela de traducao no meio, de proposito
 — tabela de traducao e um segundo lugar onde a estrutura esta escrita.
 Se mover ou criar arquivo, conserte TRES lugares: os <script src> de
 index.html, os de diagnostico.html, e as listas AREAS e PASTA_DA_AREA de
-ferramentas/testes/carregar.mjs. Ha teste comparando as tres — se elas divergirem,
+comum/ordem-de-carga.mjs. Ha teste comparando as tres — se elas divergirem,
 arreio.test.mjs reprova. Ja quebrou uma vez sem esse teste, e o app abriu mudo,
 com 26 erros 404 e nenhuma mensagem na tela.
 As campanhas vivem em campanhas/ na RAIZ, servidas por uma rota propria nos
@@ -4415,7 +4445,7 @@ A §79 fez a pasta ser o módulo. Esta é a tabela de "onde mexer" para os cinco
 | A rodada de combate na mesa | `modulos/mesa/mesa-combate.js` | Orquestração da rodada (F1, §100). **Regra de combate mora no Árbitro** |
 | Ver a conversa entre Mesa, Árbitro e Cronista | `modulos/cliente/js/trafego.js` | O registro do tráfego e a forma de cada linha (§93). **Observador: não muda nada, não vive na sessão** |
 | O que a sessão grava em disco | `modulos/mesa/mesa-pasta.mjs` | `meta.json`, `ficha.json`, `mesa.json`, `historico.jsonl` |
-| Falar com o FichaServer | `modulos/mesa/cliente-ficha.mjs` | O contrato do Módulo 2, e o que fazer quando ele não existe |
+| Falar com o FichaServer | `modulos/mesa/cliente-ficha.mjs` | O contrato do Módulo 2, e o que fazer quando ele não está de pé |
 | Que porta é de quem | `comum/portas.mjs` | **Um lugar só.** Mudar porta aqui muda em todos |
 | O aperto de mão e os quadros | `comum/websocket.mjs` | RFC 6455, lado servidor, sem dependência |
 | O que é servível pela URL | `comum/servir-estatico.mjs` | As três raízes, e a regra de que a URL é o caminho |
@@ -4424,7 +4454,7 @@ A §79 fez a pasta ser o módulo. Esta é a tabela de "onde mexer" para os cinco
 | O Cliente falar com os módulos | `modulos/cliente/js/ponte.js` | **A única parte do front que sabe que há servidor** |
 | Onde a ficha mora | `modulos/ficha/ficha-guardador.mjs` | Mongo ou pasta, com a MESMA interface |
 | Rota `/ficha/…` | `modulos/ficha/ficha-servidor.mjs` | Porta de entrada: valida forma, não regra |
-| Uma regra do Árbitro | `modulos/arbitro/<motor>.js` | **Um arquivo só.** O servidor roda o mesmo que o navegador |
+| Uma regra do Árbitro | `modulos/arbitro/motores/<motor>.js` | **Um arquivo só.** O servidor roda o mesmo que o navegador |
 | Como o Árbitro carrega no Node | `modulos/arbitro/arbitro-contexto.mjs` | O contexto de `vm`, e a fonte de acaso que estoura |
 | Narrar, cronicar, extrair intenção | `modulos/cronista/cronista-servidor.mjs` | As três camadas. O limite de taxa NÃO é dele |
 | A ordem de carga dos scripts | `comum/ordem-de-carga.mjs` | Área ≠ pasta. A única tradução do projeto |
@@ -5690,7 +5720,7 @@ tentativa revertida; `diagnostico.html`: 175 de 175.
 Duas dívidas do Árbitro estavam escritas, conferidas contra a página e impressas na ficha — mas fora
 da lista de pendências, que passou a listá-las como **A10, A11, G11 e G12**. **A10:** só a Brujah
 chegava ao dado; as outras oito Perdições eram texto certo na ficha e nenhum efeito — a pior
-categoria de dívida do projeto, regra escrita que não acontece. `modulos/arbitro/motor-perdicoes.js`
+categoria de dívida do projeto, regra escrita que não acontece. `modulos/arbitro/motores/motor-perdicoes.js`
 reúne as seis novas porque são a mesma regra com seis caras (todas medem em Gravidade da Perdição,
 mesmo erro possível de usar Potência de Sangue no lugar dela, defeito que a §88 achou na Brujah):
 Gangrel gera aspectos que tiram dado do Atributo e duram mais uma noite (com a regra de dúvida do

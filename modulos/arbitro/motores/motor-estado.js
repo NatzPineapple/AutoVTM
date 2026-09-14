@@ -619,8 +619,9 @@ const Estado = {
     if (!c) return { eventos };
     const alvo = escolha || c.escolhas[0];
 
-    /* §95 (A10) — Perdição Malkaviana, gatilho 1 de 2: pág. 79. */
-    if (typeof Perdicoes !== 'undefined' && resultado && resultado.tipo === 'falhaBestial') {
+    /* §95 (A10) — Perdição Malkaviana, gatilho 1 de 2: pág. 79. O tipo é
+       `bestial`, e era `falhaBestial`: função sem chamador esconde erro. */
+    if (typeof Perdicoes !== 'undefined' && resultado && resultado.tipo === 'bestial') {
       eventos.push(...Perdicoes.aoVirATona(f, 'Falha Bestial').eventos);
     }
 
@@ -644,11 +645,13 @@ const Estado = {
     return { eventos, escolha: alvo, opcoes: c.escolhas };
   },
 
-  /* A tabela de custos e o gastador moram em `motor-experiencia.js`
-     desde a §91. Ela ficou aqui, sem chamador nenhum, desde que foi
-     escrita — e este atalho existe para quem lia dela continuar
-     lendo. */
-  custoDe(tipo, novoNivel) { return Experiencia.custoDe(tipo, novoNivel); },
+  /* QUANTO A NOITE RENDEU — a única parte da experiência que é do
+     Árbitro. Tabela, carteira e gastador são da área Ficha
+     (`motor-experiencia.js`), porque gastar escreve na ficha; o atalho
+     `Estado.custoDe` saiu junto, sem um chamador sequer. */
+  xpDaSessao({ cumpriuAmbicao = false } = {}) {
+    return 1 + (cumpriuAmbicao ? 1 : 0);
+  },
 
   /* ----------------------------------------------------------
      O DESEJO PAGA NA HORA  (§69, item A7)
@@ -695,7 +698,10 @@ const Estado = {
 
   fimDeSessao(f, { cumpriuAmbicao = false, cumpriuDesejo = false, beneficiouPilar = false } = {}) {
     const eventos = [];
-    let xp = 1;
+    /* O ponto da Ambição está PRESO à cura da Vontade Agravada, abaixo,
+       e a pág. 128 não prende os dois. Preservado como estava: mudança
+       de área não é hora de mudar regra calada. Está na lista (A12). */
+    let ambicaoPagou = false;
 
     const cura = this.curar(f, { trilha: 'vontade' });
     eventos.push(...cura.eventos);
@@ -711,7 +717,7 @@ const Estado = {
     }
     if (cumpriuAmbicao && (f.danoVontadeAgravado || 0) > 0) {
       f.danoVontadeAgravado = Math.max(0, f.danoVontadeAgravado - 1);
-      xp += 1;
+      ambicaoPagou = true;
       eventos.push({ tipo: 'cura', texto: 'Agiu conforme a Ambição: 1 de Vontade Agravada recuperada.' });
     }
     if (beneficiouPilar && (f.danoVontadeAgravado || 0) > 0) {
@@ -735,9 +741,8 @@ const Estado = {
       if (!compra.pode) eventos.push({ tipo: 'nota', texto: compra.motivo });
     }
 
-    /* §91 — quem credita é a carteira, e ela diz quanto sobrou livre.
-       Antes o total subia e ninguém sabia quanto dele estava gasto,
-       porque não havia como gastar. */
+    /* O Árbitro decide QUANTO; a carteira da área Ficha guarda. */
+    const xp = this.xpDaSessao({ cumpriuAmbicao: ambicaoPagou });
     eventos.push(...Experiencia.creditar(f, xp, 'fim de sessão').eventos);
     return { eventos, xp };
   }

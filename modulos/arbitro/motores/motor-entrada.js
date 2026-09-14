@@ -303,7 +303,11 @@ const Entrada = {
         do G6 que pediu esta: em "...", o extrator devolveu uma frase
         inteira, copiada do exemplo do próprio prompt.
      ---------------------------------------------------------- */
-  DE_VOLUME: { whisper: 'sussurro', shout: 'grito', message: 'mensagem', normal: 'normal' },
+  /* O extrator passou a falar português no fio (`fala`, `volume_fala`), e
+     os valores já chegam no vocabulário da mesa. A tabela continua aqui
+     por uma razão: ela é a fronteira que impede um valor novo do modelo
+     de virar volume desconhecido — o que não está nela cai em 'normal'. */
+  DE_VOLUME: { sussurro: 'sussurro', grito: 'grito', mensagem: 'mensagem', normal: 'normal' },
 
   /* Trava 4, isolada para poder ser medida sozinha: diz se o que o
      jogador escreveu autoriza o modelo a pôr fala na boca dele.
@@ -336,12 +340,12 @@ const Entrada = {
 
   comModelo(seg, bruta, pessoas = []) {
     if (!seg || seg.fala) return seg;                      /* trava 1 */
-    const dito = bruta && typeof bruta.speech === 'string' ? bruta.speech.trim() : '';
+    const dito = bruta && typeof bruta.fala === 'string' ? bruta.fala.trim() : '';
     if (!dito) return seg;
     if (!this.deuSinalDeFala(seg.texto)) return seg;        /* trava 4 */
 
-    const volume = this.DE_VOLUME[bruta.speech_volume] || 'normal';
-    const alvo = this.alvoDe(seg.acao + ' ' + (bruta.target || ''), dito, pessoas);
+    const volume = this.DE_VOLUME[bruta.volume_fala] || 'normal';
+    const alvo = this.alvoDe(seg.acao + ' ' + (bruta.alvo || ''), dito, pessoas);
     const fala = { tipo: 'fala', texto: dito, volume, alvo, deModelo: true };
 
     const segmentos = seg.segmentos.concat([fala]);

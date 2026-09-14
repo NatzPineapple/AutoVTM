@@ -20,7 +20,7 @@ import { carregar, fichaDeTeste, comDadosViciados, executar, instantaneo, RAIZ, 
 const AREAS_DO_ARBITRO = ['data', 'ficha', 'arbitro', 'front', 'mesa'];
 const g = carregar(AREAS_DO_ARBITRO);
 const { Dados, Arbitro, Estado, Combate, Rodada, Grafo, Especialista, Cadeia,
-        Perdicoes, RolagemUnica, Escudo, derivados, Oblivio, MotorOblivio, Lexico } = g;
+        Perdicoes, RolagemUnica, Escudo, derivados, Oblivio, Disciplinas, Lexico, Predadores, PREDADORES, HABILIDADES, CLAS } = g;
 
 /* Apurar sem rolar: `_apurar` é pura e recebe os dados prontos. É assim
    que se testa a regra do V5 sem depender de sorteio nenhum. */
@@ -1284,8 +1284,8 @@ test('Árbitro — o segmentador da entrada (§57)', async (t) => {
   await t.test('sem fala escrita, o modelo pode acrescentar a que leu', (t2) => {
     /* O caso que a pontuação não alcança: fala indireta, sem aspas. */
     const s = ler('Digo pra ela, bem baixo, que ela não devia ter vindo');
-    const bruta = { speech: 'você não devia ter vindo', speech_volume: 'whisper',
-                    target: 'ela' };
+    const bruta = { fala: 'você não devia ter vindo', volume_fala: 'sussurro',
+                    alvo: 'ela' };
     const r = instantaneo(g, `Entrada.comModelo(${JSON.stringify(s)}, ${
       JSON.stringify(bruta)}, ${JSON.stringify(PESSOAS)})`);
     t2.diagnostic(`${r.segmentos.map(x => x.tipo).join(' › ')} · volume ${r.volume}`);
@@ -1299,7 +1299,7 @@ test('Árbitro — o segmentador da entrada (§57)', async (t) => {
   await t.test('com aspas escritas, o modelo NÃO corrige o jogador', (t2) => {
     /* Ninguém sabe melhor que o jogador o que ele quis dizer. */
     const s = ler('Sussurro: "você não devia ter vindo"');
-    const bruta = { speech: 'não era pra você estar aqui', speech_volume: 'shout' };
+    const bruta = { fala: 'não era pra você estar aqui', volume_fala: 'grito' };
     const r = instantaneo(g, `Entrada.comModelo(${JSON.stringify(s)}, ${
       JSON.stringify(bruta)}, ${JSON.stringify(PESSOAS)})`);
     t2.diagnostic(`fala: "${r.fala.texto}" · volume ${r.volume}`);
@@ -1311,7 +1311,7 @@ test('Árbitro — o segmentador da entrada (§57)', async (t) => {
   await t.test('o modelo não inventa ação nem apaga a que foi escrita', (t2) => {
     const s = ler('Empurro a porta e falo com ela');
     const r = instantaneo(g, `Entrada.comModelo(${JSON.stringify(s)}, ${
-      JSON.stringify({ speech: 'sai da frente', speech_volume: 'normal' })}, [])`);
+      JSON.stringify({ fala: 'sai da frente', volume_fala: 'normal' })}, [])`);
     t2.diagnostic(`ação: "${r.acao}"`);
     assert.equal(r.acao, s.acao, 'a ação do jogador mudou');
     assert.equal(r.segmentos.filter(x => x.tipo === 'acao').length, 1);
@@ -1321,7 +1321,7 @@ test('Árbitro — o segmentador da entrada (§57)', async (t) => {
     /* O caminho do léxico devolve `bruta: null`, e é o caminho padrão:
        o jogo nunca depende do modelo (§29). */
     const s = ler('Saco a arma.');
-    for (const bruta of [null, undefined, {}, { speech: '' }, { speech: '   ' }]) {
+    for (const bruta of [null, undefined, {}, { fala: '' }, { fala: '   ' }]) {
       const r = instantaneo(g, `Entrada.comModelo(${JSON.stringify(s)}, ${
         JSON.stringify(bruta ?? null)}, [])`);
       assert.equal(r.fala, null);
@@ -1332,7 +1332,7 @@ test('Árbitro — o segmentador da entrada (§57)', async (t) => {
   await t.test('volume que o modelo inventou vira normal, não quebra', (t2) => {
     const s = ler('Falo com ela');
     const r = instantaneo(g, `Entrada.comModelo(${JSON.stringify(s)}, ${
-      JSON.stringify({ speech: 'oi', speech_volume: 'telepathic' })}, [])`);
+      JSON.stringify({ fala: 'oi', volume_fala: 'telepatico' })}, [])`);
     t2.diagnostic(`telepathic → ${r.volume}`);
     assert.equal(r.volume, 'normal');
     assert.ok(Arbitro.VOLUMES[r.volume], 'volume fora do que o Árbitro conhece');
@@ -1378,7 +1378,7 @@ test('Entrada — o modelo não inventa fala (§94, G6)', async (t) => {
       ['...', 'você não devia ter vindo hoje'],
       ['tento convencer a Bia a me contar quem esteve aqui', 'quem esteve aqui']
     ]) {
-      const r = comModelo(texto, { speech: inventada, speech_volume: 'whisper' });
+      const r = comModelo(texto, { fala: inventada, volume_fala: 'sussurro' });
       t2.diagnostic(`"${texto}" + fala inventada → fala ${r.fala ? `"${r.fala.texto}"` : 'nenhuma'}`);
       assert.equal(r.fala, null, `o modelo pôs "${inventada}" na boca do personagem`);
       assert.ok(!r.leuComModelo);
@@ -1388,7 +1388,7 @@ test('Entrada — o modelo não inventa fala (§94, G6)', async (t) => {
   await t.test('mas a fala indireta de verdade continua passando', (t2) => {
     /* A trava não pode matar a razão de a §57 ter chamado o modelo. */
     const r = comModelo('digo pra ela, bem baixo, que ela não devia ter vindo',
-                        { speech: 'você não devia ter vindo', speech_volume: 'whisper' });
+                        { fala: 'você não devia ter vindo', volume_fala: 'sussurro' });
     t2.diagnostic(`fala "${r.fala && r.fala.texto}" · volume ${r.volume}`);
     assert.equal(r.fala.texto, 'você não devia ter vindo');
     assert.equal(r.leuComModelo, true);
@@ -1446,10 +1446,10 @@ test('Entrada — o modelo não inventa fala (§94, G6)', async (t) => {
   await t.test('a trava só tira, nunca põe', () => {
     /* Sem fala lida, ela não pode fabricar nenhuma; com aspas, quem
        manda é a trava 1, e a 4 nem chega a ser consultada. */
-    const semFala = comModelo('digo alguma coisa', { speech: '', speech_volume: 'normal' });
+    const semFala = comModelo('digo alguma coisa', { fala: '', volume_fala: 'normal' });
     assert.equal(semFala.fala, null);
     const comAspas = comModelo('sussurro: "você não devia ter vindo"',
-                               { speech: 'OUTRA COISA', speech_volume: 'shout' });
+                               { fala: 'OUTRA COISA', volume_fala: 'grito' });
     assert.equal(comAspas.fala.texto, 'você não devia ter vindo');
     assert.equal(comAspas.volume, 'sussurro');
   });
@@ -1486,11 +1486,11 @@ test('Entrada — a trava 4 concorda com a bateria de medição (§94)', async (
 
   await t.test('a trava nunca barra fala de verdade — senão ela mata a §57', (t2) => {
     const barradas = bateria.casos
-      .filter(c => c.volume && c.volume !== 'none')
+      .filter(c => c.volume && c.volume !== 'nenhum')
       .filter(c => !sinal(c.frase))
       .map(c => c.frase);
-    t2.diagnostic(`${bateria.casos.filter(c => c.volume && c.volume !== 'none').length} frases com fala na bateria`);
-    assert.ok(bateria.casos.filter(c => c.volume && c.volume !== 'none').length >= 6,
+    t2.diagnostic(`${bateria.casos.filter(c => c.volume && c.volume !== 'nenhum').length} frases com fala na bateria`);
+    assert.ok(bateria.casos.filter(c => c.volume && c.volume !== 'nenhum').length >= 6,
       'a bateria encolheu e o teste virou enfeite');
     assert.deepEqual(barradas, [], 'a trava barrou fala que o jogador escreveu');
   });
@@ -3553,7 +3553,7 @@ test('Clãs — o regras.md e os dados dizem a mesma coisa (§88)', async (t) =>
     t2.diagnostic(`o documento diz aplicadas: ${seis.join(', ')}`);
     assert.ok(seis.length >= 6, 'a tabela das Perdições aplicadas encolheu sem aviso');
 
-    const perdicoes = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motor-perdicoes')), 'utf8');
+    const perdicoes = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motores/motor-perdicoes')), 'utf8');
     const semGancho = seis.filter(nome => {
       const id = nome.replace('sangue-ralo', 'ralo');
       return !new RegExp(id, 'i').test(perdicoes);
@@ -3868,39 +3868,39 @@ test('Perdições — elas chegam à PARADA, e não só ao ajudante (§95)', asy
 
 test('Oblívio — a luz manda, e impedir não é penalizar (§96, pág. 4)', async (t) => {
   await t.test('cômodo moderadamente iluminado tira um dado', (t2) => {
-    const v = MotorOblivio.vereditoDaLuz('oblivio', 'moderada');
+    const v = Disciplinas.vereditoDaLuz('oblivio', 'moderada');
     t2.diagnostic(`${v.rotulo}: ${v.dados} dado(s) · impede ${v.impede}`);
     assert.equal(v.dados, -1);
     assert.equal(v.impede, false);
   });
 
   await t.test('luz intensa IMPEDE, e não vira penalidade', (t2) => {
-    const v = MotorOblivio.vereditoDaLuz('oblivio', 'intensa');
+    const v = Disciplinas.vereditoDaLuz('oblivio', 'intensa');
     t2.diagnostic(`impede ${v.impede} · dados ${v.dados}`);
     assert.equal(v.impede, true, 'a luz do dia deixou de impedir');
     assert.equal(v.dados, 0,
       'impedir virou desconto de dado — o piso de 1 dado ainda deixaria rolar');
-    assert.equal(MotorOblivio.modificadores({}, { disciplina: 'oblivio', luz: 'intensa' }).length, 0,
+    assert.equal(Disciplinas.modificadores({}, { disciplina: 'oblivio', luz: 'intensa' }).length, 0,
       'o que impede não pode entrar como modificador de parada');
   });
 
   await t.test('UV e infravermelho não restringem — o livro isenta os dois por nome', () => {
-    const v = MotorOblivio.vereditoDaLuz('oblivio', 'invisivel');
+    const v = Disciplinas.vereditoDaLuz('oblivio', 'invisivel');
     assert.equal(v.impede, false);
     assert.equal(v.dados, 0);
   });
 
   await t.test('ambiente DESCONHECIDO não é ambiente claro', (t2) => {
-    const v = MotorOblivio.vereditoDaLuz('oblivio', null);
+    const v = Disciplinas.vereditoDaLuz('oblivio', null);
     t2.diagnostic(`sem saber: vale ${v.vale} · impede ${v.impede}`);
     assert.equal(v.impede, false, 'punir por informação ausente é inventar regra');
-    assert.equal(MotorOblivio.modificadores({}, { disciplina: 'oblivio' }).length, 0);
+    assert.equal(Disciplinas.modificadores({}, { disciplina: 'oblivio' }).length, 0);
   });
 
   await t.test('e a luz só cobra de Oblívio', () => {
-    assert.equal(MotorOblivio.modificadores({}, { disciplina: 'ofuscacao', luz: 'moderada' }).length, 0,
+    assert.equal(Disciplinas.modificadores({}, { disciplina: 'ofuscacao', luz: 'moderada' }).length, 0,
       'a regra de Oblívio vazou para outra Disciplina');
-    assert.equal(MotorOblivio.modificadores({}, { luz: 'moderada' }).length, 0,
+    assert.equal(Disciplinas.modificadores({}, { luz: 'moderada' }).length, 0,
       'uma parada sem Disciplina nenhuma pagou a luz');
   });
 
@@ -3927,20 +3927,20 @@ test('Oblívio — a Checagem de Sangue corrói pelas duas pontas (§96, pág. 4
   });
 
   await t.test('o 10 cobra Mácula sem cobrar Fome', (t2) => {
-    const r = MotorOblivio.apurarChecagem(10);
+    const r = Disciplinas.apurarChecagem(10);
     t2.diagnostic(`macula ${r.macula} · fome ${r.fome}`);
     assert.equal(r.macula, true, 'o 10 de Oblívio deixou de cobrar');
     assert.equal(r.fome, false, 'o 10 passou a subir a Fome, e só o 1 sobe');
   });
 
   await t.test('o 1 cobra os dois', () => {
-    const r = MotorOblivio.apurarChecagem(1);
+    const r = Disciplinas.apurarChecagem(1);
     assert.equal(r.macula, true);
     assert.equal(r.fome, true);
   });
 
   await t.test('com rerrolagem, o jogador ESCOLHE — as duas saem na mão dele', (t2) => {
-    const r = MotorOblivio.apurarChecagem(10, { segundo: 4 });
+    const r = Disciplinas.apurarChecagem(10, { segundo: 4 });
     t2.diagnostic(r.opcoes.map(o => `${o.valor}${o.macula ? ' (Mácula)' : ''}`).join(' ou '));
     assert.equal(r.podeEscolher, true);
     assert.equal(r.opcoes.length, 2);
@@ -3959,7 +3959,7 @@ test('Oblívio — a porta das Cerimônias (§96, pág. 14)', async (t) => {
 
   await t.test('sem o poder exigido, a Cerimônia não abre', (t2) => {
     const f = necromante(1, ['Manto Obscuro']);
-    const r = MotorOblivio.podeAprender(f, 'Invocar o Espírito');
+    const r = Disciplinas.podeAprender(f, 'Invocar o Espírito');
     t2.diagnostic(r.motivo);
     assert.equal(r.pode, false);
     assert.match(r.motivo, /Grilhões que Vinculam/);
@@ -3967,19 +3967,19 @@ test('Oblívio — a porta das Cerimônias (§96, pág. 14)', async (t) => {
 
   await t.test('com ele, abre', () => {
     const f = necromante(1, ['Grilhões que Vinculam']);
-    assert.equal(MotorOblivio.podeAprender(f, 'Invocar o Espírito').pode, true);
+    assert.equal(Disciplinas.podeAprender(f, 'Invocar o Espírito').pode, true);
   });
 
   await t.test('e o nível de Oblívio também é cobrado', (t2) => {
     const f = necromante(1, ['Espírito em Declínio']);
-    const r = MotorOblivio.podeAprender(f, 'Ex Nihilo');
+    const r = Disciplinas.podeAprender(f, 'Ex Nihilo');
     t2.diagnostic(r.motivo);
     assert.equal(r.pode, false, 'uma Cerimônia de nível 5 abriu com Oblívio 1');
   });
 
   await t.test('o teste é Determinação + Oblívio, Dificuldade = nível + 1', (t2) => {
     const f = necromante(3, ['Aura de Decadência']);
-    const p = MotorOblivio.pedidoDaCerimonia(f, 'Hordas Trôpegas');
+    const p = Disciplinas.pedidoDaCerimonia(f, 'Hordas Trôpegas');
     t2.diagnostic(`${p.normais} dados · dificuldade ${p.dificuldade} · ${p.minutos} min`);
     assert.equal(p.possivel, true);
     assert.equal(p.normais, 6, 'Determinação 3 + Oblívio 3 tinha de dar 6');
@@ -3990,14 +3990,14 @@ test('Oblívio — a porta das Cerimônias (§96, pág. 14)', async (t) => {
 
   await t.test('e a luz que impede também impede a Cerimônia', (t2) => {
     const f = necromante(3, ['Aura de Decadência']);
-    const p = MotorOblivio.pedidoDaCerimonia(f, 'Hordas Trôpegas', { luz: 'intensa' });
+    const p = Disciplinas.pedidoDaCerimonia(f, 'Hordas Trôpegas', { luz: 'intensa' });
     t2.diagnostic(p.motivo);
     assert.equal(p.possivel, false, 'a Cerimônia rolou ao sol');
   });
 
   await t.test('a luz moderada tira um dado da Cerimônia, e não a impede', () => {
     const f = necromante(3, ['Aura de Decadência']);
-    const p = MotorOblivio.pedidoDaCerimonia(f, 'Hordas Trôpegas', { luz: 'moderada' });
+    const p = Disciplinas.pedidoDaCerimonia(f, 'Hordas Trôpegas', { luz: 'moderada' });
     assert.equal(p.possivel, true);
     assert.equal(p.normais, 5);
   });
@@ -4006,16 +4006,16 @@ test('Oblívio — a porta das Cerimônias (§96, pág. 14)', async (t) => {
     for (const [nome, xp, semanas] of [['Invocar o Espírito', 3, 1],
                                        ['Hordas Trôpegas', 9, 9],
                                        ['Ex Nihilo', 15, 25]]) {
-      t2.diagnostic(`${nome}: ${MotorOblivio.custoEmXP(nome)} XP · ${
-        MotorOblivio.semanasParaAprender(nome)} semana(s)`);
-      assert.equal(MotorOblivio.custoEmXP(nome), xp);
-      assert.equal(MotorOblivio.semanasParaAprender(nome), semanas);
+      t2.diagnostic(`${nome}: ${Disciplinas.custoEmXP(nome)} XP · ${
+        Disciplinas.semanasParaAprender(nome)} semana(s)`);
+      assert.equal(Disciplinas.custoEmXP(nome), xp);
+      assert.equal(Disciplinas.semanasParaAprender(nome), semanas);
     }
   });
 
   await t.test('Cerimônia que não existe não abre nem custa', () => {
-    assert.equal(MotorOblivio.podeAprender(necromante(5, []), 'Tempestade de Ossos').pode, false);
-    assert.equal(MotorOblivio.custoEmXP('Tempestade de Ossos'), 0);
+    assert.equal(Disciplinas.podeAprender(necromante(5, []), 'Tempestade de Ossos').pode, false);
+    assert.equal(Disciplinas.custoEmXP('Tempestade de Ossos'), 0);
   });
 });
 
@@ -4116,6 +4116,289 @@ test('Léxico — a ênclise não pode esconder o verbo (§99)', async (t) => {
     }
     t2.diagnostic(`${Object.keys(Lexico.ACOES).length} ações varridas`);
     assert.equal(mudos.join(' | '), '', 'há termo que o casador aceita e o marcador não pinta');
+  });
+});
+
+/* ============================================================
+   OS SEIS PREDADORES DO GUIA DO JOGADOR  (§101 — G10)
+
+   Lidos em `V5-Guia-Do-Jogador.txt`, págs. 106–109. Cada linha da
+   tabela abaixo é o que a PÁGINA diz, com os nomes do manual básico
+   — e o teste cobra o dado contra ela. Dos cinco que existiam, nenhum
+   batia; o sexto, o Ceifador, não existia.
+   ============================================================ */
+test('Predadores — os seis do Guia, conferidos na página (§101)', async (t) => {
+  const PAGINA = {
+    extorsionista:     { disc: ['dominacao', 'potencia'],    piscinas: 'forca+intimidacao manipulacao+intimidacao', hum: 0 },
+    ladrao_de_tumulos: { disc: ['fortitude', 'oblivio'],     piscinas: 'determinacao+medicina manipulacao+intuicao',  hum: 0 },
+    ceifador:          { disc: ['auspicios', 'oblivio'],     piscinas: 'inteligencia+consciencia inteligencia+medicina', hum: +1 },
+    montero:           { disc: ['dominacao', 'ofuscacao'],   piscinas: 'inteligencia+furtividade determinacao+furtividade', hum: -1 },
+    perseguidor:       { disc: ['animalismo', 'auspicios'],  piscinas: 'inteligencia+investigacao vigor+furtividade', hum: -1 },
+    alcapao:           { disc: ['metamorfose', 'ofuscacao'], piscinas: 'carisma+furtividade destreza+furtividade', hum: 0 }
+  };
+
+  await t.test('os seis existem, e a página de cada um está escrita', (t2) => {
+    for (const id of Object.keys(PAGINA)) {
+      const pr = PREDADORES.find(x => x.id === id);
+      assert.ok(pr, `o Predador ${id} sumiu`);
+      assert.match(String(pr.pagina || ''), /^Guia, 10[6-9]/, `${id} sem página do Guia`);
+    }
+    t2.diagnostic(Object.keys(PAGINA).join(' · '));
+  });
+
+  await t.test('Disciplina, parada e Humanidade batem com a página', (t2) => {
+    const erradas = [];
+    for (const [id, esp] of Object.entries(PAGINA)) {
+      const pr = PREDADORES.find(x => x.id === id);
+      const disc = [...pr.disciplina].sort().join(',');
+      if (disc !== [...esp.disc].sort().join(',')) erradas.push(`${id}: Disciplinas ${disc}`);
+      const pisc = pr.piscinas.map(x => x.join('+')).join(' ');
+      if (pisc !== esp.piscinas) erradas.push(`${id}: parada "${pisc}"`);
+      if ((pr.humanidade || 0) !== esp.hum) erradas.push(`${id}: Humanidade ${pr.humanidade || 0}`);
+    }
+    t2.diagnostic(erradas.length ? erradas.join(' | ') : 'os seis batem');
+    assert.equal(erradas.join(' | '), '', 'há Predador do Guia divergindo da página');
+  });
+
+  await t.test('toda especialização aponta para uma Habilidade que existe', () => {
+    const ids = new Set(Object.values(HABILIDADES).flatMap(g => g.lista).map(h => h.id));
+    const soltas = [];
+    for (const id of Object.keys(PAGINA)) {
+      const pr = PREDADORES.find(x => x.id === id);
+      for (const [hid] of pr.especializacao.opcoes) if (!ids.has(hid)) soltas.push(`${id} → ${hid}`);
+    }
+    assert.equal(soltas.join(', '), '', 'especialização apontando para Habilidade inexistente');
+  });
+
+  await t.test('os nomes são os do básico: nem "Furto", nem "Consciência", nem "Esquecimento"', () => {
+    /* O Guia traduz mal. O que entra é a regra; o nome é o do básico. */
+    const fonte = fs.readFileSync(path.join(RAIZ, 'comum', 'dados', 'data-predadores.js'), 'utf8');
+    const bloco = fonte.slice(fonte.indexOf("id: 'extorsionista'"), fonte.indexOf("id: 'assassino_de_estrada'"));
+    for (const ruim of ["'consciência'", "Esquecimento", "'Furto'", "Insight"]) {
+      assert.ok(!bloco.includes(ruim), `vocabulário do Guia vazou para o dado: ${ruim}`);
+    }
+  });
+
+  await t.test('o Assassino de Estrada não está no Guia, e o dado diz isso', (t2) => {
+    const pr = PREDADORES.find(x => x.id === 'assassino_de_estrada');
+    t2.diagnostic(String(pr.naoConferido || '(sem marca)'));
+    assert.ok(pr.naoConferido, 'um Predador sem fonte no disco ficou sem a marca');
+  });
+});
+
+test('Predadores — o cadáver do Ladrão de Túmulos (§101, Guia pág. 108)', async (t) => {
+  const coveira = (potenciaMod = 0) => {
+    const f = fichaDeTeste(g, { nome: 'Coveira', cla: 'hecata' });
+    f.predador = 'ladrao_de_tumulos'; f.fome = 4; f.potenciaMod = potenciaMod;
+    return f;
+  };
+
+  await t.test('sacia até 3', (t2) => {
+    const f = coveira();
+    const r = Predadores.alimentar(f, 'cadáver');
+    t2.diagnostic(r.eventos.map(e => e.texto).join(' | '));
+    assert.equal(r.saciou, 3);
+    assert.equal(f.fome, 1);
+  });
+
+  await t.test('com as penalidades do sangue ensacado: metade em PS 2, nada em PS 4', (t2) => {
+    const a = coveira(1), b = coveira(3);
+    const ra = Predadores.alimentar(a, 'cadáver'), rb = Predadores.alimentar(b, 'cadáver');
+    t2.diagnostic(`PS ${derivados(a).potencia}: ${ra.saciou} · PS ${derivados(b).potencia}: ${rb.saciou}`);
+    assert.equal(ra.saciou, 1);
+    assert.equal(rb.saciou, 0);
+  });
+
+  await t.test('para qualquer outro Predador, cadáver NÃO é fonte', (t2) => {
+    const f = fichaDeTeste(g, { nome: 'Outro', cla: 'brujah' });
+    f.predador = 'vira_lata'; f.fome = 4;
+    const r = Predadores.alimentar(f, 'cadáver');
+    t2.diagnostic(r.eventos[0].texto);
+    assert.equal(r.saciou, 0);
+    assert.equal(f.fome, 4, 'a Fome caiu para quem não sabe beber de cadáver');
+  });
+
+  await t.test('e a tabela do básico continua PURA no Estado', () => {
+    /* A regra não pode ter entrado em Estado.alimentar: lá é o Escudo. */
+    const f = coveira();
+    assert.equal(Estado.alimentar(f, 'cadáver').saciou, 0, 'Estado.alimentar passou a conhecer cadáver');
+    assert.equal(Predadores.alimentar(f, 'Bolsa de sangue').saciou, 1, 'o embrulho parou de delegar o resto');
+  });
+});
+
+test('Predadores — o labirinto do Alçapão (§101, Guia pág. 109)', async (t) => {
+  const aranha = () => {
+    const f = fichaDeTeste(g, { nome: 'Aranha', cla: 'nosferatu' });
+    f.predador = 'alcapao';
+    f.vantagens = [{ id: 'refugio', nome: 'Refúgio', pontos: 2, tipo: 'antecedente' }];
+    return f;
+  };
+
+  await t.test('Raciocínio + Percepção no próprio refúgio soma os pontos de Refúgio', (t2) => {
+    const m = Predadores.modificadores(aranha(), { atributo: 'raciocinio', pericia: 'consciencia', noProprioRefugio: true });
+    t2.diagnostic(JSON.stringify(m));
+    assert.equal(m.length, 1);
+    assert.equal(m[0].dados, 2);
+  });
+
+  await t.test('fora do refúgio, ou noutra parada, nada', () => {
+    assert.equal(Predadores.modificadores(aranha(), { atributo: 'raciocinio', pericia: 'consciencia' }).length, 0);
+    assert.equal(Predadores.modificadores(aranha(), { atributo: 'destreza', pericia: 'furtividade', noProprioRefugio: true }).length, 0);
+  });
+
+  await t.test('e chega à PARADA pelo caminho de verdade', (t2) => {
+    const f = aranha();
+    const pf = (extra) => Arbitro.piscinaFinal(f, Object.assign({ rota: { atributo: 'raciocinio', pericia: 'consciencia' } }, extra));
+    const fora = pf({}), dentro = pf({ noProprioRefugio: true });
+    t2.diagnostic(`fora ${fora.total} · dentro ${dentro.total}`);
+    assert.equal(dentro.total, fora.total + 2, 'o Refúgio não chegou à parada');
+  });
+});
+
+test('Predadores — o Ceifador ganha Humanidade (§101, Guia pág. 108)', async (t) => {
+  await t.test('7 + 1 = 8 na criação', (t2) => {
+    const f = fichaDeTeste(g, { nome: 'Ceifa', cla: 'hecata' });
+    f.predador = 'ceifador';
+    t2.diagnostic(`Humanidade ${derivados(f).humanidade}`);
+    assert.equal(derivados(f).humanidade, 8);
+  });
+});
+
+/* ============================================================
+   AS SETE PERDIÇÕES DO GUIA DO JOGADOR  (§101)
+
+   Banu Haqim, Hecata, Lasombra, Ministério, Ravnos, Salubri e
+   Tzimisce estavam "SEM CONFERIR" desde a §88, como texto sem número.
+   O Guia incorpora o Companion e dá o número de cada uma; todas se
+   medem em Gravidade da Perdição, como as nove do básico.
+   ============================================================ */
+test('Perdições — as sete do Guia chegam ao dado (§101)', async (t) => {
+  /* Gravidade 2 (Potência 1). `potenciaMod` sobe a Potência e, com
+     ela, a Gravidade — é o que a tabela da pág. 216 manda. */
+  const de = (cla, potenciaMod = 0) => {
+    const f = fichaDeTeste(g, { nome: 'X', cla });
+    f.potenciaMod = potenciaMod;
+    return f;
+  };
+  const grav = (f) => Perdicoes.gravidade(f);
+
+  await t.test('a página de cada uma está escrita no dado', () => {
+    for (const id of ['lasombra', 'banu_haqim', 'hecata', 'ministerio', 'ravnos', 'tzimisce', 'salubri']) {
+      const c = CLAS.find(x => x.id === id);
+      assert.match(String(c.maldicao.pagina || ''), /^Guia, \d+/, `${id}: Perdição sem página`);
+    }
+  });
+
+  await t.test('Lasombra: comunicação sobe a Dificuldade para 2 + Gravidade', (t2) => {
+    const f = de('lasombra');
+    const r = Perdicoes.dificuldadeLasombra(f, { comunicacaoModerna: true });
+    t2.diagnostic(`Gravidade ${grav(f)} → ${r.nota}`);
+    assert.equal(r.dificuldade, 2 + grav(f));
+    assert.equal(Perdicoes.dificuldadeLasombra(f, {}), null, 'cobrou sem comunicação moderna');
+    assert.equal(Perdicoes.dificuldadeLasombra(de('brujah'), { comunicacaoModerna: true }), null, 'cobrou de outro clã');
+  });
+
+  await t.test('Lasombra: detecção eletrônica tira a Gravidade, e chega à parada', (t2) => {
+    const f = de('lasombra');
+    const rota = { atributo: 'destreza', pericia: 'furtividade' };
+    const normal = Arbitro.piscinaFinal(f, { rota }).total;
+    const contra = Arbitro.piscinaFinal(f, { rota, contraDeteccaoEletronica: true }).total;
+    t2.diagnostic(`normal ${normal} · contra sensores ${contra} (Gravidade ${grav(f)})`);
+    assert.equal(contra, Math.max(1, normal - grav(f)));
+  });
+
+  await t.test('Banu Haqim: Sangue de Membro pede frenesi de Fome a 2 + Gravidade', (t2) => {
+    const f = de('banu_haqim');
+    const pedidos = Perdicoes.aoBeberDeVampiro(f, de('ventrue'));
+    t2.diagnostic(pedidos.map(p => p.motivo).join(' | '));
+    assert.equal(pedidos.length, 1);
+    assert.equal(pedidos[0].dificuldade, 2 + grav(f));
+    assert.equal(Perdicoes.aoBeberDeVampiro(de('ventrue'), de('ventrue')).length, 0, 'outro clã pediu frenesi');
+  });
+
+  await t.test('Salubri: quem bebe dele testa a 2 + Gravidade DO SALUBRI; Banu Haqim a 3 +', (t2) => {
+    const salubri = de('salubri', 3);          /* Gravidade maior, de propósito */
+    const comum = Perdicoes.aoBeberDeVampiro(de('ventrue'), salubri);
+    const juiz = Perdicoes.aoBeberDeVampiro(de('banu_haqim'), salubri);
+    t2.diagnostic(`Gravidade do Salubri ${grav(salubri)} · comum ${comum[0].dificuldade} · Banu Haqim ${juiz.map(p => p.dificuldade).join('+')}`);
+    assert.equal(comum[0].dificuldade, 2 + grav(salubri), 'usou a Gravidade do bebedor, não a do Salubri');
+    /* o Banu Haqim recebe DOIS pedidos: o dele e o do Salubri */
+    assert.equal(juiz.length, 2);
+    assert.ok(juiz.some(p => p.dificuldade === 3 + grav(salubri)), 'o Banu Haqim não pagou 3 +');
+    assert.equal(Perdicoes.aoBeberDeVampiro(de('salubri'), salubri).length, 0, 'Salubri prendeu Salubri');
+  });
+
+  await t.test('e o gole do Laço devolve o pedido', (t2) => {
+    const r = Lacos.beber(Lacos.vazio ? Lacos.vazio() : {}, { bebedor: de('banu_haqim'), doador: de('ventrue') });
+    const testes = r.eventos.filter(e => e.tipo === 'teste');
+    t2.diagnostic(testes.map(e => e.texto).join(' | ') || '(nenhum)');
+    assert.equal(testes.length, 1, 'o gole não trouxe o pedido de frenesi');
+  });
+
+  await t.test('Hecata: o Beijo cobra do mortal e do Membro', (t2) => {
+    const f = de('hecata');
+    const m = Perdicoes.beijoHecata(f), v = Perdicoes.beijoHecata(f, { vitimaEhVampiro: true });
+    t2.diagnostic(`mortal: ${m.nota} · vampiro: ${v.nota}`);
+    assert.equal(m.soBebeComDano, true);
+    assert.equal(m.teste.dificuldade, 2 + grav(f));
+    assert.equal(m.teste.piscina.join('+'), 'vigor+determinacao');
+    assert.equal(v.teste.dificuldade, 3);
+    assert.equal(v.teste.gatilho, 'terror');
+    assert.equal(Perdicoes.beijoHecata(de('ventrue')), null);
+  });
+
+  await t.test('Ministério: luz direta tira a Gravidade de TODA parada, e chega à parada', (t2) => {
+    const f = de('ministerio');
+    const rota = { atributo: 'carisma', pericia: 'persuasao' };
+    const escuro = Arbitro.piscinaFinal(f, { rota, luz: 'escuro' }).total;
+    const claro = Arbitro.piscinaFinal(f, { rota, luz: 'intensa' }).total;
+    const semSaber = Arbitro.piscinaFinal(f, { rota }).total;
+    t2.diagnostic(`escuro ${escuro} · intensa ${claro} · sem saber ${semSaber}`);
+    assert.equal(claro, Math.max(1, escuro - grav(f)));
+    assert.equal(semSaber, escuro, 'ambiente desconhecido virou claro');
+    assert.equal(Perdicoes.danoSolarExtra(f), grav(f));
+    assert.equal(Perdicoes.danoSolarExtra(de('ventrue')), 0);
+  });
+
+  await t.test('Ravnos: mesmo lugar em sete noites → Gravidade dados, cada 10 é Agravado', (t2) => {
+    const f = de('ravnos');
+    const pedido = Perdicoes.pedidoRavnos(f, { mesmoLugarEmSeteNoites: true });
+    t2.diagnostic(`${pedido.normais} dados · ${pedido.nota}`);
+    assert.equal(pedido.normais, grav(f));
+    assert.equal(pedido.fome, 0, 'a Perdição Ravnos não rola dado de Fome');
+    assert.equal(Perdicoes.pedidoRavnos(f, {}), null, 'cobrou sem dormir no mesmo lugar');
+    const ap = Perdicoes.apurarRavnos({ normais: [10, 3, 10, 7] });
+    assert.equal(ap.agravado, 2, 'os 10 não viraram Agravado');
+    assert.equal(Perdicoes.apurarRavnos({ normais: [1, 9] }).agravado, 0);
+  });
+
+  await t.test('Tzimisce: longe da carga, Agravado à Vontade igual à Gravidade', (t2) => {
+    const f = de('tzimisce');
+    const r = Perdicoes.aoAcordarTzimisce(f, { cercadoPelaCarga: false });
+    t2.diagnostic(r.texto);
+    assert.equal(r.danoVontadeAgravado, grav(f));
+    assert.equal(Perdicoes.aoAcordarTzimisce(f, { cercadoPelaCarga: true }), null, 'cobrou dormindo na carga');
+  });
+
+  await t.test('Salubri: o terceiro olho chora ao ativar Disciplina, e acorda Fome 4+', (t2) => {
+    const r = Perdicoes.terceiroOlho(de('salubri'), { nivelDaDisciplina: 3 });
+    t2.diagnostic(r.texto);
+    assert.equal(r.chora, true);
+    assert.equal(r.acordaFomeDe, 4);
+    assert.equal(Perdicoes.terceiroOlho(de('ventrue')), null);
+  });
+
+  await t.test('com Gravidade zero, nenhuma das sete cobra nada', (t2) => {
+    /* Sangue-ralo tem Potência 0 → Gravidade 0. Perdição que cobra
+       "igual à Gravidade" cobra zero. */
+    const f = de('lasombra'); f.cla = 'lasombra';
+    const zero = Object.assign(fichaDeTeste(g, { nome: 'Z', cla: 'lasombra' }), { mortal: false });
+    /* força a Gravidade a zero pela Potência: a faixa de geração mais fraca */
+    zero.geracao = 16; zero.potenciaMod = -5;
+    t2.diagnostic(`Gravidade ${grav(zero)}`);
+    if (grav(zero) !== 0) { t2.diagnostic('não deu para zerar a Gravidade nesta ficha; caso coberto pelas asserções relativas acima'); return; }
+    assert.equal(Perdicoes.dificuldadeLasombra(zero, { comunicacaoModerna: true }).dificuldade, 2);
+    assert.equal(Perdicoes.pedidoRavnos(Object.assign(zero, { cla: 'ravnos' }), { mesmoLugarEmSeteNoites: true }), null);
   });
 });
 
@@ -4609,7 +4892,7 @@ test('Projetos — o motor não inventa acaso (§89)', async (t) => {
   await t.test('nenhum Math.random em motor-projetos.js', () => {
     /* A mesma trava da §82, agora num arquivo novo: o Árbitro não
        produz acaso, ele pede. `novo()` gera id por contador. */
-    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motor-projetos')), 'utf8')
+    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motores/motor-projetos')), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, ' ');
     assert.ok(!/Math\.random/.test(fonte), 'o Árbitro voltou a sortear sozinho');
   });
@@ -4731,7 +5014,7 @@ test('Apêndices — o regras.md e o código dizem a mesma coisa (§89)', async 
        este teste é quem cobra. `Memoriam` no motor é o sinal. */
     const s = secao('### 20.6 O que o motor NÃO aplica', '### 20.7 O preço de cultivar');
     assert.match(s, /Longue Durée/);
-    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motor-projetos')), 'utf8')
+    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motores/motor-projetos')), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, ' ');
     assert.ok(!/[Mm]emoriam/.test(fonte),
       'o motor passou a conhecer Memoriam, e a §20.6 ficou velha');
@@ -5554,7 +5837,7 @@ test('Combate — o regras.md e as tabelas dizem a mesma coisa (§90)', async (t
     assert.equal(g.nomeHabilidade(Rodada.INICIATIVA.habilidade), 'Percepção',
       'a Habilidade da Iniciativa deixou de ser Percepção');
     /* E o d10 não voltou. */
-    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motor-combate-avancado')), 'utf8')
+    const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', 'motores/motor-combate-avancado')), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, ' ');
     assert.ok(!/iniciativaDe[\s\S]{0,400}d10\s*\(/.test(fonte),
       'voltou a haver um dado dentro da Iniciativa');
@@ -5583,7 +5866,7 @@ test('Combate — o regras.md e as tabelas dizem a mesma coisa (§90)', async (t
     assert.ok(!/Rolagem Única/i.test(s),
       'o Conflito de Rolagem Única voltou para a lista do que não existe, e ele existe');
 
-    const fonte = ['motor-combate', 'motor-combate-avancado']
+    const fonte = ['motores/motor-combate', 'motores/motor-combate-avancado']
       .map(n => fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', n)), 'utf8'))
       .join('\n').replace(/\/\*[\s\S]*?\*\//g, ' ');
     for (const palavra of ['manobra', 'bloqueio', 'concessao', 'municao']) {
@@ -5657,148 +5940,20 @@ test('Combate — o regras.md e as tabelas dizem a mesma coisa (§90)', async (t
 
 const { Experiencia, Criacao } = g;
 
-test('Experiência — a escada da pág. 151 (§91)', async (t) => {
-  await t.test('a tabela do livro está inteira, e com os dez custos', (t2) => {
-    const esperado = {
-      atributo: 5, habilidade: 3, disciplinaCla: 5, disciplinaFora: 7,
-      disciplinaCaitiff: 6, ritual: 3, formula: 3, potenciaSangue: 10
-    };
-    for (const [tipo, fator] of Object.entries(esperado)) {
-      t2.diagnostic(`${tipo}: nível 3 custa ${Experiencia.custoDe(tipo, 3)}`);
-      assert.equal(Experiencia.custoDe(tipo, 3), 3 * fator, `${tipo} divergiu`);
-    }
-    assert.equal(Experiencia.custoDe('especializacao'), 3);
-    assert.equal(Experiencia.custoDe('vantagem'), 3, 'Vantagem é 3 por ponto, sem escada');
-    assert.equal(Experiencia.tipos().length, 10, 'a tabela do livro tem dez linhas');
-  });
+/* ============================================================
+   A METADE DA EXPERIÊNCIA QUE É DO ÁRBITRO
 
-  await t.test('o custo é pelo nível QUE SE COMPRA, e não pelo que se tem', () => {
-    /* "'Novo nível' nessa tabela significa o nível que você deseja
-       comprar." Subir para o 3º ponto de um Atributo custa 15. */
-    assert.equal(Experiencia.custoDe('atributo', 3), 15);
-    assert.equal(Experiencia.custoDe('atributo', 4), 20);
-  });
+   A escada e a carteira foram para `ficha.test.mjs` junto com o motor,
+   numa revisão de código: gastar experiência escreve na ficha. O que
+   sobra aqui é a única pergunta que é de arbitragem — QUANTO a noite
+   rendeu —, e a costura entre as duas metades: quem decide manda
+   creditar em quem guarda.
+   ============================================================ */
 
-  await t.test('NÃO SE SALTA ETAPA: de 2 para 4 são 35, e não 20', (t2) => {
-    /* O exemplo do livro, com os números do livro: "Você não pode
-       saltar etapas e comprar quatro pontos de Autocontrole por 20
-       pontos (…) precisa primeiro comprar o terceiro ponto por 15 e,
-       em seguida, comprar os quatro pontos por 20." */
-    const conta = Experiencia.custoAte('atributo', 2, 4);
-    t2.diagnostic(conta.degraus.map(d => `${d.nivel}º=${d.custo}`).join(' + ') + ` = ${conta.total}`);
-    assert.equal(conta.total, 35, 'a escada virou atalho');
-    /* `deepEqual` entre realms de `vm` reprova dois vetores iguais — a
-       armadilha que este arreio documenta desde a §46.6. */
-    assert.equal(conta.degraus.map(d => d.custo).join(','), '15,20');
-  });
-
-  await t.test('um degrau só é o custo daquele degrau', () => {
-    assert.equal(Experiencia.custoAte('atributo', 2, 3).total, 15);
-    assert.equal(Experiencia.custoAte('habilidade', 0, 1).total, 3);
-  });
-
-  await t.test('descer ou ficar não custa nada', () => {
-    assert.equal(Experiencia.custoAte('atributo', 3, 3).total, 0);
-    assert.equal(Experiencia.custoAte('atributo', 4, 2).total, 0);
-  });
-});
-
-test('Experiência — a carteira, que não existia (§91)', async (t) => {
-  const comXP = (n) => {
-    const f = fichaDeTeste(g);
-    f.xpTotal = String(n); f.xpGasta = '0';
-    return f;
-  };
-
-  await t.test('total, gasta e livre saem dos campos de texto da ficha', (t2) => {
-    const f = comXP(30);
-    f.xpGasta = '12';
-    const c = Experiencia.carteira(f);
-    t2.diagnostic(`total ${c.total} · gasta ${c.gasta} · livre ${c.livre}`);
-    assert.equal(c.livre, 18);
-  });
-
-  await t.test('campo vazio não vira NaN', () => {
-    const f = fichaDeTeste(g);
-    f.xpTotal = ''; f.xpGasta = '';
-    assert.equal(Experiencia.carteira(f).livre, 0);
-  });
-
-  await t.test('comprar cobra da carteira e escreve na ficha', (t2) => {
-    const f = comXP(40);
-    f.atributos.autocontrole = 2;
-    const r = Experiencia.comprar(f, { classe: 'atributo', id: 'autocontrole', para: 4 });
-    t2.diagnostic(r.eventos[0].texto);
-    assert.equal(r.comprou, true);
-    assert.equal(f.atributos.autocontrole, 4);
-    assert.equal(Experiencia.carteira(f).gasta, 35);
-    assert.equal(Experiencia.carteira(f).livre, 5);
-    assert.match(r.eventos[0].texto, /não se salta etapa/);
-  });
-
-  await t.test('sem experiência bastante, não compra — e diz quanto falta', (t2) => {
-    const f = comXP(10);
-    f.atributos.forca = 2;
-    const r = Experiencia.comprar(f, { classe: 'atributo', id: 'forca', para: 4 });
-    t2.diagnostic(r.eventos[0].texto);
-    assert.equal(r.comprou, false);
-    assert.equal(f.atributos.forca, 2, 'a ficha mudou numa compra recusada');
-    assert.match(r.eventos[0].texto, /Faltam 25/);
-  });
-
-  await t.test('não compra o que já se tem, nem passa do teto', () => {
-    const f = comXP(999);
-    f.atributos.forca = 3;
-    assert.equal(Experiencia.cotar(f, { classe: 'atributo', id: 'forca', para: 3 }).possivel, false);
-    assert.equal(Experiencia.cotar(f, { classe: 'atributo', id: 'forca', para: 6 }).possivel, false);
-  });
-
-  await t.test('a Disciplina custa conforme seja do clã, de fora, ou de Caitiff', (t2) => {
-    const doCla = fichaDeTeste(g, { cla: 'brujah' });
-    doCla.xpTotal = '99'; doCla.xpGasta = '0';
-    const dela = g.disciplinasDisponiveis(doCla)[0];
-    const fora = Object.keys(g.DISCIPLINAS).find(d =>
-      d !== 'alquimia' && !g.disciplinasDisponiveis(doCla).includes(d));
-    /* A ficha de teste já traz a Disciplina do clã em 1, então o degrau
-       a comprar é o 2º: 2 × o fator. */
-    doCla.disciplinas = {}; doCla.disciplinas[dela] = 0;
-    t2.diagnostic(`do clã: ${dela} · de fora: ${fora}`);
-    assert.equal(Experiencia.cotar(doCla, { classe: 'disciplina', id: dela, para: 1 }).custo, 5);
-    assert.equal(Experiencia.cotar(doCla, { classe: 'disciplina', id: fora, para: 1 }).custo, 7);
-
-    const caitiff = fichaDeTeste(g, { cla: 'caitiff' });
-    caitiff.xpTotal = '99'; caitiff.xpGasta = '0'; caitiff.disciplinas = {};
-    assert.equal(Experiencia.cotar(caitiff, { classe: 'disciplina', id: dela, para: 1 }).custo, 6,
-      'Caitiff paga 6, e não 5 nem 7');
-  });
-
-  await t.test('a Potência de Sangue se compra, e ela é DERIVADA', (t2) => {
-    /* Até a §91 não havia por onde: a Potência saía da geração e do
-       Predador, e a linha da tabela ("Novo nível × 10") não tinha
-       destino. */
-    const f = fichaDeTeste(g, { geracao: 12 });
-    f.xpTotal = '99'; f.xpGasta = '0';
-    const antes = g.derivados(f).potencia;
-    const r = Experiencia.comprar(f, { classe: 'potenciaSangue', para: antes + 1 });
-    t2.diagnostic(`${antes} → ${g.derivados(f).potencia} por ${r.cotacao.custo}`);
-    assert.equal(r.comprou, true);
-    assert.equal(g.derivados(f).potencia, antes + 1);
-    assert.equal(r.cotacao.custo, (antes + 1) * 10);
-  });
-
-  await t.test('a especialização custa 3 fixos, e exige a Habilidade', (t2) => {
-    const f = fichaDeTeste(g);
-    f.xpTotal = '10'; f.xpGasta = '0';
-    f.habilidades.briga = 0;
-    const semHab = Experiencia.comprarEspecializacao(f, 'briga', 'Facas');
-    t2.diagnostic(semHab.eventos[0].texto);
-    assert.equal(semHab.comprou, false);
-
-    f.habilidades.briga = 2;
-    const r = Experiencia.comprarEspecializacao(f, 'briga', 'Facas');
-    assert.equal(r.comprou, true);
-    assert.equal(r.custo, 3);
-    assert.equal(f.especializacoes.briga, 'Facas');
+test('Experiência — quanto a noite rendeu, e quem credita', async (t) => {
+  await t.test('uma por sessão, e mais uma pela Ambição', () => {
+    assert.equal(g.Estado.xpDaSessao({}), 1);
+    assert.equal(g.Estado.xpDaSessao({ cumpriuAmbicao: true }), 2);
   });
 
   await t.test('o fim de sessão credita na carteira, e diz o que sobrou', (t2) => {
@@ -5810,10 +5965,17 @@ test('Experiência — a carteira, que não existia (§91)', async (t) => {
     assert.match(linha, /livre 4/i);
   });
 
-  await t.test('o Mar do Tempo dá a experiência de partida do livro', () => {
-    assert.equal(Experiencia.xpDeIdade('crianca'), 0);
-    assert.equal(Experiencia.xpDeIdade('neofita'), 15);
-    assert.equal(Experiencia.xpDeIdade('ancilla'), 35);
+  await t.test('o Árbitro não gasta: quem escreve na ficha é a carteira', () => {
+    /* A fronteira, na fonte. O Árbitro pode mandar creditar; comprar,
+       cotar e descontar são da área Ficha, e nenhum motor daqui os
+       chama. Se alguém trouxer o gastador de volta, isto cai. */
+    const proibidos = /Experiencia\.(comprar|cotar|comprarEspecializacao|custoAte)\b/;
+    const sujos = [];
+    for (const arquivo of AREAS.arbitro) {
+      const fonte = fs.readFileSync(path.join(RAIZ, caminhoDe('arbitro', arquivo)), 'utf8');
+      if (proibidos.test(fonte)) sujos.push(`arbitro/${arquivo}.js`);
+    }
+    assert.deepEqual(sujos, [], 'o Árbitro voltou a gastar experiência');
   });
 });
 

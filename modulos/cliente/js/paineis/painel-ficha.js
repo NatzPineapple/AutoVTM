@@ -96,9 +96,14 @@ function painelFicha() {
     <button class="btn" data-acao="guardar-ficha"
       title="Guarda e continua editando">Guardar e continuar</button>
     <button class="btn" data-acao="imprimir">Imprimir / PDF</button>
-    <button class="btn" data-acao="exportar">Exportar .json</button>
-    <button class="btn" data-acao="exportartxt">Exportar .txt</button>
-    <button class="btn" data-acao="exportarextraido">Exportar ficha extraída</button>
+    <span class="exportar-combo">
+      <select id="formato-exportar" title="Formato do arquivo exportado">
+        <option value="json">.json — recarregável aqui</option>
+        <option value="txt">.txt — texto simples</option>
+        <option value="extraida">ficha extraída (.json)</option>
+      </select>
+      <button class="btn" data-acao="exportar-formato">Exportar</button>
+    </span>
     <button class="btn" data-acao="mesa">Levar para a Mesa</button>
     ${reiniciarArmado
       ? '<button class="btn primario" data-acao="reiniciar">Descartar mesmo?</button>'
@@ -177,6 +182,8 @@ function painelFicha() {
       <p class="quiet">${esc(cid.poder)}. Príncipe: ${esc(cid.principe)}.</p>
       <p class="quiet" style="font-size:.85rem">${esc(cid.texto[0])}</p>`) : ''}
   </div>
+
+  ${gastarXPHTML()}
 
   ${validacoesHTML()}`;
 }

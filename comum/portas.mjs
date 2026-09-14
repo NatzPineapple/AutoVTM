@@ -15,15 +15,13 @@
 export const PORTAS = {
   /* Módulo 1 — porta de entrada. É a única que o navegador conhece. */
   gateway:  Number(process.env.PORTA || 5173),
-  /* Módulo 2 — fichas fora de sessão. Ainda não existe; a porta já
-     está reservada para o Gateway não ter de aprender nada depois. */
+  /* Módulo 2 — fichas fora de sessão (§83). */
   ficha:    Number(process.env.VITAE_PORTA_FICHA || 5174),
   /* Módulo 3 — o estado da mesa ativa. */
   mesa:     Number(process.env.VITAE_PORTA_MESA || 5175),
   /* Módulo 4 — o Árbitro, sem estado. */
   arbitro:  Number(process.env.VITAE_PORTA_ARBITRO || 5176),
-  /* Módulo 5 — o Cronista. Hoje mora dentro do Gateway; a porta é
-     o destino, não a descrição do presente. */
+  /* Módulo 5 — o Cronista, processo próprio desde a §84. */
   cronista: Number(process.env.VITAE_PORTA_CRONISTA || 5177)
 };
 

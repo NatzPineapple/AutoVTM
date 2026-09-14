@@ -253,6 +253,18 @@ em, .it { font-style: italic; color: var(--carne); }
 .btn.primario { color: var(--osso); border-color: var(--sangue); background: rgba(74,13,20,.45); }
 .btn.fantasma { border-color: rgba(182,145,63,.18); font-size: .66rem; padding: .45rem .9rem; }
 
+/* Um select colado a um .btn: o formato do arquivo escolhido antes do
+   clique em vez de um botão por extensão. */
+.exportar-combo { display: inline-flex; }
+.exportar-combo select {
+  font-family: var(--sans); font-size: .68rem; letter-spacing: .04em;
+  padding: 0 .6rem; background: transparent; color: var(--osso-fosco);
+  border: 1px solid var(--borda-forte); border-right: none; cursor: pointer;
+}
+.exportar-combo select:focus { outline: none; color: var(--osso); border-color: var(--sangue-viva); }
+.exportar-combo select option { background: var(--piche-2); }
+.exportar-combo .btn { border-left: none; }
+
 .navegar { display: flex; gap: .8rem; justify-content: space-between; align-items: center;
   margin-top: 3rem; padding-top: 1.6rem; border-top: 1px solid var(--borda); flex-wrap: wrap; }
 

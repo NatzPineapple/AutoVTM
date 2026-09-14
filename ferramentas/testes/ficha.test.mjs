@@ -25,7 +25,7 @@ import { carregar, fichaDeTeste, memoriaLocal, executar, AREAS, RAIZ, caminhoDe 
    Encolher esta lista é o objetivo; encompridá-la é regressão. */
 const AREAS_DA_FICHA = ['data', 'ficha'];
 const g = carregar(AREAS_DA_FICHA);
-const { Ficha, Matilha } = g;
+const { Ficha, Matilha, Experiencia } = g;
 
 test('Ficha — o índice de força', async (t) => {
   await t.test('devolve total, faixa e componentes', () => {
@@ -669,5 +669,171 @@ test('Ficha — a ficha parcial não derruba a biblioteca (§85)', async (t) => 
        o pressuposto era dela, não de quem a chama. */
     assert.equal(executar(g, 'contagem(undefined, todosAtributos())[1]'), 0);
     assert.equal(executar(g, 'contagem(null, todasHabilidades())[3]'), 0);
+  });
+});
+
+/* ============================================================
+   EXPERIÊNCIA — a escada e a carteira  (§91, pág. 151)
+
+   Estes testes vieram de `arbitro.test.mjs` junto com o motor, numa
+   revisão de código: gastar experiência escreve na FICHA, então o
+   gastador é da área Ficha e os testes dele também.
+
+   E há uma prova nova, de graça, no topo deste arquivo: eles rodam com
+   `AREAS_DA_FICHA` — só `data` e `ficha`. Se o gastador ainda
+   precisasse de uma linha do Árbitro, nada aqui carregaria.
+
+   O que FICOU no Árbitro é a outra metade: quanto a noite rende.
+   ============================================================ */
+
+test('Experiência — a escada da pág. 151 (§91)', async (t) => {
+  await t.test('a tabela do livro está inteira, e com os dez custos', (t2) => {
+    const esperado = {
+      atributo: 5, habilidade: 3, disciplinaCla: 5, disciplinaFora: 7,
+      disciplinaCaitiff: 6, ritual: 3, formula: 3, potenciaSangue: 10
+    };
+    for (const [tipo, fator] of Object.entries(esperado)) {
+      t2.diagnostic(`${tipo}: nível 3 custa ${Experiencia.custoDe(tipo, 3)}`);
+      assert.equal(Experiencia.custoDe(tipo, 3), 3 * fator, `${tipo} divergiu`);
+    }
+    assert.equal(Experiencia.custoDe('especializacao'), 3);
+    assert.equal(Experiencia.custoDe('vantagem'), 3, 'Vantagem é 3 por ponto, sem escada');
+    assert.equal(Experiencia.tipos().length, 10, 'a tabela do livro tem dez linhas');
+  });
+
+  await t.test('o custo é pelo nível QUE SE COMPRA, e não pelo que se tem', () => {
+    /* "'Novo nível' nessa tabela significa o nível que você deseja
+       comprar." Subir para o 3º ponto de um Atributo custa 15. */
+    assert.equal(Experiencia.custoDe('atributo', 3), 15);
+    assert.equal(Experiencia.custoDe('atributo', 4), 20);
+  });
+
+  await t.test('NÃO SE SALTA ETAPA: de 2 para 4 são 35, e não 20', (t2) => {
+    /* O exemplo do livro, com os números do livro: "Você não pode
+       saltar etapas e comprar quatro pontos de Autocontrole por 20
+       pontos (…) precisa primeiro comprar o terceiro ponto por 15 e,
+       em seguida, comprar os quatro pontos por 20." */
+    const conta = Experiencia.custoAte('atributo', 2, 4);
+    t2.diagnostic(conta.degraus.map(d => `${d.nivel}º=${d.custo}`).join(' + ') + ` = ${conta.total}`);
+    assert.equal(conta.total, 35, 'a escada virou atalho');
+    /* `deepEqual` entre realms de `vm` reprova dois vetores iguais — a
+       armadilha que este arreio documenta desde a §46.6. */
+    assert.equal(conta.degraus.map(d => d.custo).join(','), '15,20');
+  });
+
+  await t.test('um degrau só é o custo daquele degrau', () => {
+    assert.equal(Experiencia.custoAte('atributo', 2, 3).total, 15);
+    assert.equal(Experiencia.custoAte('habilidade', 0, 1).total, 3);
+  });
+
+  await t.test('descer ou ficar não custa nada', () => {
+    assert.equal(Experiencia.custoAte('atributo', 3, 3).total, 0);
+    assert.equal(Experiencia.custoAte('atributo', 4, 2).total, 0);
+  });
+});
+
+test('Experiência — a carteira, que não existia (§91)', async (t) => {
+  const comXP = (n) => {
+    const f = fichaDeTeste(g);
+    f.xpTotal = String(n); f.xpGasta = '0';
+    return f;
+  };
+
+  await t.test('total, gasta e livre saem dos campos de texto da ficha', (t2) => {
+    const f = comXP(30);
+    f.xpGasta = '12';
+    const c = Experiencia.carteira(f);
+    t2.diagnostic(`total ${c.total} · gasta ${c.gasta} · livre ${c.livre}`);
+    assert.equal(c.livre, 18);
+  });
+
+  await t.test('campo vazio não vira NaN', () => {
+    const f = fichaDeTeste(g);
+    f.xpTotal = ''; f.xpGasta = '';
+    assert.equal(Experiencia.carteira(f).livre, 0);
+  });
+
+  await t.test('comprar cobra da carteira e escreve na ficha', (t2) => {
+    const f = comXP(40);
+    f.atributos.autocontrole = 2;
+    const r = Experiencia.comprar(f, { classe: 'atributo', id: 'autocontrole', para: 4 });
+    t2.diagnostic(r.eventos[0].texto);
+    assert.equal(r.comprou, true);
+    assert.equal(f.atributos.autocontrole, 4);
+    assert.equal(Experiencia.carteira(f).gasta, 35);
+    assert.equal(Experiencia.carteira(f).livre, 5);
+    assert.match(r.eventos[0].texto, /não se salta etapa/);
+  });
+
+  await t.test('sem experiência bastante, não compra — e diz quanto falta', (t2) => {
+    const f = comXP(10);
+    f.atributos.forca = 2;
+    const r = Experiencia.comprar(f, { classe: 'atributo', id: 'forca', para: 4 });
+    t2.diagnostic(r.eventos[0].texto);
+    assert.equal(r.comprou, false);
+    assert.equal(f.atributos.forca, 2, 'a ficha mudou numa compra recusada');
+    assert.match(r.eventos[0].texto, /Faltam 25/);
+  });
+
+  await t.test('não compra o que já se tem, nem passa do teto', () => {
+    const f = comXP(999);
+    f.atributos.forca = 3;
+    assert.equal(Experiencia.cotar(f, { classe: 'atributo', id: 'forca', para: 3 }).possivel, false);
+    assert.equal(Experiencia.cotar(f, { classe: 'atributo', id: 'forca', para: 6 }).possivel, false);
+  });
+
+  await t.test('a Disciplina custa conforme seja do clã, de fora, ou de Caitiff', (t2) => {
+    const doCla = fichaDeTeste(g, { cla: 'brujah' });
+    doCla.xpTotal = '99'; doCla.xpGasta = '0';
+    const dela = g.disciplinasDisponiveis(doCla)[0];
+    const fora = Object.keys(g.DISCIPLINAS).find(d =>
+      d !== 'alquimia' && !g.disciplinasDisponiveis(doCla).includes(d));
+    /* A ficha de teste já traz a Disciplina do clã em 1, então o degrau
+       a comprar é o 2º: 2 × o fator. */
+    doCla.disciplinas = {}; doCla.disciplinas[dela] = 0;
+    t2.diagnostic(`do clã: ${dela} · de fora: ${fora}`);
+    assert.equal(Experiencia.cotar(doCla, { classe: 'disciplina', id: dela, para: 1 }).custo, 5);
+    assert.equal(Experiencia.cotar(doCla, { classe: 'disciplina', id: fora, para: 1 }).custo, 7);
+
+    const caitiff = fichaDeTeste(g, { cla: 'caitiff' });
+    caitiff.xpTotal = '99'; caitiff.xpGasta = '0'; caitiff.disciplinas = {};
+    assert.equal(Experiencia.cotar(caitiff, { classe: 'disciplina', id: dela, para: 1 }).custo, 6,
+      'Caitiff paga 6, e não 5 nem 7');
+  });
+
+  await t.test('a Potência de Sangue se compra, e ela é DERIVADA', (t2) => {
+    /* Até a §91 não havia por onde: a Potência saía da geração e do
+       Predador, e a linha da tabela ("Novo nível × 10") não tinha
+       destino. */
+    const f = fichaDeTeste(g, { geracao: 12 });
+    f.xpTotal = '99'; f.xpGasta = '0';
+    const antes = g.derivados(f).potencia;
+    const r = Experiencia.comprar(f, { classe: 'potenciaSangue', para: antes + 1 });
+    t2.diagnostic(`${antes} → ${g.derivados(f).potencia} por ${r.cotacao.custo}`);
+    assert.equal(r.comprou, true);
+    assert.equal(g.derivados(f).potencia, antes + 1);
+    assert.equal(r.cotacao.custo, (antes + 1) * 10);
+  });
+
+  await t.test('a especialização custa 3 fixos, e exige a Habilidade', (t2) => {
+    const f = fichaDeTeste(g);
+    f.xpTotal = '10'; f.xpGasta = '0';
+    f.habilidades.briga = 0;
+    const semHab = Experiencia.comprarEspecializacao(f, 'briga', 'Facas');
+    t2.diagnostic(semHab.eventos[0].texto);
+    assert.equal(semHab.comprou, false);
+
+    f.habilidades.briga = 2;
+    const r = Experiencia.comprarEspecializacao(f, 'briga', 'Facas');
+    assert.equal(r.comprou, true);
+    assert.equal(r.custo, 3);
+    assert.equal(f.especializacoes.briga, 'Facas');
+  });
+
+
+  await t.test('o Mar do Tempo dá a experiência de partida do livro', () => {
+    assert.equal(Experiencia.xpDeIdade('crianca'), 0);
+    assert.equal(Experiencia.xpDeIdade('neofita'), 15);
+    assert.equal(Experiencia.xpDeIdade('ancilla'), 35);
   });
 });

@@ -849,7 +849,7 @@ test('Cadeia — nada aqui se declara provisório', async (t) => {
        que é verdade — senão a próxima pessoa a ler o arquivo não sabe
        se o turno passa por aqui. */
     const fonte = fs.readFileSync(
-      path.join(RAIZ, caminhoDe('arbitro', 'motor-cadeia')), 'utf8');
+      path.join(RAIZ, caminhoDe('arbitro', 'motores/motor-cadeia')), 'utf8');
     const cabecalho = fonte.slice(0, fonte.indexOf('const Cadeia'));
     assert.ok(/arbitrarTurno/.test(cabecalho),
       'o cabeçalho não diz por onde a mesa entra');

@@ -18,37 +18,65 @@ import * as ollama from './provedor-ollama.mjs';
 export const MODELO_PADRAO = process.env.VITAE_MODELO_INTENCAO || 'qwen2.5:7b';
 const TEMPO_LIMITE = Number(process.env.VITAE_TEMPO_INTENCAO || 60) * 1000;
 
-export const TIPOS = ['melee_attack', 'ranged_attack', 'cast_spell', 'move', 'interact', 'unknown'];
+/* O ESQUEMA FALA PORTUGUÊS, E ISSO NÃO É COSMÉTICO.
+
+   Ele nasceu em inglês genérico de RPG — `melee_attack`, `cast_spell` —,
+   herdado de quando isto era LangChain. O modelo, porém, lê e responde em
+   português do Brasil o tempo todo: o papel é em português, os exemplos são
+   em português, a frase do jogador é em português, e só os nomes dos campos
+   e dos valores estavam em outra língua. Trocar tira uma tradução da cabeça
+   do modelo pequeno, que é exatamente o lugar onde ele tem menos folga.
+
+   `investigar` é categoria NOVA, e ela sai de dentro do antigo `interact`:
+   procurar, observar, escutar e farejar têm rota de dado bem diferente de
+   pegar e abrir, e separá-las na origem evita um desempate no meio. */
+export const TIPOS = ['interagir', 'investigar', 'atacar_corpo_a_corpo',
+                      'atacar_distancia', 'conjurar', 'mover', 'desconhecido'];
+
+export const VOLUMES = ['nenhum', 'normal', 'sussurro', 'grito', 'mensagem'];
 
 /* Todos os campos são obrigatórios e do tipo string, e o vazio é "". A união
    ['string','null'] parece natural e NÃO funciona: medido, a gramática do
-   ollama devolvia todos os campos vazios, e só o action_type vinha. Com campo
+   ollama devolvia todos os campos vazios, e só o tipo vinha. Com campo
    obrigatório o modelo é forçado a olhar cada um; o `normalizar` converte ""
    em null depois, que é o contrato que o navegador espera. */
 export const ESQUEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['action_type', 'target', 'weapon', 'spell_name', 'modifier', 'reason',
-             'speech', 'speech_volume'],
+  required: ['tipo_acao', 'alvo', 'ferramenta_arma', 'poder', 'intencao_detalhada',
+             'circunstancia', 'motivo', 'fala', 'volume_fala'],
   properties: {
-    action_type: { type: 'string', enum: TIPOS,
-      description: "Tipo mecânico da ação. 'unknown' quando a frase for conversa, sentimento ou não tiver efeito mecânico." },
-    target:     { type: 'string', description: 'Quem ou o que recebe a ação, como o jogador escreveu. "" se não houver.' },
-    weapon:     { type: 'string', description: 'A arma ou instrumento citado. "" se o jogador não citar.' },
-    spell_name: { type: 'string', description: "Nome do poder de Disciplina. \"\" se não for 'cast_spell'." },
-    modifier:   { type: 'string', description: 'Circunstância que muda a dificuldade: terreno, posição, silêncio, pressa. "" se não houver.' },
-    reason:     { type: 'string', description: "Por que não deu para nomear. \"\" se não for 'unknown'." },
+    tipo_acao: { type: 'string', enum: TIPOS,
+      description: "Tipo mecânico da ação. 'desconhecido' quando a frase for conversa, sentimento ou não tiver efeito mecânico." },
+    alvo:            { type: 'string', description: 'Quem ou o que recebe a ação, como o jogador escreveu. "" se não houver.' },
+    ferramenta_arma: { type: 'string', description: 'A arma, item ou instrumento citado. "" se o jogador não citar.' },
+    poder:           { type: 'string', description: "Nome do poder de Disciplina. \"\" se não for 'conjurar'." },
+
+    /* O CAMPO QUE FAZ O ELO 1 PARAR DE ADIVINHAR.
+
+       `tipo_acao` sozinho é grosso demais: 'interagir' cobre pegar, arrombar,
+       subornar e consertar, e o motor tinha de desempatar casando palavra
+       contra o dicionário de frases do léxico — quando nada casava, ele caía
+       na primeira da lista e "suborno o segurança" virava "Pegar".
+
+       Uma frase de propósito é o que se compara com o DOMÍNIO da ação
+       (persuasão, furtividade, técnica), que é vocabulário de regra. */
+    intencao_detalhada: { type: 'string',
+      description: 'Uma frase curta dizendo o que o jogador quer ALCANÇAR com a ação, no infinitivo. Ex.: "convencer o segurança a deixar passar", "abrir a gaveta trancada sem fazer barulho".' },
+
+    circunstancia: { type: 'string', description: 'Circunstância que muda a dificuldade: terreno, posição, silêncio, pressa. "" se não houver.' },
+    motivo:        { type: 'string', description: "Por que não deu para nomear. \"\" se não for 'desconhecido'." },
 
     /* §57 — a mesa passou a ter uma caixa só, e o modelo virou o segundo
        leitor do que era fala e o que era ação. O primeiro é a pontuação,
-       em app/js/arbitro/motor-entrada.js: aspas e parênteses resolvem o
-       caso comum sem chamar ninguém. Estes dois campos existem para o
-       caso que a pontuação NÃO resolve — o jogador que escreve "digo pra
-       ela que ela não devia ter vindo", sem aspas. */
-    speech: { type: 'string',
+       em `motor-entrada.js`: aspas e parênteses resolvem o caso comum sem
+       chamar ninguém. Estes dois campos existem para o caso que a pontuação
+       NÃO resolve — o jogador que escreve "digo pra ela que ela não devia
+       ter vindo", sem aspas. A trava 4 da §94 depende deles. */
+    fala: { type: 'string',
       description: 'O que o personagem DIZ em voz alta, com as palavras dele. "" se ele não falar.' },
-    speech_volume: { type: 'string', enum: ['none', 'normal', 'whisper', 'shout', 'message'],
-      description: "Como a fala sai: 'none' se não houver fala." }
+    volume_fala: { type: 'string', enum: VOLUMES,
+      description: "Como a fala sai: 'nenhum' se não houver fala." }
   }
 };
 
@@ -65,31 +93,37 @@ REGRAS ABSOLUTAS:
 - Você NÃO decide se a ação é possível. Outro sistema faz isso depois de você. Extraia a
   intenção mesmo quando ela parecer impossível.
 
-COMO ESCOLHER action_type:
-- melee_attack — violência ao alcance do braço: soco, mordida, faca, garras, agarrar.
-- ranged_attack — violência à distância: arma de fogo, tiro, e TODO arremesso — jogar,
+COMO ESCOLHER tipo_acao:
+- atacar_corpo_a_corpo — violência ao alcance do braço: soco, mordida, faca, garras, agarrar.
+- atacar_distancia — violência à distância: arma de fogo, tiro, e TODO arremesso — jogar,
   atirar, arremessar qualquer objeto contra alguém.
-- cast_spell — uso de um poder de Disciplina (Ofuscação, Dominação, Potência, Presença,
+- conjurar — uso de um poder de Disciplina (Ofuscação, Dominação, Potência, Presença,
   Auspícios, Celeridade, Fortitude, Animalismo, Feitiçaria, Oblívio, Metamorfose, Alquimia).
-- move — deslocamento: ir, entrar, sair, subir, fugir, se aproximar, se afastar.
-- interact — mexer no mundo ou nas pessoas sem violência: pegar, abrir, arrombar,
-  esconder-se, procurar, persuadir, intimidar, seduzir, caçar, observar.
-- unknown — a frase é conversa, sentimento, pergunta ao Mestre, ou não tem efeito mecânico.
-  Na dúvida entre unknown e uma ação, escolha unknown.
+- mover — deslocamento: ir, entrar, sair, subir, fugir, se aproximar, se afastar.
+- investigar — buscar informação com os sentidos ou com método: procurar, vasculhar, observar,
+  escutar, farejar, examinar, seguir rastro.
+- interagir — mexer no mundo ou nas pessoas sem violência e sem ser busca de informação:
+  pegar, largar, entregar, abrir, arrombar, esconder-se, persuadir, intimidar, seduzir, caçar.
+- desconhecido — a frase é conversa, sentimento, pergunta ao Mestre, ou não tem efeito
+  mecânico. Na dúvida entre desconhecido e uma ação, escolha desconhecido.
 
 COMO PREENCHER OS CAMPOS:
-- target: copie o alvo como o jogador escreveu. Sem alvo citado, deixe vazio.
-- weapon: só se o jogador citar a arma ou o instrumento.
-- spell_name: só o nome do poder, e só quando action_type for cast_spell.
-- modifier: circunstância que MUDA A DIFICULDADE — terreno, posição, cobertura, silêncio,
-  pressa, cuidado, surpresa. Estado emocional NÃO é modificador.
-- reason: só quando action_type for unknown, dizendo por que não deu para nomear.
-- speech: o que o personagem DIZ em voz alta. Se o jogador escreveu entre aspas, copie o que
+- alvo: copie o alvo como o jogador escreveu. Sem alvo citado, deixe vazio.
+- ferramenta_arma: só se o jogador citar a arma, o item ou o instrumento.
+- poder: só o nome do poder, e só quando tipo_acao for conjurar.
+- intencao_detalhada: UMA frase curta, começando por verbo no infinitivo, dizendo o que o
+  jogador quer ALCANÇAR — e não o que ele digitou. "suborno o segurança com uma nota" vira
+  "convencer o segurança a deixar passar em troca de dinheiro". Preencha SEMPRE que houver
+  ação, mesmo quando o tipo já parecer óbvio. Vazio só em desconhecido.
+- circunstancia: circunstância que MUDA A DIFICULDADE — terreno, posição, cobertura, silêncio,
+  pressa, cuidado, surpresa. Estado emocional NÃO é circunstância.
+- motivo: só quando tipo_acao for desconhecido, dizendo por que não deu para nomear.
+- fala: o que o personagem DIZ em voz alta. Se o jogador escreveu entre aspas, copie o que
   está entre aspas. Se ele escreveu em fala indireta ("digo pra ela que ela não devia ter
   vindo"), escreva a frase DIRETA que o personagem diria ("você não devia ter vindo").
   Vazio quando ninguém abre a boca. Pensamento NÃO é fala.
-- speech_volume: 'whisper' para sussurro e cochicho, 'shout' para grito e berro, 'message'
-  para recado escrito, telefone ou mensagem, 'normal' para o resto, 'none' sem fala.`;
+- volume_fala: 'sussurro' para sussurro e cochicho, 'grito' para grito e berro, 'mensagem'
+  para recado escrito, telefone ou mensagem, 'normal' para o resto, 'nenhum' sem fala.`;
 
 /* Os exemplos entram como turnos de conversa, não como bloco de texto: modelo
    pequeno obedece formato que vê no próprio papel de resposta muito melhor do
@@ -103,51 +137,78 @@ COMO PREENCHER OS CAMPOS:
    engano. */
 const EXEMPLOS = [
   ['avanço no segurança e acerto um soco no queixo dele',
-   { action_type: 'melee_attack', target: 'o segurança', weapon: '',
-     spell_name: '', modifier: '', reason: '', speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'atacar_corpo_a_corpo', alvo: 'o segurança', ferramenta_arma: '', poder: '',
+     intencao_detalhada: 'derrubar o segurança com um soco',
+     circunstancia: '', motivo: '', fala: '', volume_fala: 'nenhum' }],
 
   ['saco a nove milímetros e atiro no Duarte de trás da coluna, sem ele me ver',
-   { action_type: 'ranged_attack', target: 'Duarte', weapon: 'nove milímetros',
-     spell_name: '', modifier: 'atirando de trás da coluna, sem ser visto', reason: '', speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'atacar_distancia', alvo: 'Duarte', ferramenta_arma: 'nove milímetros', poder: '',
+     intencao_detalhada: 'atingir Duarte com um tiro antes que ele perceba',
+     circunstancia: 'atirando de trás da coluna, sem ser visto', motivo: '', fala: '', volume_fala: 'nenhum' }],
 
   ['pego o cinzeiro da mesa e arremesso na cara dela',
-   { action_type: 'ranged_attack', target: 'ela', weapon: 'cinzeiro',
-     spell_name: '', modifier: '', reason: '', speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'atacar_distancia', alvo: 'ela', ferramenta_arma: 'cinzeiro', poder: '',
+     intencao_detalhada: 'acertar o rosto dela com o cinzeiro arremessado',
+     circunstancia: '', motivo: '', fala: '', volume_fala: 'nenhum' }],
 
   ['puxo o Manto das Sombras em volta de mim antes que ela vire o rosto',
-   { action_type: 'cast_spell', target: '', weapon: '',
-     spell_name: 'Manto das Sombras', modifier: 'antes de ela virar o rosto', reason: '', speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'conjurar', alvo: '', ferramenta_arma: '', poder: 'Manto das Sombras',
+     intencao_detalhada: 'ficar invisível antes de ser notado',
+     circunstancia: 'antes de ela virar o rosto', motivo: '', fala: '', volume_fala: 'nenhum' }],
 
   ['subo pela escada de incêndio até o terceiro andar, o mais quieto que der',
-   { action_type: 'move', target: 'terceiro andar', weapon: '',
-     spell_name: '', modifier: 'pela escada de incêndio, em silêncio', reason: '', speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'mover', alvo: 'terceiro andar', ferramenta_arma: '', poder: '',
+     intencao_detalhada: 'chegar ao terceiro andar sem ser ouvido',
+     circunstancia: 'pela escada de incêndio, em silêncio', motivo: '', fala: '', volume_fala: 'nenhum' }],
 
   ['forço a gaveta trancada da penteadeira com o canivete',
-   { action_type: 'interact', target: 'a gaveta trancada da penteadeira', weapon: 'canivete',
-     spell_name: '', modifier: '', reason: '', speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'interagir', alvo: 'a gaveta trancada da penteadeira', ferramenta_arma: 'canivete', poder: '',
+     intencao_detalhada: 'arrombar a gaveta trancada para ver o que há dentro',
+     circunstancia: '', motivo: '', fala: '', volume_fala: 'nenhum' }],
+
+  /* O EXEMPLO QUE EXISTE POR CAUSA DO DESEMPATE.
+
+     "interagir" cobre pegar e subornar, e as duas têm rota de dado
+     diferente — Destreza + Furto contra Manipulação + Persuasão. O que
+     separa as duas é a `intencao_detalhada`, e é por isso que ela é
+     obrigatória: sem ela o motor voltava a chutar a primeira da lista. */
+  ['dobro uma nota de cinquenta e empurro discretamente pro segurança na porta',
+   { tipo_acao: 'interagir', alvo: 'o segurança na porta', ferramenta_arma: 'nota de cinquenta', poder: '',
+     intencao_detalhada: 'convencer o segurança a deixar passar em troca de dinheiro',
+     circunstancia: 'discretamente', motivo: '', fala: '', volume_fala: 'nenhum' }],
+
+  /* E o exemplo de `investigar`, que saiu de dentro de `interagir` justamente
+     porque buscar informação não rola os mesmos dados que manipular objeto. */
+  ['dou uma geral na gaveta atrás de alguma coisa com o nome dele',
+   { tipo_acao: 'investigar', alvo: 'a gaveta', ferramenta_arma: '', poder: '',
+     intencao_detalhada: 'encontrar na gaveta algum papel com o nome dele',
+     circunstancia: '', motivo: '', fala: '', volume_fala: 'nenhum' }],
 
   ['fico pensando se valeu a pena ter vindo, e sinto falta de quem eu era',
-   { action_type: 'unknown', target: '', weapon: '', spell_name: '',
-     modifier: '', reason: 'Reflexão interna, sem ação mecânica.', speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'desconhecido', alvo: '', ferramenta_arma: '', poder: '',
+     intencao_detalhada: '', circunstancia: '',
+     motivo: 'Reflexão interna, sem ação mecânica.', fala: '', volume_fala: 'nenhum' }],
 
   ['mestre, a Bia sabe que eu sou vampira?',
-   { action_type: 'unknown', target: '', weapon: '', spell_name: '',
-     modifier: '', reason: 'Pergunta ao Mestre, fora da ficção.',
-     speech: '', speech_volume: 'none' }],
+   { tipo_acao: 'desconhecido', alvo: '', ferramenta_arma: '', poder: '',
+     intencao_detalhada: '', circunstancia: '',
+     motivo: 'Pergunta ao Mestre, fora da ficção.', fala: '', volume_fala: 'nenhum' }],
 
   /* §57 — os dois casos de fala. O primeiro é o que a pontuação já
      resolve, e está aqui para o modelo não "melhorar" o que o jogador
      escreveu. O segundo é a razão de os campos existirem: fala indireta,
      sem aspas, que a pontuação não tem como pegar. */
   ['encosto o cinzeiro na mesa e sussurro para a Bia: "você não devia ter vindo"',
-   { action_type: 'interact', target: 'o cinzeiro', weapon: '', spell_name: '',
-     modifier: '', reason: '',
-     speech: 'você não devia ter vindo', speech_volume: 'whisper' }],
+   { tipo_acao: 'interagir', alvo: 'o cinzeiro', ferramenta_arma: '', poder: '',
+     intencao_detalhada: 'pousar o cinzeiro na mesa enquanto avisa a Bia',
+     circunstancia: '', motivo: '',
+     fala: 'você não devia ter vindo', volume_fala: 'sussurro' }],
 
   ['digo pra ela, bem baixo, que ela não devia ter vindo hoje',
-   { action_type: 'unknown', target: '', weapon: '', spell_name: '', modifier: '',
-     reason: 'Só fala, sem ação mecânica.',
-     speech: 'você não devia ter vindo hoje', speech_volume: 'whisper' }]
+   { tipo_acao: 'desconhecido', alvo: '', ferramenta_arma: '', poder: '',
+     intencao_detalhada: '', circunstancia: '',
+     motivo: 'Só fala, sem ação mecânica.',
+     fala: 'você não devia ter vindo hoje', volume_fala: 'sussurro' }]
 ];
 
 const TETO_DA_LISTA = 40;
@@ -184,37 +245,41 @@ export function normalizar(bruto) {
     return t && t.toLowerCase() !== 'null' ? t : null;
   };
 
-  const tipo = TIPOS.includes(bruto && bruto.action_type) ? bruto.action_type : 'unknown';
+  const tipo = TIPOS.includes(bruto && bruto.tipo_acao) ? bruto.tipo_acao : 'desconhecido';
   const saida = {
-    action_type: tipo,
-    target: limpar(bruto && bruto.target),
-    weapon: limpar(bruto && bruto.weapon),
-    spell_name: limpar(bruto && bruto.spell_name),
-    modifier: limpar(bruto && bruto.modifier),
-    reason: limpar(bruto && bruto.reason),
+    tipo_acao: tipo,
+    alvo: limpar(bruto && bruto.alvo),
+    ferramenta_arma: limpar(bruto && bruto.ferramenta_arma),
+    poder: limpar(bruto && bruto.poder),
+    intencao_detalhada: limpar(bruto && bruto.intencao_detalhada),
+    circunstancia: limpar(bruto && bruto.circunstancia),
+    motivo: limpar(bruto && bruto.motivo),
     /* §57 — volume fora da lista vira 'normal' quando há fala; sem fala,
        o volume não existe e é null, para não parecer que alguém falou. */
-    speech: limpar(bruto && bruto.speech),
-    speech_volume: null
+    fala: limpar(bruto && bruto.fala),
+    volume_fala: null
   };
-  const VOLUMES = ['normal', 'whisper', 'shout', 'message'];
-  if (saida.speech) {
-    const v = limpar(bruto && bruto.speech_volume);
-    saida.speech_volume = VOLUMES.includes(v) ? v : 'normal';
+  const COM_SOM = VOLUMES.filter(v => v !== 'nenhum');
+  if (saida.fala) {
+    const v = limpar(bruto && bruto.volume_fala);
+    saida.volume_fala = COM_SOM.includes(v) ? v : 'normal';
   }
 
-  if (saida.action_type === 'unknown') {
-    if (!saida.reason) saida.reason = 'O modelo não soube nomear a ação.';
+  if (saida.tipo_acao === 'desconhecido') {
+    if (!saida.motivo) saida.motivo = 'O modelo não soube nomear a ação.';
+    /* Sem ação não há o que alcançar: a frase-resumo é de ação, e deixá-la
+       preenchida aqui faria o Elo 1 desempatar sobre coisa nenhuma. */
+    saida.intencao_detalhada = null;
   } else {
-    saida.reason = null;
+    saida.motivo = null;
   }
-  if (saida.action_type !== 'cast_spell') saida.spell_name = null;
+  if (saida.tipo_acao !== 'conjurar') saida.poder = null;
 
   return saida;
 }
 
 function desconhecida(motivo) {
-  return normalizar({ action_type: 'unknown', reason: motivo });
+  return normalizar({ tipo_acao: 'desconhecido', motivo });
 }
 
 /* Última tentativa: achar um objeto JSON no meio de texto sujo. A gramática do

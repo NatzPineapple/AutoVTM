@@ -83,7 +83,7 @@ const Lacos = {
      Tremere (pág. 97) poder ser consultada. Os dois são opcionais e o
      padrão é o comportamento de antes: quem chamava sem eles continua
      chamando, e nada muda. */
-  beber(l, { daVeia = true, quando = null, doador = null, alvoEhVampiro = false } = {}) {
+  beber(l, { daVeia = true, quando = null, doador = null, alvoEhVampiro = false, bebedor = null } = {}) {
     const n = this.normalizar(l);
     const eventos = [];
 
@@ -95,6 +95,14 @@ const Lacos = {
       eventos.push({ tipo: 'nota', texto: tremere.nota });
       return { laco: n, eventos, subiu: false };
     }
+
+    /* §101 — Sangue de Membro na boca de um Banu Haqim, ou Sangue
+       Salubri na boca de qualquer um: o gole pede um teste de frenesi
+       antes de contar. Quem sabe disso é o motor de Perdições; aqui só
+       se devolve o pedido, e quem rola é a Mesa (§82). */
+    const pedidos = (typeof Perdicoes !== 'undefined' && bebedor)
+      ? Perdicoes.aoBeberDeVampiro(bebedor, doador) : [];
+    for (const p of pedidos) eventos.push({ tipo: 'teste', pedido: p, texto: p.motivo });
     if (!daVeia) {
       eventos.push({ tipo: 'nota', texto:
         'Sangue que não veio direto da veia não enlaça: ele perde o poder em segundos '

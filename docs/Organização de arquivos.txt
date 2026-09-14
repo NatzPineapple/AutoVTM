@@ -1,5 +1,5 @@
 PENDÊNCIAS — VITÆ
-Atualizado em 09/09/2026, depois da §100.
+Atualizado em 14/09/2026, depois da §101.
 
 ESTE ARQUIVO É SÓ A LISTA DE PENDÊNCIAS. Nada mais.
 Nada de relato do que foi feito, nada de explicação de defeito, nada de
@@ -31,7 +31,19 @@ FRONT
   Nada aberto.
 
 ÁRBITRO
-  Nada aberto.
+
+  A12. O ponto da Ambição está preso à cura da Vontade ......... baixo
+      Em Estado.fimDeSessao, o +1 de experiência por Ambição cumprida
+      só é pago quando há Vontade Agravada para curar. A pág. 128 não
+      prende as duas coisas: quem cumpre a Ambição com a trilha limpa
+      ganha o ponto do mesmo jeito. Achado ao separar xpDaSessao do
+      gastador; preservado como estava para não mudar regra calado.
+
+  A13. Três Perdições do Guia esperam "a noite que passa" ....... baixo
+      regras.md §19.5. Ministério (dano solar extra), Ravnos (o fogo
+      ao dormir no mesmo lugar) e Tzimisce (a carga) estão calculadas
+      em motor-perdicoes.js e nada as dispara: o motor não tem um dia
+      que passa nem sabe onde a ficha dormiu.
 
 FICHA
   Nada aberto.
@@ -42,6 +54,19 @@ CRONISTA
       Cena vazia ainda é aceita em 96%. ~5% dos turnos vão ao Narrador
       sem motivo, e dois turnos idênticos podem cair em degraus
       diferentes.
+
+  C2. O esquema do extrator em português caiu de 96,8% pra 80,6% . médio
+      motor-intencao.js foi refeito para desempatar por semântica em vez
+      de casar frase no léxico, e o esquema do extrator (intencao.mjs)
+      virou português no fio: tipo_acao, alvo, poder, no lugar de
+      action_type, target, spell_name. Medido depois com a mesma
+      bateria da §94 (5 repetições, qwen2.5:7b): tipo certo caiu de
+      150/155 pra 125/155, e o caso do arremesso (G4, era 20/20) quebrou
+      — "jogo o cinzeiro na cabeça dela" virou corpo a corpo. Suspeita:
+      enum longo com sublinhado em português tokeniza pior que o
+      inglês curto, sob gramática restrita. O turno não quebra — tipo
+      errado cai na rota de fuga (léxico, depois o Narrador) —, só usa
+      menos o modelo do que podia.
 
 GERAL
 
@@ -57,8 +82,14 @@ GERAL
       o que barateou o resto da fila: Oblivio.pdf (as regras gerais da
       Disciplina e as Cerimônias, que não existiam no motor) e
       Sombras-na-Torre.pdf (a migração dos Lasombra, em cenario.md).
-      Sobram 7: Anarquistas, Camarilla, Escudo-Do-Mestre, SABBAT,
-      Sigilos-de-Sangue, Companion e o Guia do Jogador.
+      GUIA DO JOGADOR LIDO NA §101, nas partes que têm motor: os seis
+      Tipos de Predador (págs. 106-109) e as sete Perdições e Compulsões
+      dos clãs de fora do básico (págs. 18-54). Ficaram DECLARADOS sem
+      motor: as Variantes da Perdição (págs. 56-57), as Fichas de
+      Conhecimento, os poderes novos de Disciplina, os Rituais e
+      Fórmulas, Memoriam, Projetos Colaborativos e os Círculos.
+      Sobram 6 livros: Anarquistas, Camarilla, Escudo-Do-Mestre,
+      SABBAT, Sigilos-de-Sangue e o Companion (só imagem).
       CLÃS LIDO NA §88: o básico tem SETE clãs, mais Caitiff e Sangue-Ralo.
       As nove Perdições estavam erradas e foram corrigidas; só a Brujah
       chega ao dado, as outras oito estão declaradas em regras.md §19.3.
@@ -76,6 +107,12 @@ GERAL
       O método narrativo das Habilidades (145-146) também não existia,
       e é o TEXTO PRINCIPAL do livro. Ficaram de fora as Qualidades e
       Defeitos de Sangue-Ralo, que estão nas págs. 182-183.
+
+  G13. O Assassino de Estrada não tem fonte no disco ............ baixo
+      Não está no Guia do Jogador (os seis do Guia são outros). É do
+      Companion, que só existe aqui como PDF de imagem. Está marcado
+      naoConferido em data-predadores.js e fica porque há ficha salva
+      com o id. Quando o Companion for lido, ele se confere ou sai.
 
   G11. Seis erros de documento, achados no levantamento ...... médio
       Todos do mesmo tipo: documento que envelheceu enquanto o código
@@ -95,22 +132,6 @@ GERAL
       6. regras.md Parte IV §9 diz que o app só modela um personagem.
          A Parte III §10 diz que motor-matilha.js resolveu isso.
 
-  G12. As Partes III e IV, e o livro que não está aqui ....... médio
-      Zero páginas conferidas nas duas, e elas não se leem igual.
-      A Parte III é DOCUMENTO DE DESENHO, não regra de livro: reler é
-      conferir contra o código, não contra a página.
-      A Parte IV depende de dois livros de peso diferente, e o que
-      carrega os SISTEMAS - Vaulderie, Vinculum, matilhas, Ritae com
-      efeito, os 8 Predadores - é de comunidade e NÃO ESTÁ NA MÁQUINA.
-      Dá para reler contra o SABBAT.pdf oficial, que está: §1, a
-      metade de cenário da §2, os nomes da §5 e a parte oficial da §7.
-
-  G10. Os seis Predadores do Guia do Jogador ................. médio
-      Extorsionista, Ladrão de Túmulos, Montero, Perseguidor,
-      Assassino de Estrada e Alçapão vêm do Guia (págs. 107-111) e
-      NÃO foram conferidos. O Guia dá parada de dados para todos, e
-      traduz mal (Oblívio vira "Esquecimento"). Há ainda um sétimo,
-      o Ceifador, que o projeto não tem. §77.7
 
   ---- ARQUITETURA MODULAR (§78-§87) ----
   Cinco módulos, cada um em sua PASTA (§79), em seu processo e em sua porta
@@ -140,6 +161,15 @@ GERAL
       veredito tem de trazer o que a mesa deve gravar. Hoje ele devolve
       só o resultado mecânico, e mundo.objetos / mundo.pessoas ficam
       vazios a menos que alguém preencha à mão.
+
+  M11. Checkout/checkin sem teste com o FichaServer de verdade . baixo
+      cliente-ficha.mjs e ficha-servidor.mjs foram conferidos por
+      leitura — rota, envelope, formato de resposta e origem batem.
+      Mas nenhum teste sobe os dois processos juntos: mesa-servidor.
+      test.mjs fixa VITAE_PORTA_FICHA numa porta que ninguém atende,
+      de propósito, e só cobre o caminho SEM FichaServer. O caminho
+      feliz (origemDaFicha: 'fichaserver', checkin 200 de verdade)
+      nunca rodou fora de teste mockado na Ponte.
 
 
 ================================================================
@@ -192,6 +222,7 @@ GERAL
   G4 ..... o extrator erra o arremesso .......... §94, medido: 20/20
   G6 ..... a leitura de fala não medida ......... §94, medida
   ....... o relator dizia "0 reprovaram" ........ §94.6
+  ....... os seis Predadores do Guia (G10) ...... §101
   ....... Criação e Experiência (135-154) ....... §91
   ....... Conflito Avançado (295-305) ........... §90
   ....... Estados de Condenação (233-235) ....... §90

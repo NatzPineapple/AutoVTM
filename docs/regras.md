@@ -1033,7 +1033,7 @@ Exemplo: *Braços de Arimã* é Oblívio 2 com Amálgama Potência 2.
 tempo, preparação e componentes, e o nível **não pode passar do nível da Disciplina**. O
 custo em experiência é o **nível × 3** (§17).
 
-**O que faltava das Cerimônias, e agora está no motor** (`motor-oblivio.js`):
+**O que faltava das Cerimônias, e agora está no motor** (`motor-disciplinas.js`):
 
 | | Regra |
 |---|---|
@@ -1522,7 +1522,28 @@ levá-la para a Habilidade de nível 4.
 > se é erro de tradução ou do original, e inventar a Habilidade "certa" seria escrever a regra em
 > vez de lê-la. A entrada ficou com uma opção só, e o motivo está escrito nela.
 
-### 16.3 O que o Predador acrescenta *(pág. 149)*
+### 16.3 O que o Predador acrescenta *(pág. 149; os seis do Guia, págs. 106–109 — §101)*
+
+**Os seis Tipos de Predador do Guia do Jogador foram conferidos na página** (G10): Extorsionista,
+Ladrão de Túmulos, **Ceifador**, Montero, Perseguidor e Alçapão. Dos cinco que o projeto já tinha,
+**nenhum batia** — o Ladrão de Túmulos tinha parada, Qualidade e Defeito errados; o Montero, a
+Disciplina errada; o Perseguidor não perdia Humanidade; o Alçapão tinha a segunda parada e o
+Antecedente errados. O Ceifador não existia.
+
+E **"Assassino de Estrada" não está no Guia**: é do Companion (*Roadside Killer*), que só existe
+aqui em PDF de imagem. Fica em `data-predadores.js` marcado `naoConferido`, porque há ficha
+salva usando o id.
+
+Duas regras dos seis valem **durante o jogo**, e ganharam motor próprio —
+`modulos/arbitro/motores/motor-predadores.js`, o par de `motor-perdicoes.js`:
+
+| Predador | Regra *(pág.)* | Onde |
+|---|---|---|
+| **Ladrão de Túmulos** | *"Um cadáver frio pode saciar até 3 pontos de Fome, mas sofre as mesmas penalidades de saciedade que o sangue ensacado"* *(108)* | `Predadores.alimentar` embrulha `Estado.alimentar`; a tabela do Escudo continua **sem cadáver**, porque para os outros não é fonte |
+| **Alçapão** | *"Navegar pelo labirinto dentro de sua toca exige Raciocínio + Percepção (mas você pode adicionar seus pontos de Refúgio em dados à reserva)"* *(109)* | `Predadores.modificadores`, na parada, com `noProprioRefugio` |
+
+E uma nota geral do Guia *(pág. 107)*: **o Tipo de Predador pode dar um ponto de Disciplina
+fora do clã** — *"a fome pode ser mais forte que a linhagem"*. O criador já permitia.
 
 Cada tipo de Predador dá uma especialização, um ponto numa Disciplina e as Vantagens e Defeitos
 listados — e nada disso conta no orçamento de 7 e 2 pontos. E há uma regra que faltava ao motor:
@@ -1605,7 +1626,9 @@ desde a §61 e **nenhuma linha do jogo os chamava**.
 
 É a quarta tabela morta que este projeto encontra do mesmo jeito — a Ressonância na §67, os
 Ferimentos Incapacitantes e a audiência do combate social na §90. `motor-experiencia.js` é o
-caminho que faltava: aba **Experiência** na mesa, com a conta aberta.
+caminho que faltava, e ele é da **área Ficha**: gastar experiência escreve na ficha. A tela é a
+seção **Gastar experiência**, no passo A Ficha do criador, com a conta aberta. Quem *ganha* é a
+sessão — `Estado.xpDaSessao` diz quanto, e a carteira credita.
 
 ### 17.3 A experiência de partida — o Mar do Tempo *(pág. 137)*
 
@@ -1782,7 +1805,8 @@ Continuam valendo, e vêm de outras seções:
 
 O básico tem **sete clãs**, mais Caitiff e Sangue-Ralo. Banu Haqim, Hecata, Lasombra,
 Ministério, Ravnos, Salubri e Tzimisce — que também estão em `data-clans.js` — vieram do
-Companion e de livros de seita, e **não foram conferidos contra a página**.
+Companion, e desde a **§101** estão conferidos no **Guia do Jogador**, que incorpora o Companion
+e é a fonte oficial deles. Ver §19.5.
 
 ### 19.1 O que o livro chama de Perdição
 
@@ -1817,7 +1841,7 @@ ela é derivada de verdade: `derivados(f).gravidadePerdicao`.
 quando o clã é Brujah e o frenesi é de fúria, e diz que subtraiu. Medido: Gravidade 2 → Brujah
 rola 6 dados onde o Ventrue rola 8.
 
-**Aplicado na §95** — `modulos/arbitro/motor-perdicoes.js`, e cada uma numa função com nome:
+**Aplicado na §95** — `modulos/arbitro/motores/motor-perdicoes.js`, e cada uma numa função com nome:
 
 | Clã | O que passou a acontecer |
 |---|---|
@@ -1859,6 +1883,39 @@ As nove estavam erradas, e sempre do mesmo jeito: **número inventado no lugar d
 
 O Toreador é o mais grave: um Toreador jogado com a regra antiga era penalizado exatamente
 quando o livro manda **não** penalizar.
+
+### 19.5 As sete do Guia do Jogador *(Guia, págs. 18, 23, 29, 36, 42, 47 e 54 — §101)*
+
+O Guia é tradução automática e "só apoio" pela tabela do topo — mas **incorpora o Companion**,
+que é a fonte oficial destes sete, e é o único texto deles no disco. Entra a regra; os nomes
+são os do básico: onde o Guia escreve *"Gravidade de Bane"*, aqui é **Gravidade da Perdição**.
+
+Todas se medem pela Gravidade, como as nove do básico. E todas chegaram ao dado em
+`motor-perdicoes.js`, cada uma numa função com nome:
+
+| Clã | Perdição *(pág.)* | O que o motor faz |
+|---|---|---|
+| **Banu Haqim** *(18)* | Saciar Fome com Sangue de Membro → frenesi de Fome, **Dificuldade 2 + Gravidade** | `aoBeberDeVampiro` devolve o pedido; **`Lacos.beber` o entrega** quando a Mesa passa o bebedor |
+| **Hecata** *(23)* | O Beijo dói: só se bebe **causando dano**; mortal testa **Vigor + Determinação** contra 2 + Gravidade; Membro testa frenesi de **terror** contra 3 | `beijoHecata` devolve os dois testes |
+| **Lasombra** *(29)* | Comunicação moderna: Tecnologia com **Dificuldade 2 + Gravidade**; evitar detecção eletrônica: **−Gravidade** dados | a dificuldade em `dificuldadeLasombra`; **a penalidade entra em `piscinaFinal`** com `contraDeteccaoEletronica` |
+| **Ministério** *(36)* | Luz brilhante apontada: **−Gravidade em toda parada**; luz do sol: **+Gravidade de Agravado** | **a penalidade entra em `piscinaFinal`** pelo mesmo `luz` de Oblívio (§96); o dano extra em `danoSolarExtra` |
+| **Ravnos** *(42)* | Mesmo lugar em 7 noites: rola **Gravidade dados, cada 10 é um Agravado**. 1 km entre lugares; 1,5 km para refúgio móvel. Vale em torpor. Sem o Defeito Sem Refúgio | `pedidoRavnos` e `apurarRavnos` — pedir e apurar são do Árbitro, rolar é da Mesa (§82) |
+| **Salubri** *(47)* | Quem bebe dele testa frenesi de Fome a **2 + Gravidade do Salubri** (**3 +** para Banu Haqim); o terceiro olho chora ao ativar Disciplina, e **Membros com Fome 4+** por perto testam frenesi | `aoBeberDeVampiro` (a Gravidade é a do **doador**) e `terceiroOlho` |
+| **Tzimisce** *(54)* | Dormir longe da carga escolhida: **Agravado à Vontade igual à Gravidade** ao acordar | `aoAcordarTzimisce` |
+
+**O que já dispara sozinho:** a penalidade Lasombra e a do Ministério (pela parada), e os dois
+frenesis de gole (pelo Laço). **O que é calculado e ainda espera gancho:** o dano solar extra do
+Ministério, o fogo Ravnos e a carga Tzimisce — os três dependem de "o dia passou" e de "onde
+você dormiu", e o motor não tem uma noite que passa. O Beijo Hecata e o terceiro olho Salubri
+devolvem os testes; quem os pede é a Mesa quando a cena os traz. Declarados, e não meio feitos.
+
+As **Compulsões** dos sete também foram reescritas pela página em `data-clans.js`, no mesmo
+regime das nove do básico: texto certo, sem mecânica própria além da penalidade que cada uma
+nomeia.
+
+**O que o Guia diz de todos os catorze clãs** *(págs. 56–57)*: **Variantes da Perdição** — uma
+Perdição alternativa por clã, à escolha na criação. Ficam **declaradas, não implementadas**: são
+opção de mesa, e o projeto adota a Perdição principal de cada clã.
 
 ---
 
@@ -2148,14 +2205,16 @@ entre as gerações**.
 | Frenesi e Compulsão | `js/arbitro/motor-estado.js` | Implementado |
 | Combate | `js/arbitro/motor-combate.js` | Implementado |
 | Experiência e fim de sessão | `js/arbitro/motor-estado.js` | Implementado |
-| Projetos — Escopo, Lançamento, Dado do Projeto, Objetivo | `modulos/arbitro/motor-projetos.js` | Implementado — §20, menos a Longue Durée |
+| Projetos — Escopo, Lançamento, Dado do Projeto, Objetivo | `modulos/arbitro/motores/motor-projetos.js` | Implementado — §20, menos a Longue Durée |
 | Linhas, Véus, Carta X e fade | `comum/dados/data-limites.js` + a aba Limites | Implementado — §21 |
-| Conflito Avançado: Ataque/Defesa Total, surpresa, mira, agarramento, Ferimentos, combate social | `modulos/arbitro/motor-combate-avancado.js` | Implementado — §15.7 a §15.12 |
-| Conflito de Rolagem Única, com as duas tabelas de Dificuldade | `modulos/arbitro/motor-combate-avancado.js` → `RolagemUnica` | Implementado — §15.13 (§95) |
-| As Perdições de clã, da Brujah ao Sangue-Ralo | `modulos/arbitro/motor-perdicoes.js` | Implementado — §19.3 (§95) |
-| Oblívio: a luz, a Checagem que gera Mácula, e a porta das Cerimônias | `comum/dados/data-oblivio.js` + `modulos/arbitro/motor-oblivio.js` | Implementado — §14.6 e §14.6.1 (§96) |
-| Laço de Sangue, carniçais e Diablerie | `modulos/arbitro/motor-lacos.js` + a aba Sangue | Implementado — §22 |
-| Experiência: a escada da pág. 151, a carteira e a compra | `modulos/arbitro/motor-experiencia.js` + a aba Experiência | Implementado — §17 |
+| Conflito Avançado: Ataque/Defesa Total, surpresa, mira, agarramento, Ferimentos, combate social | `modulos/arbitro/motores/motor-combate-avancado.js` | Implementado — §15.7 a §15.12 |
+| Conflito de Rolagem Única, com as duas tabelas de Dificuldade | `modulos/arbitro/motores/motor-combate-avancado.js` → `RolagemUnica` | Implementado — §15.13 (§95) |
+| As Perdições de clã, da Brujah ao Sangue-Ralo | `modulos/arbitro/motores/motor-perdicoes.js` | Implementado — §19.3 (§95) |
+| As sete Perdições do Guia (Banu Haqim, Hecata, Lasombra, Ministério, Ravnos, Salubri, Tzimisce) | `modulos/arbitro/motores/motor-perdicoes.js` | Implementado — §19.5 (§101) |
+| Os seis Predadores do Guia, e o que fazem no dado | `comum/dados/data-predadores.js` + `motores/motor-predadores.js` | Implementado — §16.3 (§101) |
+| Oblívio: a luz, a Checagem que gera Mácula, e a porta das Cerimônias | `comum/dados/data-oblivio.js` + `modulos/arbitro/motores/motor-disciplinas.js` | Implementado — §14.6 e §14.6.1 (§96) |
+| Laço de Sangue, carniçais e Diablerie | `modulos/arbitro/motores/motor-lacos.js` + a aba Sangue | Implementado — §22 |
+| Experiência: a escada da pág. 151, a carteira e a compra | `modulos/ficha/motor-experiencia.js` + a seção Gastar experiência, na tela da Ficha | Implementado — §17 |
 | A vida humana: profissão, evento e passatempos | `comum/dados/data-criacao.js` + o passo "A vida que você teve" | Implementado — §16.2 |
 
 ---

@@ -6,8 +6,9 @@
      checkout  pedirFicha(fichaId)    →  a ficha completa
      checkin   devolverFicha(ficha)   →  persistida no banco
 
-   O FichaServer AINDA NÃO EXISTE. Este arquivo não finge que
-   existe, e também não trava a mesa até ele nascer:
+   O FichaServer existe desde a §83, mas continua um processo à
+   parte que pode não estar de pé — e este arquivo não trava a
+   mesa esperando por ele:
 
      1. tenta o FichaServer na porta dele;
      2. se ele não responde e o Cliente mandou a ficha junto no

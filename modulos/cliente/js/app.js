@@ -906,6 +906,45 @@ document.addEventListener('click', (e) => {
       render(); return;
     }
 
+    /* ----------------------------------------------------------
+       GASTAR EXPERIÊNCIA  (pág. 151)
+
+       Veio da doca da Mesa numa revisão de código: gastar experiência
+       é editar a ficha, e é aqui que a ficha se edita. A conta é toda
+       de `Experiencia`, da área Ficha — estas quatro só dizem QUANDO.
+       ---------------------------------------------------------- */
+    case acao === 'xp-classe':
+      compraXP = { classe: id, id: '', para: 0 };
+      render(); return;
+
+    case acao === 'xp-nivel': {
+      const atual = nivelAtualDaCompraXP();
+      compraXP.para = Math.max(atual + 1, (compraXP.para || atual + 1) + (Number(id) || 0));
+      render(); return;
+    }
+
+    case acao === 'xp-comprar': {
+      if (!compraXP.classe) return;
+      const r = Experiencia.comprar(S, { classe: compraXP.classe, id: compraXP.id,
+                                         para: compraXP.para || (nivelAtualDaCompraXP() + 1) });
+      /* O motor devolve o evento pronto — e ele é o mesmo texto que a
+         Mesa anunciava no fluxo. Aqui não há fluxo: vira toast. */
+      for (const ev of r.eventos) toast(ev.texto);
+      if (r.comprou) { compraXP = { classe: compraXP.classe, id: '', para: 0 }; salvar(); }
+      render(); return;
+    }
+
+    case acao === 'xp-especializacao': {
+      const hab = $('#xp-esp-hab');
+      const txt = $('#xp-esp-texto');
+      if (!hab || !hab.value) { toast('Escolha uma Habilidade com pontos.'); return; }
+      if (!txt || !txt.value.trim()) { toast('Escreva a especialização.'); return; }
+      const r = Experiencia.comprarEspecializacao(S, hab.value, txt.value);
+      for (const ev of r.eventos) toast(ev.texto);
+      if (r.comprou) salvar();
+      render(); return;
+    }
+
     case acao === 'ver-ficha':
       fichaAberta = fichaAberta === id ? '' : id;
       renderFichas(); return;
@@ -1229,12 +1268,23 @@ document.addEventListener('click', (e) => {
       if (PASSOS[passo].id !== 'ficha') { passo = PASSOS.length - 1; render(); }
       setTimeout(() => window.print(), 120);
       return;
+    /* O "Salvar" do topo, sempre visível, continua exportando .json
+       direto — sem escolha de formato, é o atalho rápido. */
     case acao === 'exportar': exportarJSON(); return;
-    case acao === 'exportarextraido':
-      baixar(`vitae-${slug()}-extraida.json`, Ficha.json(S), 'application/json');
-      toast('Ficha extraída exportada.');
+
+    /* As três extensões da tela da Ficha viviam em três botões
+       separados; um dropdown escolhe o formato e este é o único
+       gatilho. */
+    case acao === 'exportar-formato': {
+      const sel = $('#formato-exportar');
+      const formato = sel ? sel.value : 'json';
+      if (formato === 'txt') exportarTXT();
+      else if (formato === 'extraida') {
+        baixar(`vitae-${slug()}-extraida.json`, Ficha.json(S), 'application/json');
+        toast('Ficha extraída exportada.');
+      } else exportarJSON();
       return;
-    case acao === 'exportartxt': exportarTXT(); return;
+    }
     case acao === 'importar': importarJSON(); return;
     case acao === 'reiniciar':
       if (!reiniciarArmado) {
@@ -1284,6 +1334,12 @@ document.addEventListener('change', (e) => {
   const el = e.target;
   if (el.dataset.campo) { S[el.dataset.campo] = el.value; salvar(); }
   else if (el.dataset.caminho) { definirEm(S, el.dataset.caminho, el.value); sincronizarMatilha(S); salvar(); }
+  /* Escolher O QUE comprar zera o nível-alvo: a cotação passa a valer
+     para o traço novo, e não para o degrau em que o anterior parou. */
+  else if (el.dataset.campoXp === 'id') {
+    compraXP = Object.assign({}, compraXP, { id: el.value, para: 0 });
+    render();
+  }
 });
 
 /* ------------------------------------------------------------

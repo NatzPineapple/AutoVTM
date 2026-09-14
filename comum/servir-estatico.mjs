@@ -7,8 +7,8 @@
    mais delicada: o navegador não carrega mais de UMA pasta.
 
    A REGRA DA URL, e ela vale para o projeto todo: **a URL é o
-   caminho no repositório.** `/modulos/arbitro/motor-dados.js` é
-   `modulos/arbitro/motor-dados.js`, sem tradução no meio.
+   caminho no repositório.** `/modulos/arbitro/motores/motor-dados.js`
+   é `modulos/arbitro/motores/motor-dados.js`, sem tradução no meio.
 
    Foi escolha, e contra a alternativa de manter as URLs antigas
    com uma tabela de tradução. Tabela de tradução é um segundo

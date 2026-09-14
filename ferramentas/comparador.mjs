@@ -106,8 +106,8 @@ async function medirIntencao(modelo, dados, opcoes) {
       tempos.push(r.milissegundos);
       total++;
 
-      if (!TIPOS.includes(s.action_type)) {
-        foraDoFormato.push(`${caso.frase}: tipo inválido ${s.action_type}`);
+      if (!TIPOS.includes(s.tipo_acao)) {
+        foraDoFormato.push(`${caso.frase}: tipo inválido ${s.tipo_acao}`);
         process.stdout.write('!');
         continue;
       }
@@ -115,8 +115,8 @@ async function medirIntencao(modelo, dados, opcoes) {
       const suja = SUJEIRA.filter(p => texto.includes(p));
       if (suja.length) foraDoFormato.push(`${caso.frase}: texto conversacional ${suja.join(', ')}`);
 
-      if (s.action_type === caso.tipo) { acertos++; process.stdout.write('.'); }
-      else { erros.push(`${caso.frase}: veio ${s.action_type}, esperado ${caso.tipo}`); process.stdout.write('×'); }
+      if (s.tipo_acao === caso.tipo) { acertos++; process.stdout.write('.'); }
+      else { erros.push(`${caso.frase}: veio ${s.tipo_acao}, esperado ${caso.tipo}`); process.stdout.write('×'); }
 
       const vazios = (caso.exige || []).filter(c => !s[c]);
       if (vazios.length) faltando.push(`${caso.frase}: sem ${vazios.join(', ')}`);
@@ -128,21 +128,21 @@ async function medirIntencao(modelo, dados, opcoes) {
          algo que o jogador não escreveu, e isso vira narração e
          história. Por isso as duas contas são separadas. */
       if (caso.volume === undefined) continue;
-      if (caso.volume === 'none') {
+      if (caso.volume === 'nenhum') {
         semFala++;
-        if (!s.speech) silencioOk++;
-        else falaInventada.push(`${caso.frase}: inventou "${s.speech}"`);
+        if (!s.fala) silencioOk++;
+        else falaInventada.push(`${caso.frase}: inventou "${s.fala}"`);
         continue;
       }
       comFala++;
-      if (!s.speech) { falaPerdida.push(`${caso.frase}: não ouviu fala nenhuma`); continue; }
-      const volumeOk = s.speech_volume === caso.volume;
-      const chaves = (caso.falaContem || []).filter(k => !semAcento(s.speech).includes(semAcento(k)));
+      if (!s.fala) { falaPerdida.push(`${caso.frase}: não ouviu fala nenhuma`); continue; }
+      const volumeOk = s.volume_fala === caso.volume;
+      const chaves = (caso.falaContem || []).filter(k => !semAcento(s.fala).includes(semAcento(k)));
       if (volumeOk && !chaves.length) falaOk++;
       else falaErrada.push(`${caso.frase}: `
-        + (volumeOk ? '' : `volume ${s.speech_volume} em vez de ${caso.volume}`)
+        + (volumeOk ? '' : `volume ${s.volume_fala} em vez de ${caso.volume}`)
         + (volumeOk || !chaves.length ? '' : ' · ')
-        + (chaves.length ? `fala "${s.speech}" sem ${chaves.join(', ')}` : ''));
+        + (chaves.length ? `fala "${s.fala}" sem ${chaves.join(', ')}` : ''));
     }
   }
   process.stdout.write('\n');

@@ -27,10 +27,27 @@ export const AREAS = {
   data: ['data-traits', 'data-clans', 'data-disciplinas', 'data-predadores', 'data-vantagens',
          'data-brasil', 'data-sabbat', 'data-anarquistas', 'data-independentes', 'data-seitas',
          'data-mesa', 'data-recombinacao', 'data-escudo', 'data-itens', 'data-ressonancia', 'data-limites', 'data-criacao', 'data-oblivio'],
-  ficha: ['ficha-vocabulario', 'motor-ficha', 'motor-matilha', 'ficha-regras', 'ficha-modelo', 'fichas'],
-  arbitro: ['motor-dados', 'motor-arbitro', 'arbitro-lexico', 'arbitro-tabelas', 'motor-experiencia', 'motor-perdicoes', 'motor-oblivio', 'motor-estado', 'motor-combate', 'motor-grafo',
-            'motor-especialista', 'motor-cadeia', 'motor-navegacao', 'motor-entrada', 'motor-intencao', 'motor-projetos',
-            'motor-combate-avancado', 'motor-lacos'],
+  /* `motor-experiencia` veio do Árbitro numa revisão de código (sem
+     número de §): gastar experiência escreve na FICHA, e a ficha fora
+     de sessão é do Módulo 2. Ele entra depois de `ficha-regras` porque
+     lê `derivados`, `disciplinasDisponiveis` e `nomeHabilidade` de lá.
+     O Árbitro continua enxergando — ele carrega a área Ficha antes da
+     dele (`AREAS_DO_ARBITRO`), e é assim que `Estado.xpDaSessao` manda
+     creditar. */
+  ficha: ['ficha-vocabulario', 'motor-ficha', 'motor-matilha', 'ficha-regras', 'motor-experiencia',
+          'ficha-modelo', 'fichas'],
+  /* Os quinze `motor-*.js` moram em `motores/` desde uma reorganização
+     de pasta (sem §): o mesmo prefixo que `paineis/` já usa no Front,
+     porque a área continua sendo uma pasta só (`PASTA_DA_AREA.arbitro`)
+     e o que muda é onde DENTRO dela cada arquivo está. `arbitro-lexico`
+     e `arbitro-tabelas` ficam fora: não são motores, são o léxico e as
+     tabelas que os motores consultam. */
+  arbitro: ['motores/motor-dados', 'motores/motor-arbitro', 'arbitro-lexico', 'arbitro-tabelas',
+            'motores/motor-perdicoes', 'motores/motor-disciplinas', 'motores/motor-estado', 'motores/motor-predadores',
+            'motores/motor-combate', 'motores/motor-grafo', 'motores/motor-especialista',
+            'motores/motor-cadeia', 'motores/motor-navegacao', 'motores/motor-entrada',
+            'motores/motor-intencao', 'motores/motor-projetos', 'motores/motor-combate-avancado',
+            'motores/motor-lacos'],
   cronista: ['compilador', 'diretor', 'recombinador', 'escada', 'narrador',
              'motor-cronica', 'cronista', 'legado'],
   front: ['trafego', 'ponte', 'dados-ui', 'criador-paineis',
@@ -45,7 +62,11 @@ export const AREAS = {
              arquivo, só de dentro de função. */
           'paineis/painel-cronica', 'paineis/painel-cla', 'paineis/painel-atributos',
           'paineis/painel-habilidades', 'paineis/painel-disciplinas', 'paineis/painel-predador',
-          'paineis/painel-vantagens', 'paineis/painel-alma', 'paineis/painel-ficha',
+          'paineis/painel-vantagens', 'paineis/painel-alma',
+          /* `painel-experiencia` não é um passo: é a seção de gastar
+             experiência DENTRO da tela da Ficha, e por isso entra logo
+             antes dela. Veio da doca da Mesa numa revisão de código. */
+          'paineis/painel-experiencia', 'paineis/painel-ficha',
           'app'],
   /* A Mesa ganhou área própria numa revisão de código (sem número de §
      — não é uma decisão registrada no README): `mesa-servidor.mjs` (o

@@ -2,6 +2,25 @@
    VITÆ — Experiência
    (básico, "Custo das Características: Experiência", pág. 151)
 
+   ESTE ARQUIVO É DA ÁREA FICHA, e nasceu na área errada.
+
+   Ele morou em `modulos/arbitro/` desde a §91, por vizinhança e não
+   por dono: a tabela de custos estava em `motor-estado.js`, então o
+   gastador nasceu ao lado dela. Mas gastar experiência é MEXER NA
+   FICHA — sobe um Atributo, escreve uma Especialização, desconta da
+   carteira —, e a ficha fora de sessão é do Módulo 2.
+
+   A prova de que ele sempre foi da Ficha está nas dependências: tudo
+   o que este arquivo chama vem de `ficha-regras.js`, de
+   `ficha-vocabulario.js` ou de `comum/dados/`. Ele nunca precisou de
+   uma linha do Árbitro. Mudar de pasta não mudou uma chamada.
+
+   O QUE FICA COM O ÁRBITRO é a outra metade, e só ela: **quanto** a
+   noite rendeu. `Estado.xpDaSessao` responde isso — uma por sessão,
+   mais uma pela Ambição cumprida — e manda creditar aqui. Decidir
+   quanto se ganha é arbitragem; guardar e gastar é ficha.
+   (Mudança pedida em revisão de código, sem número de §.)
+
    A tabela de custos já morava em `motor-estado.js` como `CUSTO_XP`,
    e `Estado.custoDe` já sabia lê-la. **Nada no jogo as chamava.**
 

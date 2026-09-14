@@ -24,7 +24,7 @@
    · É ORQUESTRAÇÃO. Ele lê `M`, chama os motores do Árbitro
      (`Combate`, `Rodada`, `Agarramento`) e escreve o resultado de
      volta em `M`. Regra de combate não mora aqui — mora em
-     `modulos/arbitro/motor-combate.js` e `motor-combate-avancado.js`.
+     `modulos/arbitro/motores/motor-combate.js` e `motor-combate-avancado.js`.
 
    · NÃO ROLA DADO por conta própria. Quem rola é a Mesa, pela §82, e
      é por isso que `golpe` chama `rolarPelaMesa`.

@@ -727,33 +727,33 @@ test('Servidor — o turno segmentado (§57)', async (t) => {
     /* A mesa traduz whisper/shout/message para sussurro/grito/mensagem.
        Volume fora da lista tem de virar 'normal', e não vazar. */
     for (const [bruto, esperado] of [
-      [{ speech: 'vem', speech_volume: 'whisper' }, 'whisper'],
-      [{ speech: 'vem', speech_volume: 'shout' }, 'shout'],
-      [{ speech: 'vem', speech_volume: 'telepathic' }, 'normal'],
-      [{ speech: 'vem', speech_volume: '' }, 'normal'],
-      [{ speech: '', speech_volume: 'shout' }, null]
+      [{ fala: 'vem', volume_fala: 'sussurro' }, 'sussurro'],
+      [{ fala: 'vem', volume_fala: 'grito' }, 'grito'],
+      [{ fala: 'vem', volume_fala: 'telepatico' }, 'normal'],
+      [{ fala: 'vem', volume_fala: '' }, 'normal'],
+      [{ fala: '', volume_fala: 'grito' }, null]
     ]) {
-      const n = intencao.normalizar(Object.assign({ action_type: 'unknown' }, bruto));
-      t2.diagnostic(`${JSON.stringify(bruto)} → speech ${JSON.stringify(n.speech)}, volume ${JSON.stringify(n.speech_volume)}`);
-      assert.equal(n.speech_volume, esperado);
+      const n = intencao.normalizar(Object.assign({ tipo_acao: 'desconhecido' }, bruto));
+      t2.diagnostic(`${JSON.stringify(bruto)} → fala ${JSON.stringify(n.fala)}, volume ${JSON.stringify(n.volume_fala)}`);
+      assert.equal(n.volume_fala, esperado);
     }
   });
 
   await t.test('sem fala, o extrator não inventa volume', () => {
-    /* `speech_volume` preenchido sem `speech` faria a mesa desenhar
+    /* `volume_fala` preenchido sem `fala` faria a mesa desenhar
        uma fala que ninguém disse. */
-    const n = intencao.normalizar({ action_type: 'melee_attack', target: 'o segurança' });
-    assert.equal(n.speech, null);
-    assert.equal(n.speech_volume, null);
+    const n = intencao.normalizar({ tipo_acao: 'atacar_corpo_a_corpo', alvo: 'o segurança' });
+    assert.equal(n.fala, null);
+    assert.equal(n.volume_fala, null);
   });
 
   await t.test('o esquema exige os dois campos novos', () => {
     /* Campo opcional na gramática do ollama vem vazio (a nota do topo
        de intencao.mjs registra a medição). Exigido, o modelo olha. */
-    assert.ok(intencao.ESQUEMA.required.includes('speech'));
-    assert.ok(intencao.ESQUEMA.required.includes('speech_volume'));
-    assert.deepEqual(intencao.ESQUEMA.properties.speech_volume.enum,
-                     ['none', 'normal', 'whisper', 'shout', 'message']);
+    assert.ok(intencao.ESQUEMA.required.includes('fala'));
+    assert.ok(intencao.ESQUEMA.required.includes('volume_fala'));
+    assert.deepEqual(intencao.ESQUEMA.properties.volume_fala.enum,
+                     ['nenhum', 'normal', 'sussurro', 'grito', 'mensagem']);
   });
 });
 

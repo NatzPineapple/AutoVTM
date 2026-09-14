@@ -967,11 +967,11 @@ const Diagnostico = {
   intencao() {
     const G = 'Intenção';
     const bruta = (extra) => Object.assign({
-      action_type: 'unknown', target: null, weapon: null,
-      spell_name: null, modifier: null, reason: null }, extra);
+      tipo_acao: 'desconhecido', alvo: null, ferramenta_arma: null,
+      poder: null, circunstancia: null, intencao_detalhada: null, motivo: null }, extra);
 
     this.checar(G, 'Todo tipo do esquema tem tradução declarada', () =>
-      ['melee_attack', 'ranged_attack', 'cast_spell', 'move', 'interact', 'unknown']
+      ['atacar_corpo_a_corpo', 'atacar_distancia', 'conjurar', 'mover', 'interagir', 'investigar', 'desconhecido']
         .filter(t => !(t in Intencao.POR_TIPO)));
 
     this.checar(G, 'Toda ação citada na tradução existe no Árbitro', () => {
@@ -984,12 +984,12 @@ const Diagnostico = {
 
     this.checar(G, 'Os cinco tipos com mecânica viram intenção do V5', () => {
       const casos = [
-        ['melee_attack', 'lutar'], ['ranged_attack', 'atirar'],
-        ['move', 'ir_para'], ['interact', 'pegar']
+        ['atacar_corpo_a_corpo', 'lutar'], ['atacar_distancia', 'atirar'],
+        ['mover', 'ir_para']
       ];
       const erros = [];
       for (const [tipo, esperado] of casos) {
-        const t = Intencao.traduzir(bruta({ action_type: tipo }));
+        const t = Intencao.traduzir(bruta({ tipo_acao: tipo }));
         if (t.intencao !== esperado) erros.push(`${tipo} virou ${t.intencao}`);
       }
       /* O nome vem do DADO, e não de uma cópia. Na §64 este teste caiu
@@ -997,32 +997,49 @@ const Diagnostico = {
          a cópia aqui ficou para trás — a mesma armadilha que quebrou
          oito entradas de PODER_EXIGE. */
       const alvo = DISCIPLINAS.ofuscacao.poderes[1][0].nome;
-      const poder = Intencao.traduzir(bruta({ action_type: 'cast_spell',
-        spell_name: alvo }));
+      const poder = Intencao.traduzir(bruta({ tipo_acao: 'conjurar',
+        poder: alvo }));
       if (poder.intencao !== 'poder:ofuscacao:' + alvo) {
-        erros.push(`cast_spell virou ${poder.intencao}`);
+        erros.push(`conjurar virou ${poder.intencao}`);
       }
       return erros;
     });
 
     this.checar(G, 'unknown não vira ação nenhuma', () => {
-      const t = Intencao.traduzir(bruta({ action_type: 'unknown', reason: 'conversa' }));
+      const t = Intencao.traduzir(bruta({ tipo_acao: 'desconhecido', motivo: 'conversa' }));
       return t.intencao === null ? true : `virou ${t.intencao}`;
     });
 
     this.checar(G, 'Poder inventado não vira intenção', () => {
-      const t = Intencao.traduzir(bruta({ action_type: 'cast_spell',
-        spell_name: 'Bola de Fogo Suprema' }));
+      const t = Intencao.traduzir(bruta({ tipo_acao: 'conjurar',
+        poder: 'Bola de Fogo Suprema' }));
       return t.intencao === null ? true : `aceitou poder inexistente: ${t.intencao}`;
     });
 
-    this.checar(G, 'O verbo desempata dentro de interact', () => {
-      const esconder = Intencao.traduzir(bruta({ action_type: 'interact',
-        frase: 'me escondo nas sombras' }));
-      const arrombar = Intencao.traduzir(bruta({ action_type: 'interact',
-        frase: 'arrombo a fechadura' }));
-      if (esconder.intencao !== 'esconder') return `esconder virou ${esconder.intencao}`;
-      return arrombar.intencao === 'arrombar' ? true : `arrombar virou ${arrombar.intencao}`;
+    /* O desempate deixou de casar as `frases` do léxico e passou a ler a
+       frase-resumo do modelo contra o nome e o domínio da ação. */
+    this.checar(G, 'A intenção detalhada desempata dentro de interagir', () => {
+      const casos = [
+        ['esconder-se atrás da cortina sem ser visto', 'esconder'],
+        ['arrombar a fechadura da gaveta', 'arrombar'],
+        ['convencer o segurança a deixar passar', 'persuadir']
+      ];
+      const erros = [];
+      for (const [frase, esperado] of casos) {
+        const t = Intencao.traduzir(bruta({ tipo_acao: 'interagir', intencao_detalhada: frase }));
+        if (t.intencao !== esperado) erros.push(`"${frase}" virou ${t.intencao}`);
+      }
+      return erros;
+    });
+
+    /* O defeito que a refatoração do Elo 1 veio fechar: sem casar nada, a
+       versão anterior devolvia a PRIMEIRA candidata — "Pegar" — e o turno
+       seguia rolando os dados de outra ação, calado. */
+    this.checar(G, 'Sem casar nada, o Elo 1 diz que não sabe em vez de chutar', () => {
+      const t = Intencao.traduzir(bruta({ tipo_acao: 'interagir',
+        intencao_detalhada: 'reconfigurar o modulador de fluxo taquiônico' }));
+      if (t.intencao === null) return t.motivo ? true : 'devolveu null sem motivo';
+      return `chutou ${t.intencao}`;
     });
 
     this.checar(G, 'O plano do modelo tem o mesmo formato do plano do léxico', () => {
@@ -1032,7 +1049,7 @@ const Diagnostico = {
       const doLexico = Cadeia.INTERPRETADORES.lexico(
         { texto: 'me escondo', modo: 'agir', grafo: g, contexto: ctx, ficha: mesa.ficha });
       const doModelo = Intencao.planoDe(
-        bruta({ action_type: 'interact', frase: 'me escondo' }), g, ctx, 'me escondo');
+        bruta({ tipo_acao: 'interagir', intencao_detalhada: 'esconder-se atrás da cortina' }), g, ctx, 'me escondo');
       const chaves = (p) => p.acoes.length ? Object.keys(p.acoes[0]).sort().join(',') : '';
       const faltando = Object.keys(doLexico.acoes[0] || {})
         .filter(k => !(k in (doModelo.acoes[0] || {})));

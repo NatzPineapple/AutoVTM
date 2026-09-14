@@ -242,7 +242,8 @@ const Perdicoes = {
      formato dos outros, e o piso de 1 dado que já existe lá (§63, A1)
      continua sendo quem segura o fundo.
      ========================================================== */
-  modificadores(f, { atributo = '', disciplina = null, texto = '', belezaDoLocal = null } = {}) {
+  modificadores(f, { atributo = '', disciplina = null, texto = '', belezaDoLocal = null,
+                      luz = null, contraDeteccaoEletronica = false } = {}) {
     const mods = [];
     if (!f) return mods;
     const g = this.gravidade(f);
@@ -274,7 +275,159 @@ const Perdicoes = {
       mods.push({ nome: 'Perdição Toreador (ambiente menos que belo)', dados: -g, tipo: 'perdicao' });
     }
 
+    /* §101 — Ministério (Guia, pág. 36): luz brilhante apontada para
+       ele tira a Gravidade de TODA parada. Lê o mesmo `luz` que Oblívio
+       lê (§96), e pela mesma razão desconhecido não é claro. */
+    if (this.ehDoCla(f, 'ministerio') && luz === 'intensa') {
+      mods.push({ nome: 'Perdição do Ministério (luz direta)', dados: -g, tipo: 'perdicao' });
+    }
+
+    /* §101 — Lasombra (Guia, pág. 29): a metade que tira dados. */
+    if (this.ehDoCla(f, 'lasombra') && contraDeteccaoEletronica) {
+      mods.push({ nome: 'Perdição Lasombra (detecção eletrônica)', dados: -g, tipo: 'perdicao' });
+    }
+
     return mods;
+  },
+
+  /* ==========================================================
+     AS SETE DO GUIA DO JOGADOR  (§101 — págs. 18, 23, 29, 36, 42,
+     47 e 54)
+
+     Banu Haqim, Hecata, Lasombra, Ministério, Ravnos, Salubri e
+     Tzimisce não estão no manual básico. Estavam em `data-clans.js`
+     desde sempre como texto, marcados "SEM CONFERIR" (§88), e nenhuma
+     chegava ao dado. O Guia incorpora o Companion — a fonte oficial
+     delas — e é tradução automática: entra a REGRA, e os nomes são os
+     do básico ("Gravidade da Perdição", não "Gravidade de Bane").
+
+     O que cada uma precisa saber já existe no motor: a Gravidade, a
+     luz do ambiente (§96), o gole de outro Membro (§90) e a noite que
+     passa. Onde a regra é um TESTE, a função devolve o pedido — quem
+     rola é a Mesa (§82).
+     ========================================================== */
+
+  /* ---- Lasombra (pág. 29): a Ausência --------------------------
+
+     "o uso de tecnologia de comunicação moderna (…) requer um teste
+      de Tecnologia de Dificuldade 2 + Gravidade da Perdição (…). Evitar
+      sistemas eletrônicos de detecção de vampiros também é feito com
+      uma penalidade igual à Gravidade."
+
+     Duas metades, e são diferentes: a comunicação sobe a DIFICULDADE;
+     a detecção tira DADOS. A segunda entra em `modificadores`. */
+  dificuldadeLasombra(f, { comunicacaoModerna = false } = {}) {
+    if (!this.ehDoCla(f, 'lasombra') || !comunicacaoModerna) return null;
+    const g = this.gravidade(f);
+    return { pericia: 'tecnologia', dificuldade: 2 + g,
+             nota: `Perdição Lasombra: microfone e câmera falham com você — Tecnologia, Dificuldade ${2 + g} (Guia, pág. 29).` };
+  },
+
+  /* ---- Banu Haqim (pág. 18): o Sangue que julga -----------------
+
+     "Abater pelo menos um nível de Fome com vitae vampírica provoca
+      um teste de frenesi de fome com Dificuldade 2 + Gravidade." */
+  aoBeberDeVampiro(bebedor, doador = null) {
+    const pedidos = [];
+    if (this.ehDoCla(bebedor, 'banu_haqim')) {
+      const g = this.gravidade(bebedor);
+      pedidos.push({ tipo: 'frenesi', gatilho: 'fome', dificuldade: 2 + g,
+        motivo: `Perdição Banu Haqim: Sangue de Membro na boca — frenesi de Fome, Dificuldade ${2 + g} (Guia, pág. 18).` });
+    }
+    /* ---- Salubri (pág. 47): o Sangue que prende quem o bebe -----
+       "requer um teste de frenesi de fome na Dificuldade 2 + Gravidade
+        da Perdição de Salubri (dificuldade 3 + Gravidade (…) para Banu
+        Haqim)". A Gravidade é a do DOADOR: é o sangue dele que prende. */
+    if (doador && this.ehDoCla(doador, 'salubri') && !this.ehDoCla(bebedor, 'salubri')) {
+      const g = this.gravidade(doador);
+      const base = this.ehDoCla(bebedor, 'banu_haqim') ? 3 : 2;
+      pedidos.push({ tipo: 'frenesi', gatilho: 'fome', dificuldade: base + g,
+        motivo: `Perdição Salubri: quem prova o sangue de um Cíclope não quer parar — frenesi de Fome, Dificuldade ${base + g} (Guia, pág. 47).` });
+    }
+    return pedidos;
+  },
+
+  /* ---- Hecata (pág. 23): o Beijo que dói --------------------------
+
+     "Hecata só pode ingerir bebidas prejudiciais (…) mortais coagidos
+      ou dispostos devem ter sucesso em um teste de Vigor + Determinação
+      contra Dificuldade 2 + Gravidade da Perdição para não se
+      esforçarem contra a dor. Vampiros (…) devem fazer um teste de
+      Frenesi contra Dificuldade 3 para evitar cair em um Frenesi de
+      terror." */
+  beijoHecata(f, { vitimaEhVampiro = false } = {}) {
+    if (!this.ehDoCla(f, 'hecata')) return null;
+    const g = this.gravidade(f);
+    return vitimaEhVampiro
+      ? { vitima: 'vampiro', teste: { tipo: 'frenesi', gatilho: 'terror', dificuldade: 3 },
+          nota: 'O Beijo Hecata não dá prazer: o Membro mordido testa frenesi de terror, Dificuldade 3 (Guia, pág. 23).' }
+      : { vitima: 'mortal', soBebeComDano: true,
+          teste: { piscina: ['vigor', 'determinacao'], dificuldade: 2 + g },
+          nota: `O Beijo Hecata é agonia: só se bebe causando dano, e o mortal testa Vigor + Determinação contra ${2 + g} para não se debater (Guia, pág. 23).` };
+  },
+
+  /* ---- Ministério (pág. 36): o Sangue que abomina a luz ----------
+
+     "recebem uma penalidade igual à sua Gravidade em todas as paradas
+      quando submetidos à luz brilhante direcionada diretamente a eles.
+      Além disso, adicione a Gravidade ao dano agravado recebido pela
+      luz solar." A penalidade entra em `modificadores`; esta é a outra
+      metade. */
+  danoSolarExtra(f) {
+    return this.ehDoCla(f, 'ministerio') ? this.gravidade(f) : 0;
+  },
+
+  /* ---- Ravnos (pág. 42): o fogo que sobe de dentro ----------------
+
+     "Se eles dormirem no mesmo lugar mais de uma vez em sete noites,
+      role um número de dados igual à sua Gravidade. Eles recebem dano
+      Agravado igual ao número de 10s rolados." Dois locais precisam
+      estar a pelo menos um quilômetro; refúgio móvel vale se andou
+      um quilômetro e meio. Ravnos não pode ter o Defeito Sem Refúgio. */
+  DISTANCIA_RAVNOS_M: 1000,
+  DISTANCIA_RAVNOS_MOVEL_M: 1500,
+
+  pedidoRavnos(f, { mesmoLugarEmSeteNoites = false } = {}) {
+    if (!this.ehDoCla(f, 'ravnos') || !mesmoLugarEmSeteNoites) return null;
+    const g = this.gravidade(f);
+    if (!g) return null;
+    return { normais: g, fome: 0, dificuldade: 0, rotulo: 'Perdição Ravnos — o fogo de dentro',
+             apurar: 'dezes',
+             nota: `Dormiu onde já dormira há menos de uma semana: ${g} dado(s), e cada 10 é um Agravado (Guia, pág. 42).` };
+  },
+
+  apurarRavnos(valores) {
+    const dezes = (valores && valores.normais || []).filter(v => v === 10).length;
+    return { agravado: dezes, texto: dezes
+      ? `O Sangue queima por dentro: ${dezes} de dano Agravado.`
+      : 'O fogo não subiu esta vez.' };
+  },
+
+  /* ---- Tzimisce (pág. 54): a carga ------------------------------
+
+     "O Membro deve passar o sono rodeado pela carga escolhida (…) Caso
+      contrário, sofrerá dano agravado de Força de Vontade igual à sua
+      Gravidade ao acordar na noite seguinte." */
+  aoAcordarTzimisce(f, { cercadoPelaCarga = true } = {}) {
+    if (!this.ehDoCla(f, 'tzimisce') || cercadoPelaCarga) return null;
+    const g = this.gravidade(f);
+    return { danoVontadeAgravado: g,
+             texto: g ? `Dormiu longe da carga: ${g} de Agravado à Força de Vontade ao acordar (Guia, pág. 54).`
+                      : 'Dormiu longe da carga, e a Gravidade ainda é zero: nada a pagar.' };
+  },
+
+  /* ---- Salubri (pág. 47): o terceiro olho -------------------------
+
+     "Sempre que um Salubri ativa o poder de uma Disciplina, o terceiro
+      olho chora vitae (…). O fluxo desencadeia um teste de frenesi de
+      fome em vampiros próximos com Fome 4 ou mais." */
+  FOME_QUE_O_OLHO_ACORDA: 4,
+
+  terceiroOlho(f, { nivelDaDisciplina = 1 } = {}) {
+    if (!this.ehDoCla(f, 'salubri')) return null;
+    return { chora: true, intensidade: nivelDaDisciplina,
+             acordaFomeDe: this.FOME_QUE_O_OLHO_ACORDA,
+             texto: `O terceiro olho chora vitae (nível ${nivelDaDisciplina}): Membros próximos com Fome ${this.FOME_QUE_O_OLHO_ACORDA}+ testam frenesi de Fome (Guia, pág. 47).` };
   },
 
   /* ==========================================================
