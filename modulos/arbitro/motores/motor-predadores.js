@@ -108,11 +108,18 @@ const Predadores = {
     return [{ nome: `${pred.nome}: conhece o próprio labirinto (+Refúgio)`, dados: refugio, tipo: 'predador' }];
   },
 
+  /* BUG CONFIRMADO EM REVISÃO: lia `f.vantagens`, que não existe em
+     ficha nenhuma — o Antecedente do PERSONAGEM mora em
+     `f.antecedentes.refugio` (um número), e `f.vantagens` só existe no
+     dado ESTÁTICO do Predador (`p.vantagens`, a lista de bônus que ele
+     concede na criação). As duas coisas têm nome parecido e são coisas
+     diferentes: confundi-las fazia esta função devolver 0 sempre, com
+     qualquer ficha real — o bônus do Alçapão nunca chegava ao dado.
+
+     O teste que cobria isto usava a MESMA forma errada (`f.vantagens`
+     como array), então passava calado: a rede de segurança tinha o
+     mesmo defeito que o código. */
   _pontosDeRefugio(f) {
-    const v = (f && f.vantagens) || [];
-    const lista = Array.isArray(v) ? v : Object.values(v);
-    return lista
-      .filter(x => x && /ref[uú]gio/i.test(String(x.id || x.nome || '')))
-      .reduce((n, x) => n + (Number(x.pontos) || 0), 0);
+    return (f && f.antecedentes && Number(f.antecedentes.refugio)) || 0;
   }
 };

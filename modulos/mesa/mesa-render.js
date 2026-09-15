@@ -901,6 +901,15 @@ function condicaoHTML() {
     <p class="quiet" style="margin:0 0 .4rem;font-size:.8rem">De quem você bebeu:</p>
     <div class="chips">
       ${FONTES_DE_SANGUE.map(x => botao('alimentar', x.fonte, x.rotulo)).join('')}
+      ${/* O Ladrão de Túmulos ganhou o motor na §101 (Predadores.alimentarDeCadaver),
+           e ficou sem botão: FONTES_DE_SANGUE nunca teve "cadáver", e não há campo
+           livre para digitar — o mecanismo do Predador existia e não tinha como
+           ser acionado jogando. Condicionado ao Predador certo, como as outras
+           opções que só um Predador específico habilita. */
+        (typeof Predadores !== 'undefined' && (Predadores.de(f) || {}).id === 'ladrao_de_tumulos')
+          ? botao('alimentar', 'cadáver', 'Cadáver frio',
+              'Sacia até 3 de Fome, com a mesma penalidade do sangue ensacado (Guia, pág. 108)')
+          : ''}
     </div>
     <div class="chips" style="margin-top:.4rem">
       ${botao('provocacao', '', 'Provocação', 'Rola 1d10; de 1 a 5 a Fome sobe')}

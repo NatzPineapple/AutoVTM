@@ -4230,7 +4230,11 @@ test('Predadores — o labirinto do Alçapão (§101, Guia pág. 109)', async (t
   const aranha = () => {
     const f = fichaDeTeste(g, { nome: 'Aranha', cla: 'nosferatu' });
     f.predador = 'alcapao';
-    f.vantagens = [{ id: 'refugio', nome: 'Refúgio', pontos: 2, tipo: 'antecedente' }];
+    /* A forma de verdade: Antecedente do PERSONAGEM é
+       `f.antecedentes.refugio`, um número — não `f.vantagens`, que não
+       existe em ficha nenhuma. O teste tinha o mesmo defeito da função:
+       usava uma forma que só existe dentro dele mesmo. */
+    f.antecedentes = Object.assign({}, f.antecedentes, { refugio: 2 });
     return f;
   };
 

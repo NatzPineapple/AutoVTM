@@ -45,6 +45,17 @@ FRONT
       em motor-perdicoes.js e nada as dispara: o motor não tem um dia
       que passa nem sabe onde a ficha dormiu.
 
+  A14. noProprioRefugio e contraDeteccaoEletronica são flags mortas . médio
+      Achado em revisão do G2 (§101). As duas viajam em piscinaFinal,
+      têm motor (Predadores.modificadores, Perdicoes.dificuldadeLasombra)
+      e têm teste — mas nenhum caller real (mesa-render.js,
+      motor-especialista.js, arbitro-servidor.mjs) jamais passa true.
+      Só disparam chamando piscinaFinal direto num teste: o Alçapão
+      nunca ganha o bônus do labirinto jogando, e o Lasombra nunca sofre
+      a penalidade extra contra detecção eletrônica. Falta o motor saber
+      "o jogador está no próprio Refúgio agora" e "esta ação é contra
+      detecção eletrônica" — as duas exigem desenho, não só ligação.
+
 FICHA
   Nada aberto.
 
@@ -72,65 +83,46 @@ GERAL
 
   G2. Reler Livros/Regras e Livros/Adição-Narrativa ........... médio
       EM ANDAMENTO, E É O QUE MAIS ESTÁ RENDENDO.
-      A FILA DO BÁSICO ACABOU NA §91. Os dez itens do mapa do README
+      A FILA DO BÁSICO ACABOU NA §91 — os dez itens do mapa do README
       §61.2 estão todos lidos e pagos, do §62 ao §91.
       Falta ainda o que nunca esteve nessa fila: as Partes III e IV do
-      meu documento, e os outros 9 livros de Livros/Regras — o Guia
-      do Jogador é o mais rentável deles, e a parte dele que já está
-      isolada é o G10.
-      DOIS LIDOS NA §96, e agora há txts_extraidos/ com texto limpo,
-      o que barateou o resto da fila: Oblivio.pdf (as regras gerais da
-      Disciplina e as Cerimônias, que não existiam no motor) e
-      Sombras-na-Torre.pdf (a migração dos Lasombra, em cenario.md).
-      GUIA DO JOGADOR LIDO NA §101, nas partes que têm motor: os seis
-      Tipos de Predador (págs. 106-109) e as sete Perdições e Compulsões
-      dos clãs de fora do básico (págs. 18-54). Ficaram DECLARADOS sem
-      motor: as Variantes da Perdição (págs. 56-57), as Fichas de
-      Conhecimento, os poderes novos de Disciplina, os Rituais e
-      Fórmulas, Memoriam, Projetos Colaborativos e os Círculos.
-      Sobram 6 livros: Anarquistas, Camarilla, Escudo-Do-Mestre,
-      SABBAT, Sigilos-de-Sangue e o Companion (só imagem).
-      CLÃS LIDO NA §88: o básico tem SETE clãs, mais Caitiff e Sangue-Ralo.
-      As nove Perdições estavam erradas e foram corrigidas; só a Brujah
-      chega ao dado, as outras oito estão declaradas em regras.md §19.3.
-      Os nove clãs de outros livros (Banu Haqim, Hecata, Lasombra,
-      Ministério, Ravnos, Salubri, Tzimisce) seguem SEM CONFERIR.
-      CONFLITO AVANÇADO LIDO NA §90 (295-305, e não 295-305 só de
-      combate: o capítulo é de conflito). A iniciativa do motor não era
-      de livro nenhum, e a armadura subtraía onde o livro converte.
-      Seis sistemas do capítulo seguem SEM IMPLEMENTAR, declarados em
-      regras.md §15.12 — o maior deles é o Conflito de Rolagem Única.
-      ESTADOS DE CONDENAÇÃO LIDOS NA §90 (233-235): Laço, carniçais e
-      Diablerie não existiam e agora existem, em regras.md §22.
-      CRIAÇÃO E EXPERIÊNCIA LIDAS NA §91 (135-154). O gastador de
-      experiência não existia — a tabela estava lá e ninguém a chamava.
-      O método narrativo das Habilidades (145-146) também não existia,
-      e é o TEXTO PRINCIPAL do livro. Ficaram de fora as Qualidades e
-      Defeitos de Sangue-Ralo, que estão nas págs. 182-183.
+      meu documento, e os outros livros de Livros/Regras. Isso virou
+      três itens próprios, para não crescer tudo dentro deste:
+        G14 — os livros que ainda faltam ler;
+        G15 — o que o Guia do Jogador leu e ficou sem motor;
+        G16 — os clãs de fora do básico, sem conferência completa.
+
+  G14. Seis livros de Livros/Regras ainda não lidos ........... médio
+      Anarquistas, Camarilla, Escudo-Do-Mestre, SABBAT, Sigilos-de-
+      Sangue e o Companion (só existe aqui como PDF de imagem, sem
+      texto extraído — G13 depende dele). Já foram lidos: o básico
+      (§60), Oblivio.pdf e Sombras-na-Torre.pdf (§96), e o Guia do
+      Jogador (§96, §101, mas com backlog — ver G15).
+
+  G15. O que o Guia do Jogador leu e ficou sem motor .......... baixo
+      Lido na §101: os seis Tipos de Predador (págs. 106-109) e as
+      sete Perdições e Compulsões dos clãs de fora do básico
+      (págs. 18-54) — essas duas partes JÁ TÊM motor. Ficaram
+      DECLARADAS sem motor: as Variantes da Perdição (págs. 56-57),
+      as Fichas de Conhecimento, os poderes novos de Disciplina, os
+      Rituais e Fórmulas, Memoriam, Projetos Colaborativos e os
+      Círculos.
+
+  G16. Os sete clãs de fora do básico, sem conferência completa . médio
+      O básico (§88) tem sete clãs, mais Caitiff e Sangue-Ralo — as
+      nove Perdições deles estavam erradas e foram corrigidas, só a
+      Brujah chega ao dado hoje, as outras oito estão declaradas em
+      regras.md §19.3. Os SETE clãs de outros livros (Banu Haqim,
+      Hecata, Lasombra, Ministério, Ravnos, Salubri, Tzimisce) têm
+      Perdição e Compulsão conferidas contra o Guia desde a §101 —
+      o resto deles (disciplinas, resumo, arquétipos) segue SEM
+      CONFERIR contra livro nenhum.
 
   G13. O Assassino de Estrada não tem fonte no disco ............ baixo
       Não está no Guia do Jogador (os seis do Guia são outros). É do
       Companion, que só existe aqui como PDF de imagem. Está marcado
       naoConferido em data-predadores.js e fica porque há ficha salva
       com o id. Quando o Companion for lido, ele se confere ou sai.
-
-  G11. Seis erros de documento, achados no levantamento ...... médio
-      Todos do mesmo tipo: documento que envelheceu enquanto o código
-      andava. O primeiro é o pior — as duas afirmações estão no mesmo
-      arquivo.
-      1. regras.md:1711 diz que o Laço de Sangue não é mecanizado e
-         regras.md:2029 diz que é. A §90 fez o Laço; falta a exceção
-         Tremere.
-      2. Quatro caminhos de Livros/ quebrados nos docs, e o cabeçalho
-         da regras.md afirma que foram consertados.
-      3. regras.md:32 diz "Na Parte II, 3 das 15". A Parte II tem 17
-         seções, e as com marca explícita são 2.
-      4. glossario-traducao.md:480 diz que Projetos e Jogo Ponderado
-         não estão implementados. Foram pagos na §89.
-      5. "os 12 outros livros" aqui e no README §61.3. Livros/Regras
-         tem 10 PDFs: 9 além do básico.
-      6. regras.md Parte IV §9 diz que o app só modela um personagem.
-         A Parte III §10 diz que motor-matilha.js resolveu isso.
 
 
   ---- ARQUITETURA MODULAR (§78-§87) ----
@@ -221,8 +213,10 @@ CRONISTA
 GERAL
   G4 ..... o extrator erra o arremesso .......... §94, medido: 20/20
   G6 ..... a leitura de fala não medida ......... §94, medida
+  G11 .... seis erros de documento .............. revisão de código
   ....... o relator dizia "0 reprovaram" ........ §94.6
   ....... os seis Predadores do Guia (G10) ...... §101
+  ....... Clãs, sete + Caitiff + Sangue-Ralo .... §88
   ....... Criação e Experiência (135-154) ....... §91
   ....... Conflito Avançado (295-305) ........... §90
   ....... Estados de Condenação (233-235) ....... §90

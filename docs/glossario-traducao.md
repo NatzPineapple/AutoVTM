@@ -475,10 +475,11 @@ Indiferente · Lobo Solitário · Procrastinar · Reflexão* (fleumáticas); *Am
 Arrebatamento Maníaco · Buliçoso · Entusiasmo Constante · Entusiasmo pela Vida · Jogo do Olfato*
 (sanguíneas).
 
-### 8.11 Projetos e Jogo Ponderado *(Apêndices II e III — §70)*
+### 8.11 Projetos e Jogo Ponderado *(Apêndices II e III — §89)*
 
-Ainda **não implementados** (G8 e G9 no README §14.1). Os termos estão aqui para que a conversão,
-quando vier, não invente sinônimo.
+**Implementados na §89** — Projetos em `motor-projetos.js` (aba Projetos), Jogo Ponderado em
+`data-limites.js` (aba Limites) e no prefixo do Narrador. Os termos ficam aqui como referência de
+tradução, para o texto do jogo não divergir do vocabulário do livro.
 
 | Inglês | PT-BR | Observação |
 |---|---|---|

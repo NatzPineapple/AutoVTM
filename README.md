@@ -1377,7 +1377,7 @@ F1 a F5 pagos na §47. A área carrega sozinha, com duas pastas: `['data', 'fich
 
 ---
 
-#### Árbitro — **um item, achado numa mudança de área**
+#### Árbitro — **três itens**
 
 **A12. O ponto da Ambição está preso à cura da Vontade** — *baixo*
 
@@ -1389,6 +1389,30 @@ Apareceu ao separar **quanto a noite rende** (do Árbitro) de **como se gasta** 
 regra do quanto ganhou nome próprio, `xpDaSessao`, e com nome próprio ficou visível que ela
 recebia uma condição que não é dela. Preservado como estava — mudança de área não é hora de
 mudar regra calado.
+
+**A13. Três Perdições do Guia esperam "a noite que passa"** — *baixo* · nasceu na §101
+
+`regras.md` §19.5. Ministério (dano solar extra), Ravnos (o fogo ao dormir no mesmo lugar) e
+Tzimisce (a carga) estão calculadas em `motor-perdicoes.js` e nada as dispara: o motor não tem
+um dia que passa nem sabe onde a ficha dormiu — falta o relógio da sessão que essas três
+Perdições precisam.
+
+**A14. `noProprioRefugio` e `contraDeteccaoEletronica` são flags mortas** — *médio* · achado
+em revisão do G2 (§101)
+
+As duas viajam em `piscinaFinal`, têm motor (`Predadores.modificadores`,
+`Perdicoes.dificuldadeLasombra`) e têm teste — mas nenhum caller real (`mesa-render.js`,
+`motor-especialista.js`, `arbitro-servidor.mjs`) jamais passa `true`. Só disparam chamando
+`piscinaFinal` direto num teste: o Alçapão nunca ganha o bônus do labirinto jogando, e o
+Lasombra nunca sofre a penalidade extra contra detecção eletrônica. Falta o motor saber "o
+jogador está no próprio Refúgio agora" e "esta ação é contra detecção eletrônica" — as duas
+exigem desenho, não só ligação.
+
+Um terceiro achado da mesma revisão **já foi corrigido**: `Predadores._pontosDeRefugio` lia
+`f.vantagens` — campo que não existe em ficha nenhuma, confundido com `p.vantagens` (o dado
+estático do Predador). O bônus do Alçapão nunca chegava ao dado com ficha real, e o teste que
+cobria isso usava a mesma forma errada, então passava calado. Corrigido junto com o botão
+"Cadáver frio" que faltava na Mesa para o Ladrão de Túmulos ter como acionar o próprio motor.
 
 ---
 
@@ -1498,33 +1522,38 @@ conhecidas foram pagas na §40. Quer dizer que **o que não foi lido não foi co
 que documento velho não é inofensivo só porque o código está certo, porque **quem lê o
 documento programa por ele**.
 
-**G11. Seis erros de documento, achados no levantamento** — *médio* · nasceu na §95
+**O G2 virou três itens**, para não crescer mais dentro de um texto só:
 
-Todos do mesmo tipo — **documento que envelheceu enquanto o código andava** —, que é o defeito que
-a §64, a §65 e a §67 já acharam três vezes. O primeiro é o pior, porque as duas afirmações
-contraditórias estão **no mesmo arquivo**:
+**G14. Seis livros de `Livros/Regras` ainda não lidos** — *médio*
 
-| | O quê |
-|---|---|
-| 1 | `regras.md:1711` diz que o Laço de Sangue **não** é mecanizado; `regras.md:2029` diz que **é**. A §90 fez o Laço; o que falta é a exceção Tremere |
-| 2 | Quatro caminhos de `Livros/` quebrados nos docs — e o cabeçalho da `regras.md` afirma que os caminhos foram consertados |
-| 3 | `regras.md:32` diz *"Na Parte II, 3 das 15"*. A Parte II tem **17** seções, e as com marca explícita são **2** |
-| 4 | `glossario-traducao.md:480` diz que Projetos e Jogo Ponderado não estão implementados. Foram pagos na §89 |
-| 5 | *"os 12 outros livros"*, aqui na §61.3 e no arquivo de pendências. `Livros/Regras/` tem **10** PDFs: 9 além do básico |
-| 6 | `regras.md` Parte IV §9 diz que o app só modela um personagem; a Parte III §10 diz que `motor-matilha.js` resolveu isso |
+Anarquistas, Camarilla, Escudo-Do-Mestre, SABBAT, Sigilos-de-Sangue e o `Companion` (só existe
+aqui como PDF de imagem, sem texto extraído — o G13 depende dele). Já foram lidos: o básico
+(§60), `Oblivio.pdf` e `Sombras-na-Torre.pdf` (§96), e o Guia do Jogador (§96, §101 — mas com
+backlog, ver G15).
 
-Dois deles — o 2 e o 5 — dão para travar com teste, do jeito que a §94 travou a bateria: caminho de
-livro citado num `.md` que não existe no disco vira falha de `npm test`.
+**G15. O que o Guia do Jogador leu e ficou sem motor** — *baixo* · nasceu na §101
 
-**G10. Os seis Tipos de Predador do Guia do Jogador não foram conferidos** — *médio* · nasceu na §77
+Lido na §101: os seis Tipos de Predador (págs. 106–109) e as sete Perdições e Compulsões dos
+clãs de fora do básico (págs. 18–54) — essas duas partes **já têm motor**. Ficaram
+**declaradas sem motor**: as Variantes da Perdição (págs. 56–57), as Fichas de Conhecimento,
+os poderes novos de Disciplina, os Rituais e Fórmulas, Memoriam, Projetos Colaborativos e os
+Círculos.
 
-Extorsionista, Ladrão de Túmulos, Montero, Perseguidor, Assassino de Estrada e Alçapão vêm do
-**Guia do Jogador**, págs. 107–111, e estão em `data-predadores.js` abaixo de um separador que diz
-que não foram lidos contra a página.
+**G16. Os sete clãs de fora do básico, sem conferência completa** — *médio*
 
-O Guia **dá parada de dados** para todos eles — coisa que o básico não faz para os dez dele —, e a
-tradução exige cuidado: chama Oblívio de *"Esquecimento"*, Sagacidade de *"Insight"* e Ladroagem
-de *"Furto"*. Há ainda um sétimo tipo no Guia, o **Ceifador**, que o projeto não tem.
+O básico (§88) tem sete clãs, mais Caitiff e Sangue-Ralo — as nove Perdições deles estavam
+erradas e foram corrigidas; só a Brujah chega ao dado hoje, as outras oito estão declaradas em
+`regras.md` §19.3. Os **sete** clãs de outros livros (Banu Haqim, Hecata, Lasombra, Ministério,
+Ravnos, Salubri, Tzimisce) têm Perdição e Compulsão conferidas contra o Guia desde a §101 — o
+resto deles (disciplinas, resumo, arquétipos) segue sem conferir contra livro nenhum.
+
+**G13. O Assassino de Estrada não tem fonte no disco** — *baixo* · nasceu na §101
+
+Não está no Guia do Jogador — os seis do Guia (Extorsionista, Ladrão de Túmulos, Ceifador,
+Montero, Perseguidor, Alçapão) foram lidos e pagos na §101. Este é do `Companion`, que só existe
+aqui como PDF de imagem, sem texto extraído. Fica em `data-predadores.js` marcado
+`naoConferido`, porque há ficha salva com o id — apagá-lo quebraria o que o jogador guardou.
+Quando o `Companion` for lido, ele se confere ou sai.
 
 **Arquitetura modular** — *nasceu na §78*
 
@@ -1581,15 +1610,19 @@ Para responder "o que fazer em seguida":
 | | Item | Área | Peso |
 |---|---|---|---|
 | 1 | Reler os livros de regras e atualizar os arquivos (G2) | Geral | médio — **e é o que mais rende** |
-| 2 | Os seis Predadores do Guia do Jogador (G10) | Geral | médio |
-| 3 | O Árbitro não manda salvar na memória da mesa (M4) | Geral | médio |
-| 4 | A sessão é espelhada, não autoritativa (M9) | Geral | médio |
-| 5 | Seis erros de documento achados no levantamento (G11) | Geral | médio |
-| 6 | O degrau 3 aceita ou recusa por sorteio (C1) | Cronista | baixo |
-| 7 | Só a rolagem de ação passa pela Mesa (M10) | Geral | baixo |
-| 8 | Checkout/checkin sem teste com o FichaServer de verdade (M11) | Geral | baixo |
-| 9 | O ponto da Ambição está preso à cura da Vontade (A12) | Árbitro | baixo |
-| 10 | O esquema do extrator em português caiu de 96,8% pra 80,6% (C2) | Cronista | médio |
+| 2 | Seis livros de `Livros/Regras` ainda não lidos (G14) | Geral | médio |
+| 3 | Os sete clãs de fora do básico, sem conferência completa (G16) | Geral | médio |
+| 4 | O Árbitro não manda salvar na memória da mesa (M4) | Geral | médio |
+| 5 | A sessão é espelhada, não autoritativa (M9) | Geral | médio |
+| 6 | `noProprioRefugio` e `contraDeteccaoEletronica` são flags mortas (A14) | Árbitro | médio |
+| 7 | O esquema do extrator em português caiu de 96,8% pra 80,6% (C2) | Cronista | médio |
+| 8 | O degrau 3 aceita ou recusa por sorteio (C1) | Cronista | baixo |
+| 9 | Só a rolagem de ação passa pela Mesa (M10) | Geral | baixo |
+| 10 | Checkout/checkin sem teste com o FichaServer de verdade (M11) | Geral | baixo |
+| 11 | O ponto da Ambição está preso à cura da Vontade (A12) | Árbitro | baixo |
+| 12 | Três Perdições do Guia esperam "a noite que passa" (A13) | Árbitro | baixo |
+| 13 | O que o Guia do Jogador leu e ficou sem motor (G15) | Geral | baixo |
+| 14 | O Assassino de Estrada não tem fonte no disco (G13) | Geral | baixo |
 
 **O Árbitro reabriu e fechou na mesma §95.** O levantamento pôs na lista o que já estava escrito em
 `regras.md` mas fora dela — as seis Perdições de clã que eram só texto (A10) e o Conflito de
@@ -1647,6 +1680,7 @@ E dois fecharam por trabalho desde a última revisão:
 | **M1 — o FichaServer, o Módulo 2, não existia** | Pago na §83. Porta 5174, MongoDB quando houver e pasta quando não, e o ciclo Checkout/Checkin da §78 fechando com as duas pontas |
 | **M3 — Árbitro e Cronista não tinham processo próprio** | Pago na §84. O Módulo 4 roda os MESMOS arquivos do navegador num contexto de vm; o Módulo 5 tirou as três camadas de modelo de dentro do Gateway |
 | **M5 — ligar/desligar não conhecia os módulos novos** | Pago na §80. O painel da capa separa **processos** de **recursos**, o Gateway sobe e derruba os módulos irmãos na ordem certa, e `ferramentas/desligar.cmd` é o par do `iniciar.cmd` |
+| **G11 — seis erros de documento, achados no levantamento** | Pago em revisão de código. A contradição do Laço de Sangue (`regras.md`) já não existia; ganhou a exceção Tremere que faltava. Os quatro caminhos de `Livros/` quebrados pela reorganização em subpastas foram corrigidos (`modelo.pdf`, `Escudo-Do-Mestre.pdf`, `SABBAT.pdf`, e o livro de comunidade que nunca esteve no disco passou a dizer isso). "3 das 15" virou "2 das 17" na Parte II. O glossário parou de dizer que Projetos e Jogo Ponderado não existem — existem desde a §89. E a Parte IV do Sabá parou de contradizer a Parte III sobre a matilha ser estado coletivo: `motor-matilha.js` já resolvia isso |
 
 ### 14.1.4 O registro acumulado
 
@@ -4843,8 +4877,9 @@ sozinho pela maior parada, sem modelar a escolha nem o preço. Fica pendente por
 §15 antes de mexer.
 
 **A Parte I fechou** (17 seções de regra, §2–§18): oito correções de documento, duas de dado,
-três divergências de motor achadas (A1–A3, nenhuma corrigida). O item G2 segue aberto — falta a
-Parte II, as Partes III/IV, e doze outros livros.
+três divergências de motor achadas (A1–A3, pagas depois na §63). O item G2 seguia aberto naquele
+momento — faltava a Parte II, as Partes III/IV, e nove outros livros (`Livros/Regras/` tem dez
+PDFs ao todo, um deles o básico).
 
 ## 61. Quanto do manual básico foi lido, de verdade
 

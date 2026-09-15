@@ -17,7 +17,7 @@ A ordem de autoridade, do maior para o menor:
 | Fonte | Peso |
 |---|---|
 | `Livros/Regras/vampiro-a-mascara---manual-basico-5-edicao.pdf` | **Manda em tudo.** Tradução oficial, e a única fonte primária de regra do sistema |
-| `Livros/Regras/modelo.pdf` (ficha oficial) e `Oblivio.pdf` | Traduções profissionais; mandam na terminologia |
+| `Livros/modelo.pdf` (ficha oficial) e `Livros/Regras/Oblivio.pdf` | Traduções profissionais; mandam na terminologia |
 | Os demais em `Livros/Regras/` | Suplementos, cada um na sua matéria |
 | `Livros/Regras/V5-Guia-Do-Jogador.pdf` | Tradução automática ruim. **Só apoio**, e perde de qualquer outro |
 
@@ -29,7 +29,8 @@ A ordem de autoridade, do maior para o menor:
 >
 > **A Parte I está fechada: as 17 seções de regra (§2 a §18) foram conferidas contra o
 > manual básico.** A §1 saiu daqui — virou vocabulário, em `narracao-ia.md` §4.7 — e a §19 é
-> inventário do motor, não regra. Na Parte II, 3 das 15 — a §15 nasceu conferida, do Apêndice I.
+> inventário do motor, não regra. Na Parte II, 2 das 17 — a §5 (Potência de Sangue) e a §15
+> (Ações padrão, que nasceu conferida, do Apêndice I).
 >
 > **A revisão está achando erro de conteúdo, e não pouco.** A tabela de Dificuldade da §5
 > estava com os rótulos deslocados em um nível e fechava em 6 em vez de 7 — vinha do Guia do
@@ -2120,6 +2121,11 @@ as usa o tempo todo.
 menos que seja ingerido"*. Vitae de bolsa **não enlaça** — e isso importa nesta mesa, que tem
 bolsa desde a §67.
 
+**Exceção Tremere** *(pág. 97)*: o Vitae Tremere **não Enlaça outro Membro do clã** — o gole
+não conta para o Laço. Dado a mortal ou carniçal, exige goles extras iguais à Gravidade da
+Perdição antes de a Força começar a subir. Implementado em `motor-lacos.js` via
+`Perdicoes.doacaoTremere` (§95).
+
 **Uma cria é um terço Enlaçada ao Senhor** no primeiro ano, por já ter provado o Sangue dele
 uma vez.
 
@@ -2225,7 +2231,7 @@ entre as gerações**.
 > Mestre — humano ou IA — não precisar inventar número nenhum ao montar uma situação.
 
 Toda tabela desta parte está implementada em `comum/dados/data-escudo.js` e é consultável
-pelo Árbitro. **Fonte:** `Livros/Escudo-Do-Mestre.pdf`, págs. 124–127 — onde ele diverge do
+pelo Árbitro. **Fonte:** `Livros/Regras/Escudo-Do-Mestre.pdf`, págs. 124–127 — onde ele diverge do
 que estava documentado antes, **ele venceu**; ver §12 desta parte.
 
 ---
@@ -3386,8 +3392,8 @@ Os dois livros de Sabá no projeto **não têm o mesmo peso**:
 
 | Livro | Origem | O que traz |
 |---|---|---|
-| `Livros/SABBAT.pdf` (PT) | Oficial Paradox — *The Sabbat: The Black Hand* | Cenário, os Caminhos, os Ritae, antagonistas. Trata o Sabá como **inimigo**, não como personagem jogável. |
-| `Livros/Vampire-the-Masquerade-v5-Black-Hand-Playing-the-Sabbat.pdf` (EN) | **Storytellers Vault** — conteúdo de comunidade, sob o Community Content Agreement | Os **sistemas** que tornam o Sabá jogável: Vaulderie, Vinculum, matilhas, Ritae com efeito mecânico, Tipos de Predador. |
+| `Livros/Regras/SABBAT.pdf` (PT) | Oficial Paradox — *The Sabbat: The Black Hand* | Cenário, os Caminhos, os Ritae, antagonistas. Trata o Sabá como **inimigo**, não como personagem jogável. |
+| *Vampire: The Masquerade v5 — Black Hand: Playing the Sabbat* (EN) — **não está no disco** | **Storytellers Vault** — conteúdo de comunidade, sob o Community Content Agreement | Traria os **sistemas** que tornam o Sabá jogável: Vaulderie, Vinculum, matilhas, Ritae com efeito mecânico, Tipos de Predador. Sem o arquivo, essas mecânicas seguem como pendência (G12) |
 
 Ou seja: **a maior parte das mecânicas abaixo é material de comunidade, não cânone
 Paradox.** O livro oficial descreve os Caminhos e os Ritae, mas nunca dá sistema para
@@ -3653,19 +3659,20 @@ Anarquistas, e **só podem comprar Status positivo dentro do Sabá** na criaçã
 
 ## 9. Notas para a implementação no VITÆ
 
-O Sabá **não é uma variante cosmética** — ele troca três subsistemas inteiros:
+O Sabá **não é uma variante cosmética** — ele troca três subsistemas inteiros. Esta seção é a
+nota de projeto de ANTES da implementação; o que de fato aconteceu está registrado na Parte III
+§10, e o item 3 abaixo **envelheceu**: o app deixou de modelar um personagem só.
 
 1. **Pilares → Ritae-Pilares.** O `data-mesa.js` guarda pilares como pessoas. Uma ficha
    de Sabá precisaria ligar Convicções a Ritae, e a doca de **Pessoas** perde peso para
    uma doca de **Ritae**.
 2. **Humanidade → Caminho.** Muda a compulsão, muda o teste de Remorso (que passa a
    depender da celebração de um Ritae-Pilar) e trava a compra de Humanidade.
-3. **Coterie → Matilha.** Traços de Arena, Pontos de Matilha e Vinculum são estado
-   **coletivo**, e o app hoje só modela um personagem.
-
-Nada disso é difícil, mas nenhum é pequeno. Sugiro deixar para depois da Fase 2 do
-**Parte B**, quando o Diretor já existir — o Vinculum e os Ritae são naturalmente
-gatilhos de campanha, não de ficha.
+3. ~~**Coterie → Matilha.** Traços de Arena, Pontos de Matilha e Vinculum são estado
+   coletivo, e o app hoje só modela um personagem.~~ **Resolvido.** `modulos/ficha/motor-matilha.js`
+   tirou Vinculum, Arena, Pontos e membros de dentro da ficha — vivem num registro próprio
+   (`vitae:matilhas`), e duas fichas na mesma matilha compartilham o Vinculum de verdade.
+   Detalhes na Parte III §10, item 1.
 
 Para o cenário brasileiro, o gancho já está em `data-brasil.js`: **São Paulo** foi um
 dos maiores centros do Sabá nas Américas, e a **Catedral da Sé** abrigava o concílio que
